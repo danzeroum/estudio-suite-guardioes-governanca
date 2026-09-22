@@ -58,6 +58,12 @@ jobs:
       - name: O normalizador de fala (CP-004)
         run: python3 tests/test_fala.py
 
+      # CP-004: o fiscal de redublagem compara TEXTO e TEMPO, nao bytes de
+      # audio -- por isso roda em CI, onde piper nao existe. Piper ausente no
+      # runner nunca quebra o build: dublar e comando de maquina local.
+      - name: O fiscal de redublagem (CP-004)
+        run: python3 tests/test_dublar.py
+
   navegador:
     runs-on: ubuntu-latest
     steps:

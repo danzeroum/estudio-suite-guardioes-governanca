@@ -1,0 +1,258 @@
+{
+ "filme": "jornada-dado",
+ "gerado_por": "python3 -m estudio_suite dublar",
+ "modelo": {
+  "nome": "pt_BR-faber-medium",
+  "sha256_onnx": "858555e3a064209c57088fe6bd70c4c3dc54d03eaa00c45d5ecaf43a33f95aa7",
+  "sha256_json": "7e694de195ae3fc36dd732c445eb04fb49b649854893cb5506b978f0d50a1d6f"
+ },
+ "mix": {
+  "arquivo": "jornada-dado.opus",
+  "taxa_hz": 48000,
+  "canais": 1,
+  "loudness_alvo_lufs": -16.0,
+  "true_peak_alvo_dbtp": -1.5
+ },
+ "clipes": [
+  {
+   "plano": "p01",
+   "em": 0.5,
+   "ate": 5.5,
+   "dur": 1.904,
+   "voz": "narrador",
+   "texto_sha256": "61347f9aa0180b369f909b3d1006d942e9796ba84591a0f3fb6ed4f7afbc1b40"
+  },
+  {
+   "plano": "p02",
+   "em": 6.3,
+   "ate": 10.0,
+   "dur": 1.997,
+   "voz": "coruja",
+   "texto_sha256": "abcd471f2eee3467f15c66a3eb9a541a1e64af3c1346005c211ca6141af50a40"
+  },
+  {
+   "plano": "p02",
+   "em": 10.3,
+   "ate": 14.7,
+   "dur": 2.705,
+   "voz": "coruja",
+   "texto_sha256": "65f74d0b668d248dd55f828f610828476f0e449ffb694a6c67eb58b3cd96ec21"
+  },
+  {
+   "plano": "p03",
+   "em": 15.3,
+   "ate": 19.3,
+   "dur": 1.788,
+   "voz": "coruja",
+   "texto_sha256": "7a64bd8a6a4575270a2d912c117f2013608316b80a58fc43fe1a8d867b26bba1"
+  },
+  {
+   "plano": "p03",
+   "em": 19.5,
+   "ate": 23.7,
+   "dur": 2.566,
+   "voz": "coruja",
+   "texto_sha256": "cd28be7fb793e73a723e3e901f02c55899be4aeba35e2b3e645610ad90bdcea1"
+  },
+  {
+   "plano": "p04",
+   "em": 24.3,
+   "ate": 28.5,
+   "dur": 2.032,
+   "voz": "raposa",
+   "texto_sha256": "39fd93c44029c7a10971ac0003680b8239d1ac883354b51151682f88b98aa46a"
+  },
+  {
+   "plano": "p04",
+   "em": 28.7,
+   "ate": 32.0,
+   "dur": 1.649,
+   "voz": "raposa",
+   "texto_sha256": "8b0c027d003834fe02e3ca5000bb923a724c84c42241ccb4826e3ecf9d95be61"
+  },
+  {
+   "plano": "p04",
+   "em": 32.2,
+   "ate": 34.8,
+   "dur": 2.009,
+   "voz": "raposa",
+   "texto_sha256": "8ea7940fff498c37ed8137c16012b31fa3918f0c0e325307395ae61d73027f95"
+  },
+  {
+   "plano": "p05",
+   "em": 35.3,
+   "ate": 39.0,
+   "dur": 2.159,
+   "voz": "aguia",
+   "texto_sha256": "1e775aeccff31704f64c2e35532b14652da4ed1021649c1f1230bcca6ffa1d71"
+  },
+  {
+   "plano": "p05",
+   "em": 39.2,
+   "ate": 42.8,
+   "dur": 1.846,
+   "voz": "aguia",
+   "texto_sha256": "d0560d52b3bbe07e4fc65396feed7994d6f093808d16b403a5f09cda0bea08ce"
+  },
+  {
+   "plano": "p05",
+   "em": 43.0,
+   "ate": 45.8,
+   "dur": 2.159,
+   "voz": "aguia",
+   "texto_sha256": "ad1aadb835db3cc2445ba2858e87e63195be428a3da0864c422814080e9a9530"
+  },
+  {
+   "plano": "p06",
+   "em": 46.3,
+   "ate": 50.2,
+   "dur": 1.498,
+   "voz": "tartaruga",
+   "texto_sha256": "fe5c4a51e9abc6f4dc5821af8320dda17baa25ce21d518339f7f09e8f9d14c1c"
+  },
+  {
+   "plano": "p06",
+   "em": 50.4,
+   "ate": 54.6,
+   "dur": 2.055,
+   "voz": "tartaruga",
+   "texto_sha256": "a92b3002dbe854b7914d786d49545c936230f6ee092ba769e67781cd8c3bea3b"
+  },
+  {
+   "plano": "p06",
+   "em": 54.8,
+   "ate": 58.8,
+   "dur": 2.752,
+   "voz": "tartaruga",
+   "texto_sha256": "3bcd56cd04ff327d239d1c7985cd71997cb215efe7385cc4ae9d6fedf14b1242"
+  },
+  {
+   "plano": "p07",
+   "em": 59.3,
+   "ate": 63.5,
+   "dur": 2.02,
+   "voz": "raposa",
+   "texto_sha256": "75f200279679963a42ee5c86bd56b1b3d13ddd8351655f951778931da6a25d46"
+  },
+  {
+   "plano": "p07",
+   "em": 63.7,
+   "ate": 68.8,
+   "dur": 3.471,
+   "voz": "raposa",
+   "texto_sha256": "252bb554421cd2d32f3c155eb16d948ab948a2dc9befdbead858dd18902d05ac"
+  },
+  {
+   "plano": "p08",
+   "em": 69.3,
+   "ate": 73.4,
+   "dur": 1.939,
+   "voz": "elefante",
+   "texto_sha256": "b44a0d10e56b19313f18c47e0eec4b2fc3e3db8c05112cb8082f8abc80debfbf"
+  },
+  {
+   "plano": "p08",
+   "em": 73.6,
+   "ate": 77.4,
+   "dur": 2.02,
+   "voz": "elefante",
+   "texto_sha256": "099b668b13e332422d4bd71a46674d544e0dba32494e6b73a8f9bc06bdd4b3ba"
+  },
+  {
+   "plano": "p08",
+   "em": 77.6,
+   "ate": 79.8,
+   "dur": 1.869,
+   "voz": "elefante",
+   "texto_sha256": "e192f3928b199856cc8766daf00bf9f86a0ec5f59cc342538dee1870d65748b5"
+  },
+  {
+   "plano": "p09",
+   "em": 80.3,
+   "ate": 84.4,
+   "dur": 1.614,
+   "voz": "aguia",
+   "texto_sha256": "fe3c35a8aa08f13046742a72e16ee13b94ff6f10783439de17b73c62ab03c2a0"
+  },
+  {
+   "plano": "p09",
+   "em": 84.6,
+   "ate": 88.2,
+   "dur": 1.614,
+   "voz": "aguia",
+   "texto_sha256": "ca3f369dee6bf9c4950da104c732367779e03e5aa0f9784c96a404fb64b5583b"
+  },
+  {
+   "plano": "p09",
+   "em": 88.4,
+   "ate": 91.0,
+   "dur": 2.531,
+   "voz": "aguia",
+   "texto_sha256": "983eca1410a6c4b5864af3eb8f488c098310461983002905e94b8061b236aa71"
+  },
+  {
+   "plano": "p10",
+   "em": 91.3,
+   "ate": 94.6,
+   "dur": 1.509,
+   "voz": "elefante",
+   "texto_sha256": "21e32989191bf4b425b8f4736c63fd630fec930a8cfca92b2a264860a8168dd9"
+  },
+  {
+   "plano": "p10",
+   "em": 94.8,
+   "ate": 98.6,
+   "dur": 1.649,
+   "voz": "elefante",
+   "texto_sha256": "52af247fb8c153e44314ed27f221fe59ffeb9670bef114c4cc2bed51ceacd847"
+  },
+  {
+   "plano": "p10",
+   "em": 98.8,
+   "ate": 102.8,
+   "dur": 2.752,
+   "voz": "elefante",
+   "texto_sha256": "63cc409c2c880df6a3ee61d63a1308c7fe39236ee64224d8c6542230864320e4"
+  },
+  {
+   "plano": "p11",
+   "em": 103.3,
+   "ate": 107.2,
+   "dur": 1.811,
+   "voz": "aguia",
+   "texto_sha256": "47c74c25aaf363f76b471a6ba5f4261f78ee223ae1c7ed4f44d768670bfbda92"
+  },
+  {
+   "plano": "p11",
+   "em": 107.4,
+   "ate": 112.8,
+   "dur": 4.005,
+   "voz": "aguia",
+   "texto_sha256": "ceac190e51ee89019bca8926eba80d8de26223f3fef96bbb4784acdc955b5bff"
+  },
+  {
+   "plano": "p12",
+   "em": 113.3,
+   "ate": 117.2,
+   "dur": 1.556,
+   "voz": "aguia",
+   "texto_sha256": "44618daaecc06fbcb4cbeea65806dce2b648b396ccca65e06efd9d626d29f430"
+  },
+  {
+   "plano": "p12",
+   "em": 117.4,
+   "ate": 121.0,
+   "dur": 2.101,
+   "voz": "aguia",
+   "texto_sha256": "ec11bfb75d8d4fc958c2de3e4746c070f1562f231cac3fe736f29e1aa2cb36fe"
+  },
+  {
+   "plano": "p12",
+   "em": 121.2,
+   "ate": 123.8,
+   "dur": 2.171,
+   "voz": "aguia",
+   "texto_sha256": "0c6ad7de86b95d06f913bcba2980ee6efd28802598b185f8c881c0b197043076"
+  }
+ ]
+}

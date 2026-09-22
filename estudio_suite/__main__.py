@@ -12,6 +12,7 @@ AJUDA = """estudio — a suite que transforma historia em filme
   validar       o gate unico: roteiros, derivados, lei   (o que o CI roda)
   etapas <id>   onde este filme esta nas cinco etapas, e o que falta
   novo-filme <id> [--de <pedido.md>]   cria o esqueleto e mostra a proxima etapa
+  dublar <id>   a camada de audio derivada das legendas (CP-004: offline, travada)
   lei           materializa e confere a lei ancorada
   melhorias     os sinais de hoje e as propostas que eles geram
                 (--escrever grava as propostas em harness/change-proposals/)
@@ -92,6 +93,12 @@ def main(argv=None) -> int:
                     print(f"           · {a}")
             return 0
 
+        if cmd == "dublar":
+            from .dublar import main as m
+            if not resto:
+                print("uso: dublar <id-do-filme>", file=sys.stderr)
+                return 64
+            return m(resto)
         if cmd == "melhorias":
             from .melhorias import evidencias, propor
             print(evidencias.resumo())

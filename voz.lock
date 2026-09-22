@@ -1,0 +1,24 @@
+# A voz tem ancora, no mesmo espirito do lei.lock.
+#
+# O audio e camada derivada e ADITIVA (CP-004), e o que o torna revisavel e
+# ser reproduzivel: o modelo exato que sintetizou cada clipe esta travado
+# aqui por sha256. Sem esta conferencia, dublar em outra maquina -- ou depois
+# de um release novo do piper-voices -- produziria outro audio do que o
+# commitado, e o diff de uma redublagem mostraria mudanca onde o texto nem
+# mudou. O que e derivado tem de ser derivavel.
+#
+# Para avancar a ancora: change-proposal (caminho protegido). Nunca em
+# silencio, porque avancar o modelo muda a voz de filmes ja publicados.
+schema: estudio-suite/voz-lock@1
+
+modelo:
+  nome: pt_BR-faber-medium
+  origem: https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/faber/medium
+
+arquivos:
+  pt_BR-faber-medium.onnx:
+    sha256: 858555e3a064209c57088fe6bd70c4c3dc54d03eaa00c45d5ecaf43a33f95aa7
+    papel: "pesos do modelo acustico"
+  pt_BR-faber-medium.onnx.json:
+    sha256: 7e694de195ae3fc36dd732c445eb04fb49b649854893cb5506b978f0d50a1d6f
+    papel: "configuracao: fonemizacao, taxa de amostragem (22050 Hz)"
