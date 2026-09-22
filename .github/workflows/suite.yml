@@ -64,6 +64,13 @@ jobs:
       - name: O fiscal de redublagem (CP-004)
         run: python3 tests/test_dublar.py
 
+      # CP-005: som de terceiro so entra pela porta do amostras.lock. O
+      # teste prova a LOGICA da ancora e do fiscal com fixtures locais
+      # (file://) -- a coleta real do Freesound e evidencia de maquina
+      # local, registrada no PR; o CI nao precisa de rede para fiscalizar.
+      - name: A ancora e o fiscal de amostras (CP-005)
+        run: python3 tests/test_amostras.py
+
       # CP-004: o sexto portao. A audio-suite NAO esta instalada no runner:
       # o portao devolve INDECISO, publicado por filme, e o build SEGUE --
       # so FINDING (saida 1) reprova. "Nao consegui medir" nao e "esta errado",
