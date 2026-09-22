@@ -1,0 +1,57 @@
+# Perfil de medicao do portao de sonorizacao da suite dos Guardioes (CP-004).
+#
+# DERIVADO do profiles/podcast.yaml do audio-suite (danzeroum/audio-suite,
+# somente leitura -- o codigo dele nunca e copiado para ca). O que mudou em
+# relacao ao podcast, e por que:
+#
+#   - loudness: o podcast ja trava -17..-15 LUFS, que E a ancora da CP-004
+#     (-16 +- 1). Mantido como esta.
+#   - true_peak: <= -1.0 dBTP, o teto da CP-004. Mantido.
+#   - clipping e glitch: os dois defeitos objetivos ativos, como manda a CP.
+#   - FORA do perfil de partida: mono_compat e channel_balance (a trilha e
+#     MONO de voz -- medir cancelamento L/R em mono e medir o vazio),
+#     spectral_health, lra e demais DESCRITORES (regra R1 do audio-suite:
+#     descritor nunca reprova), speech_intelligibility e speech_rate
+#     (calibrar empiricamente antes de travar -- ADR-0002; candidatos ao
+#     Sprint 5 desta CP, com justificativa medida).
+#
+# Lembra ADR-0002: tolerancia e limiar se DERIVAM de medicao, nao se escolhem.
+# Estes sao os ancoras de PARTIDA declarados na CP-004; o Sprint 5 mede os
+# filmes reais, registra as medicoes no PR e ajusta este arquivo com
+# justificativa. Ajustar sem medir e o anti-padrao que a ADR existe para pegar.
+name: guardioes-narracao
+version: "1.0.0"
+data_classification: internal
+
+analyzers:
+  inspect: {}
+  loudness:
+    min_lufs: -17.0
+    max_lufs: -15.0
+  true_peak:
+    max_dbtp: -1.0
+  clipping:
+    threshold: 0.99
+    max_clipped_pct: 0.01
+  glitch: {}
+
+# O portao roda com --strict: o overlay promove a FAIL os avisos que a CP-004
+# declara como ancora. O glitch NAO entra no overlay de partida -- medido
+# empiricamente (Sprint 4), o detector conta dezenas de milhares de eventos
+# de "repeticao" sobre o SILENCIO entre clipes (30s de silencio puro: ~44k
+# eventos; a propria ADR-0002 do audio-suite documenta o comportamento dele
+# sobre piso digital). Travar isso como fail sem calibrar seria reprovar o
+# silencio de proposito. O Sprint 5 mede os tres filmes, registra no PR e
+# decide: tunar o detector, calibrar o limiar, ou aceitar o aviso.
+strict_overlay:
+  clipping:
+    clipped_sample_pct: fail
+  true_peak:
+    true_peak: fail
+  loudness:
+    integrated_loudness: fail
+
+retention_policy:
+  bundle_ttl_days: 90
+  redact_pii: true
+

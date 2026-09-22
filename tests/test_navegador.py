@@ -1450,6 +1450,17 @@ def escrever_relatorios():
                "achados": {f"achado-{i+1}": a for i, a in enumerate(d["achados"])},
                "nota": (f"{d['ok']} checagem(ns) verdes" if not d["achados"]
                         else f"{len(d['achados'])} achado(s)")}
+        # O sexto portao (CP-004) publica o estado da sonorizacao aqui.
+        # Este regrava e dele: preservar a chave e o que costura as duas
+        # escritas -- sem isto, cada run do navegador apagava a medicao.
+        antigo = pasta / "relatorio.json"
+        if antigo.exists():
+            try:
+                prev = json.loads(antigo.read_text(encoding="utf-8"))
+                if prev.get("sonorizacao"):
+                    rel["sonorizacao"] = prev["sonorizacao"]
+            except Exception:
+                pass
         (pasta / "relatorio.json").write_text(
             json.dumps(rel, ensure_ascii=False, indent=1, sort_keys=True) + "\n",
             encoding="utf-8")

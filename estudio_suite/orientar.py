@@ -62,7 +62,10 @@ def _etapas_do_filme(fid):
             ("roteiro", (d / "roteiro.md").exists()),
             ("storyboard", (d / f"{fid}.filme.js").exists()),
             ("animacao", any((d / "baseline").glob("*.txt"))),
-            ("acabamento", (d / "relatorio.json").exists())]
+            ("acabamento", (d / "relatorio.json").exists()),
+            # A camada aditiva (CP-004): a trilha e opcional, e o artefato
+            # que a declara e o audio/ dela.
+            ("sonoro", (d / "audio" / f"{fid}.opus").exists())]
 
 
 def texto() -> str:
@@ -78,14 +81,18 @@ def texto() -> str:
     L.append(f"  conteudo       {len(filmes_existentes())} filme(s), "
              f"{len(jogos_existentes())} jogo(s)")
     L.append("")
-    L.append("  filme                 pedido roteiro storyb anima acaba   proxima etapa")
+    L.append("  filme                 pedido roteiro storyb anima acaba sonoro  proxima etapa")
     # Filme EM ANDAMENTO e o que mais importa a quem esta orientando, e ele nao
     # aparece em filmes_existentes(): aquilo exige o .filme.js, que so nasce na
     # terceira etapa. Listar so o que ja terminou esconderia o trabalho aberto.
     for fid in _todos_os_filmes():
         et = _etapas_do_filme(fid)
         marcas = "  ".join(" ok  " if ok else " --  " for _, ok in et)
-        prox = next((n for n, ok in et if not ok), "completo")
+        # As cinco primeiras etapas sao do filme; a trilha (CP-004) e camada
+        # ADITIVA: filme mudo nao esta incompleto, esta completo -- e mudo.
+        prox = next((n for n, ok in et[:5] if not ok), None)
+        if prox is None:
+            prox = "completo e dublado" if et[5][1] else "completo, mudo"
         L.append(f"  {fid:<20}  {marcas}  {prox}")
     L.append("")
     locais = {fid: sorted(p.name for p in (FILMES / fid / "local").glob("*.js"))

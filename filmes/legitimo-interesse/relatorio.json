@@ -3,5 +3,17 @@
  "alvo": "legitimo-interesse",
  "checagens_ok": 6,
  "nota": "6 checagem(ns) verdes",
- "quando": "2026-09-22T22:37:17+00:00"
+ "quando": "2026-09-22T22:48:21+00:00",
+ "sonorizacao": {
+  "estado": "verde",
+  "medidas": {
+   "clipping.clipped_sample_pct": 0.0,
+   "glitch.glitch_event_count": 10857.0,
+   "inspect.metadata": null,
+   "loudness.integrated_loudness": -16.21,
+   "true_peak.true_peak": -1.319
+  },
+  "nota": "dentro das ancoras do perfil",
+  "quando": "2026-09-22T22:48:51+00:00"
+ }
 }

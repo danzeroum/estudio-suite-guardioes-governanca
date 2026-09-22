@@ -1,4 +1,11 @@
-"""As cinco etapas entre uma historia em prosa e um filme.
+"""As seis etapas entre uma historia em prosa e um filme dubrado.
+
+Cinco etapas nasceram com a suite; a sexta, `sonorizacao`, veio com a
+CP-004 -- e e a unica que depende de ferramenta EXTERNA (a audio-suite,
+chamada por CLI, nunca copiada). Por isso o mapeamento dela tem tres
+estados de saida: 0 verde, 1 vermelho, e "nao consegui medir" vira
+INDECISO -- porque "a audio-suite nao estava la" e "a trilha esta errada"
+sao coisas diferentes, e colapsa-las faz a leitura barata vencer.
 
 Cada etapa tem UM artefato revisavel e UM portao. O agente itera dentro da
 etapa e nunca avanca com portao vermelho -- e a sequencia que de fato
@@ -15,11 +22,13 @@ esta correto" sao coisas diferentes, e colapsa-las faz a leitura barata vencer.
 """
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 
-from .comum import FILMES, RAIZ, dados_do_filme
+from .comum import FILMES, HARNESS, RAIZ, dados_do_filme
 from . import lei as _lei
 
-ETAPAS = ["recepcao", "roteiro", "storyboard", "animacao", "acabamento"]
+ETAPAS = ["recepcao", "roteiro", "storyboard", "animacao", "acabamento",
+          "sonorizacao"]
 
 
 @dataclass
@@ -244,9 +253,144 @@ def portao_acabamento(fid):
     return _v("acabamento", achados, nota=d.get("nota", ""))
 
 
+# ---- sonorizacao (CP-004: o sexto portao) ----------------------------------
+# O perfil de medicao mora em harness/perfis/: e da SUITE (derivado do
+# podcast.yaml da audio-suite), e o Sprint 5 o calibra com as medicoes reais.
+PERFIL_SONORO = HARNESS / "perfis" / "guardioes-narracao.yaml"
+
+
+def _tem_audio_suite() -> bool:
+    import shutil
+    return shutil.which("audio-suite") is not None
+
+
+def _publicar_sonorizacao(fid, estado, medidas=None, nota=""):
+    """O estado do portao vira evidencia no relatorio.json do filme.
+
+    Integrado aos tres estados existentes: verde/vermelho/indeciso sao a
+    mesma moeda das outras etapas. O navegador regrava o relatorio dele por
+    cima e PRESERVA esta chave -- o teste e que costura as duas escritas.
+    """
+    import datetime
+    import json
+    rel = FILMES / fid / "relatorio.json"
+    d = {}
+    if rel.exists():
+        try:
+            d = json.loads(rel.read_text(encoding="utf-8"))
+        except Exception:
+            d = {}
+    d["alvo"] = fid
+    d["sonorizacao"] = {
+        "estado": estado,
+        "medidas": medidas or {},
+        "nota": nota,
+        "quando": datetime.datetime.now(datetime.timezone.utc)
+                  .isoformat(timespec="seconds"),
+    }
+    rel.parent.mkdir(parents=True, exist_ok=True)
+    rel.write_text(json.dumps(d, ensure_ascii=False, indent=1, sort_keys=True)
+                   + "\n", encoding="utf-8")
+
+
+def portao_sonorizacao(fid):
+    """A trilha que o filme DECLARA, medida pela audio-suite (CLI externa).
+
+    So mede o filme que declara audio: true E tem audio/<id>.opus -- as duas
+    coisas juntas, para nao fabricar falso positivo nem com artefato esquecido
+    de uma dublagem abandonada, nem com declaracao sem entrega.
+
+    Mapeamento da CP-004: 0 -> VERDE · 1 -> VERMELHO · 2, 3 ou ausencia do
+    binario/perfil -> INDECISO. "Nao consegui medir" NAO e "esta errado":
+    descritor nunca reprova, e a ausencia da ferramenta reprova menos ainda.
+    """
+    d = dados_do_filme(fid)
+    opus = FILMES / fid / "audio" / f"{fid}.opus"
+    declara = bool(d.get("audio"))
+
+    if not declara and not opus.exists():
+        return _v("sonorizacao", [], nota="filme mudo — nada a medir")
+    if declara and not opus.exists():
+        _publicar_sonorizacao(fid, "vermelho", nota="declara sem trilha")
+        return _v("sonorizacao", [
+            f"o filme declara audio, mas falta {opus.relative_to(RAIZ)} — "
+            f"declare a dublagem rodando dublar, ou remova a declaracao"])
+    if not declara and opus.exists():
+        _publicar_sonorizacao(fid, "vermelho", nota="trilha sem declaracao")
+        return _v("sonorizacao", [
+            f"existe {opus.relative_to(RAIZ)} sem o filme declarar audio: true — "
+            f"a declaracao e o contrato da camada aditiva. Decida: declare, ou apague."])
+
+    if not _tem_audio_suite():
+        _publicar_sonorizacao(fid, "indeciso", nota="audio-suite ausente")
+        return _v("sonorizacao", [], indeciso=True,
+                  nota="audio-suite ausente — NAO consigo medir (INDECISO, "
+                       "nao aprovado). A audio-suite e CLI externa: "
+                       "pip install -e danzeroum/audio-suite")
+    if not PERFIL_SONORO.exists():
+        _publicar_sonorizacao(fid, "indeciso", nota="sem perfil")
+        return _v("sonorizacao", [], indeciso=True,
+                  nota=f"falta o perfil {PERFIL_SONORO.relative_to(RAIZ)}")
+
+    import json
+    import subprocess
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        # Decodificar nao e reamostrar: opus -> wav e mudanca de FORMATO,
+        # mesma taxa (48 kHz), mesma duracao. O alvo da web e opus; a
+        # audio-suite mede PCM. O sinal e o mesmo.
+        wav = Path(tmp) / "medicao.wav"
+        dec = subprocess.run(
+            ["ffmpeg", "-y", "-nostdin", "-v", "error", "-i", str(opus),
+             "-c:a", "pcm_s16le", str(wav)],
+            capture_output=True, text=True, timeout=180)
+        if dec.returncode != 0:
+            _publicar_sonorizacao(fid, "indeciso", nota="decode falhou")
+            return _v("sonorizacao", [f"nao consegui decodificar a trilha: "
+                                      f"{dec.stderr[-160:]}"], indeciso=True)
+        try:
+            r = subprocess.run(
+                ["audio-suite", "analyze", str(wav),
+                 "--profile", str(PERFIL_SONORO), "--strict", "--format", "json"],
+                capture_output=True, text=True, timeout=600)
+        except subprocess.TimeoutExpired:
+            _publicar_sonorizacao(fid, "indeciso", nota="timeout da audio-suite")
+            return _v("sonorizacao", [], indeciso=True,
+                      nota="audio-suite nao respondeu (timeout) — INDECISO")
+
+    medidas, reprovas = {}, []
+    try:
+        achados_json = json.loads(r.stdout)
+        for f in achados_json.get("findings", []):
+            medidas[f"{f.get('analyzer')}.{f.get('metric')}"] = f.get("value")
+            if str(f.get("severity", "")).lower() in ("fail", "error"):
+                reprovas.append(f"{f.get('analyzer')}: {f.get('message')}")
+    except Exception:
+        pass                                   # saida ilegivel cai no mapa abaixo
+
+    if r.returncode == 0:
+        _publicar_sonorizacao(fid, "verde", medidas, "dentro das ancoras do perfil")
+        return _v("sonorizacao", [], nota="trilha dentro das ancoras do perfil "
+                                          + " · ".join(f"{k}={v}" for k, v in
+                                                       sorted(medidas.items())[:3]))
+    if r.returncode == 1:
+        _publicar_sonorizacao(fid, "vermelho", medidas, "audio-suite reprovou")
+        return _v("sonorizacao", reprovas or ["audio-suite reprovou a trilha"],
+                  nota="saida 1 da audio-suite — FINDING")
+    # 2 (perfil invalido), 3 (entrada invalida), 64 (uso) e qualquer outro:
+    # o portao nao conseguiu MEDIR. Nao e aprovado nem reprovado.
+    _publicar_sonorizacao(fid, "indeciso", medidas,
+                          f"audio-suite devolveu {r.returncode}")
+    return _v("sonorizacao", [f"audio-suite devolveu {r.returncode} "
+                              f"(2=perfil invalido, 3=entrada invalida): "
+                              f"{(r.stderr or r.stdout)[-200:]}"], indeciso=True,
+              nota="INDECISO — a ferramenta nao mediu")
+
+
 PORTOES = {"recepcao": portao_recepcao, "roteiro": portao_roteiro,
            "storyboard": portao_storyboard, "animacao": portao_animacao,
-           "acabamento": portao_acabamento}
+           "acabamento": portao_acabamento, "sonorizacao": portao_sonorizacao}
 
 
 def rodar(fid, ate=None):

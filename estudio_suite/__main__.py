@@ -84,7 +84,7 @@ def main(argv=None) -> int:
             print(f"  criado filmes/{fid}/ — pedido.md, local/, baseline/")
             if origem:
                 print(f"  pedido copiado de {origem}")
-            print("\n  as cinco etapas, em ordem: " + " → ".join(ETAPAS))
+            print(f"\n  as {len(ETAPAS)} etapas, em ordem: " + " → ".join(ETAPAS))
             print("  o portao de cada uma para o agente na primeira que nao fechar.\n")
             for v in rodar(fid):
                 m = {"verde": "ok      ", "vermelho": "VERMELHO", "indeciso": "indeciso"}
