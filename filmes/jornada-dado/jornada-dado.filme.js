@@ -16,6 +16,7 @@ window.ESTUDIO_FILMES=window.ESTUDIO_FILMES||{};window.ESTUDIO_FILMES["jornada-d
  "id": "jornada-dado",
  "titulo": "A jornada de um dado pessoal",
  "duracao": 124,
+ "audio": true,
  "palco": {
   "w": 1280,
   "h": 720
