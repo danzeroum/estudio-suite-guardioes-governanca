@@ -1242,6 +1242,13 @@ def fumaca_em_file(nav):
     chk(not e3, f"player abre por file:// sem erro (veio {e3[:2]})")
     chk(pg3.eval_on_selector_all("[data-camada=atores] .est-rig", "e=>e.length") > 0,
         "o filme monta sob file://")
+    # CP-004: <audio src> e elemento de midia, carrega por file:// como
+    # <script src> carrega. O botao so aparece quando a trilha carregou.
+    try:
+        pg3.wait_for_selector("#btSom:not([hidden])", timeout=6000)
+        chk(True, "a trilha carrega por file:// e o botao Som aparece")
+    except Exception:
+        chk(False, "a trilha carrega por file:// e o botao Som aparece")
     chk(pg3.evaluate("ESTUDIO_PLAYER.irPara(40); ESTUDIO_PLAYER.avancar(1); ESTUDIO_PLAYER.t()") > 40,
         "o transporte funciona sob file:// (rAF e matchMedia existem la)")
 
@@ -1286,8 +1293,11 @@ CONTRATO = {
     "Estudio.Palco": ["CAMADAS", "criar"],
     "Palco.prototype": ["camera", "cenario", "rotulo"],
     "Estudio.Chassi": ["fatal", "regua", "transcricao"],
+    # CP-004: o reprodutor escravo. Cliente de criar: player.js. Os metodos da
+    # INSTANCIA sao internos ao player -- quem os lê e o hook _som, abaixo.
+    "Estudio.Som": ["criar"],
     "Relogio": ["MAXDT", "_quadro", "_raf", "avancar", "parar", "tocando", "tocar"],
-    "Player": ["_quadro", "_raf", "alternar", "avancar", "filme", "indice", "irPara",
+    "Player": ["_quadro", "_raf", "_som", "alternar", "avancar", "filme", "indice", "irPara",
                "irPlano", "modo", "palco", "pausar", "t", "tocando", "tocar"],
     "Jogo": ["_raf", "avancar", "comPrazo", "dados", "dpo", "fila", "indice", "palco",
              "placar", "proximo", "relogio", "responder"],
@@ -1304,6 +1314,7 @@ LEITURA = {
     "Palco.prototype": "Object.keys(Object.getPrototypeOf(ESTUDIO_PLAYER.palco))"
                        ".filter(k=>k[0]!=='_')",
     "Estudio.Chassi": "Object.keys(Estudio.Chassi)",
+    "Estudio.Som": "Object.keys(Estudio.Som)",
     "Relogio": "Object.keys(Estudio.Relogio(function(){}))",
     "Player": "Object.keys(ESTUDIO_PLAYER)",
 }
@@ -1335,6 +1346,90 @@ def contrato_da_api(nav):
     chk(lido == sorted(CONTRATO["Jogo"]),
         f"o contrato de Jogo esta como declarado ({lido})")
     pgk.close()
+
+
+def a_camada_de_som(nav):
+    """CP-004: o reprodutor escravo — nasce DESLIGADO, segue filme.t, e o
+    modo quadrinhos permanece silencioso. O som nunca escreve o tempo:
+    com Som desligado, nada muda em relacao ao filme mudo."""
+    pg = nav.new_page()
+    pg.goto(B + "paginas/player.html?filme=jornada-dado")
+    pg.wait_for_timeout(500)
+
+    # o botao nasce escondido e aparece quando a trilha carrega
+    try:
+        pg.wait_for_selector("#btSom:not([hidden])", timeout=8000)
+        chk(True, "o botao Som aparece quando o filme declara trilha")
+    except Exception:
+        chk(False, "o botao Som aparece quando o filme declara trilha")
+        pg.close()
+        return
+    chk(pg.eval_on_selector("#btSom", "b => b.getAttribute('aria-pressed')") == "false",
+        "o Som nasce DESLIGADO (aria-pressed=false)")
+    chk(pg.evaluate("ESTUDIO_PLAYER._som !== null"),
+        "o player tem camada de som para filme que declara audio")
+    chk(pg.eval_on_selector("#audioTxt", "e => e.textContent") == "com camada de áudio opcional",
+        "a nota da pagina diz que a camada e opcional, sem mentir o mudo")
+
+    # armar o som com o filme pausado NAO toca: escravo nao anda sozinho
+    pg.click("#btSom")
+    pg.wait_for_timeout(150)
+    chk(pg.eval_on_selector("#btSom", "b => b.getAttribute('aria-pressed')") == "true",
+        "clicar liga o Som (armado)")
+    chk(pg.evaluate("ESTUDIO_PLAYER._som._el.paused"),
+        "filme pausado: Som armado e o <audio> NAO adianta sozinho")
+
+    # tocar o filme: o audio acompanha
+    pg.evaluate("ESTUDIO_PLAYER.tocar()")
+    pg.wait_for_timeout(400)
+    chk(pg.evaluate("!ESTUDIO_PLAYER._som._el.paused"),
+        "tocando o filme, o <audio> toca junto")
+
+    # busca arrasta o audio junto (currentTime = filme.t)
+    pg.evaluate("ESTUDIO_PLAYER.irPara(60)")
+    pg.wait_for_timeout(250)
+    d = pg.evaluate("Math.abs(ESTUDIO_PLAYER._som._el.currentTime - ESTUDIO_PLAYER.t())")
+    chk(d < 0.2, f"buscar leva o audio junto (drift {d * 1000:.0f} ms)")
+
+    # drift forcado: porQuadro ressincroniza acima de 80 ms
+    pg.evaluate("ESTUDIO_PLAYER._som._el.currentTime = 10")
+    pg.evaluate("ESTUDIO_PLAYER.avancar(0.2)")
+    d = pg.evaluate("Math.abs(ESTUDIO_PLAYER._som._el.currentTime - ESTUDIO_PLAYER.t())")
+    chk(d < 0.2, f"drift acima de 80 ms e corrigido por quadro (resto {d * 1000:.0f} ms)")
+
+    # modo quadrinhos: silencioso nesta CP, e continua funcional
+    pg.click("#btModo")
+    pg.wait_for_timeout(150)
+    chk(pg.evaluate("ESTUDIO_PLAYER._som._el.paused"),
+        "modo quadrinhos silencia o audio (CP-004)")
+    chk(pg.evaluate("ESTUDIO_PLAYER.modo() === 'quadrinhos'"),
+        "e o modo quadrinhos segue funcional")
+    pg.click("#btModo")
+    pg.evaluate("ESTUDIO_PLAYER.tocar()")
+    pg.wait_for_timeout(250)
+    chk(pg.evaluate("!ESTUDIO_PLAYER._som._el.paused"),
+        "voltar ao movimento retoma o audio ligado")
+
+    # desligar: pausa, aria-pressed volta, o filme mudo e o produto completo
+    pg.click("#btSom")
+    chk(pg.eval_on_selector("#btSom", "b => b.getAttribute('aria-pressed')") == "false",
+        "clicar de novo desliga o Som")
+    chk(pg.evaluate("ESTUDIO_PLAYER._som._el.paused"),
+        "desligado, o <audio> pausa — comportamento do mudo")
+    pg.close()
+
+    # sem trilha, o botao nao nasce: filme mudo e o fallback natural
+    pg2 = nav.new_page()
+    pg2.goto(B + "paginas/player.html?filme=jornada-dado")
+    pg2.wait_for_timeout(400)
+    sumiu = pg2.evaluate("""() => new Promise(ok => {
+      var bt = document.createElement('button'); bt.hidden = false;
+      Estudio.Som.criar({ bt: bt, filme: { id: 'sem-trilha-nenhuma', t: 0 },
+                          base: '../' });
+      setTimeout(() => ok(bt.hidden), 900);
+    })""")
+    chk(sumiu, "sem audio/<id>.opus o botao nao aparece — o fallback natural")
+    pg2.close()
 
 
 def escrever_relatorios():
@@ -1380,6 +1475,7 @@ def main():
         personagens_e_rigs(nav)
         pgf = filme_e_transporte(nav)
         segundo_filme(nav, pgf)
+        a_camada_de_som(nav)
         injecao_de_falha(nav)
         o_jogo(nav)
         jogo_caminhos_esquecidos(nav)
