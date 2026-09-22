@@ -64,6 +64,13 @@ jobs:
       - name: O fiscal de redublagem (CP-004)
         run: python3 tests/test_dublar.py
 
+      # CP-004: o sexto portao. A audio-suite NAO esta instalada no runner:
+      # o portao devolve INDECISO, publicado por filme, e o build SEGUE --
+      # so FINDING (saida 1) reprova. "Nao consegui medir" nao e "esta errado",
+      # e chamar de verde uma medida que nao houve seria pior do que o silencio.
+      - name: O portão de sonorização (CP-004)
+        run: python3 ci/portao_sonorizacao.py
+
   navegador:
     runs-on: ubuntu-latest
     steps:
