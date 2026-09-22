@@ -1,0 +1,19 @@
+{
+ "achados": [
+  "o botao Som aparece quando o filme declara trilha",
+  "a trilha carrega por file:// e o botao Som aparece"
+ ],
+ "falhas": 2,
+ "ok": 212,
+ "por_alvo": {
+  "jornada-dado": {
+   "achados": [],
+   "ok": 14
+  },
+  "legitimo-interesse": {
+   "achados": [],
+   "ok": 6
+  }
+ },
+ "quando": "2026-09-22T22:35:43+00:00"
+}
