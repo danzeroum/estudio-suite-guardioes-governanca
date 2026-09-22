@@ -66,13 +66,24 @@ def _buscar_do_remoto(a: dict) -> None:
     if not (repo / ".git").exists():
         git("init", "-q")
         git("remote", "add", "origem", a["url"])
+    # Buscar o SHA direto e o caminho barato, e funciona em repositorio
+    # publico quando o commit e alcancavel por um ref. Quando o servidor
+    # recusa, buscar o ref e resolver dali custa mais rede e da no mesmo --
+    # e a alternativa seria exigir um token para ler dado publico.
     r = git("fetch", "--depth", "1", "origem", a["sha"])
     if r.returncode != 0:
-        raise ErroDeDados(
-            f"nao consegui buscar a lei em {a['repo']} no commit {a['sha'][:12]}.\n"
-            f"  git: {(r.stderr or '').strip()[:200]}\n"
-            f"  Sem rede? Deixe um checkout de {a['repo']} ao lado desta suite."
-        )
+        alt = git("fetch", "--depth", "50", "origem", "HEAD")
+        if alt.returncode == 0:
+            r = git("rev-parse", "--verify", a["sha"] + "^{commit}")
+            if r.returncode == 0:
+                git("update-ref", "FETCH_HEAD", a["sha"])
+        if r.returncode != 0:
+            raise ErroDeDados(
+                f"nao consegui buscar a lei em {a['repo']} no commit {a['sha'][:12]}.\n"
+                f"  git: {(r.stderr or '').strip()[:200]}\n"
+                f"  Sem rede? Deixe um checkout de {a['repo']} ao lado desta suite,\n"
+                f"  ou em _lei-origem/ dentro dela."
+            )
     for rel in a["arquivos"]:
         r = git("checkout", "FETCH_HEAD", "--", rel)
         if r.returncode != 0:

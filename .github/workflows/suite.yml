@@ -14,14 +14,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # A lei NAO e versionada aqui. Ela e materializada do commit que lei.lock
-      # ancora, e conferida byte a byte -- um checkout no caminho vizinho evita
-      # uma busca pela rede, e o hash decide se serve.
-      - uses: actions/checkout@v4
-        with:
-          repository: danzeroum/guardioes-governanca
-          path: _lei-origem
-          fetch-depth: 0
+      # A lei NAO e versionada aqui, e NAO e trazida por actions/checkout: o
+      # GITHUB_TOKEN de um repositorio nao alcanca outro, e o checkout falha
+      # com "Not Found" -- que foi como os tres primeiros runs morreram.
+      # Dar um token para ler dado PUBLICO seria resolver o sintoma; deixar
+      # estudio_suite/lei.py buscar e conferir o hash exercita, no CI, o mesmo
+      # caminho que roda na maquina de quem desenvolve.
 
       - uses: actions/setup-python@v5
         with:
@@ -37,10 +35,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
-        with:
-          repository: danzeroum/guardioes-governanca
-          path: _lei-origem
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
