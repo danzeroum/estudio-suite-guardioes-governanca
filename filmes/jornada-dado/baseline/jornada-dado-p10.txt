@@ -1,0 +1,72 @@
+cenario: cofre
+rotulo: A segurança
+camera: translate(640 360) scale(1) translate(-640 -360)
+rig porta | t=translate(980 536) scale(1.95 1.95) translate(-100 -320) | op=1
+    folha | t=translate(34 240) rotate(-24) translate(-34 -240) | op=-
+    planta | t=- | op=0
+rig ana | t=translate(300 620) scale(0.968 0.968) translate(-100 -320) | op=0
+    cauda | t=translate(146 236) rotate(-8) translate(-146 -236) | op=-
+    braco-r | t=translate(158.5 164) rotate(-48) translate(-158.5 -164) | op=-
+    cabeca | t=translate(100 132) rotate(-5) translate(-100 -132) | op=-
+    orelha-l | t=translate(66 58) rotate(-8) translate(-66 -58) | op=-
+    orelha-r | t=translate(134 58) rotate(8) translate(-134 -58) | op=-
+    palpebra-l | t=translate(78 80) translate(-78 -74) | op=-
+    palpebra-r | t=translate(122 80) translate(-122 -74) | op=-
+    boca | t=translate(100 129) scale(1 1.4) translate(-100 -129) | op=-
+rig dpo | t=translate(940 620) scale(-0.968 0.968) translate(-100 -320) | op=0
+    corpo | t=translate(104 206) translate(-100 -206) | op=-
+    braco-l | t=translate(41.5 164) rotate(-14) translate(-41.5 -164) | op=-
+    braco-r | t=translate(158.5 164) rotate(-74) translate(-158.5 -164) | op=-
+    cabeca | t=translate(100 132) rotate(4) translate(-100 -132) | op=-
+    orelha-l | t=translate(66 58) rotate(24) translate(-66 -58) | op=-
+    orelha-r | t=translate(134 58) rotate(-24) translate(-134 -58) | op=-
+    palpebra-l | t=translate(78 82) translate(-78 -74) | op=-
+    palpebra-r | t=translate(122 82) translate(-122 -74) | op=-
+    sobrancelha-l | t=translate(78 62) rotate(17) translate(-78 -62) | op=-
+    sobrancelha-r | t=translate(122 62) rotate(-17) translate(-122 -62) | op=-
+    boca | t=translate(100 132) scale(1 -0.9) translate(-100 -129) | op=-
+rig ctrl | t=translate(300 620) scale(-0.966 0.966) translate(-100 -320) | op=0
+    corpo | t=translate(103 206) translate(-100 -206) | op=-
+    braco-l | t=translate(66 162) rotate(12) translate(-66 -162) | op=-
+    braco-r | t=translate(134 162) rotate(-70) translate(-134 -162) | op=-
+    cabeca | t=translate(100 136) rotate(4) translate(-100 -136) | op=-
+rig op | t=translate(990 620) scale(-0.882 0.882) translate(-100 -320) | op=0
+    braco-l | t=translate(42 186) rotate(-30) translate(-42 -186) | op=-
+    corpo | t=translate(100 206) scale(1 0.98) translate(-100 -206) | op=-
+    braco-r | t=translate(142 160) rotate(28) translate(-158 -186) | op=-
+    cabeca | t=translate(100 156) translate(-100 -150) | op=-
+    palpebra-l | t=translate(82 91) translate(-82 -82) | op=-
+    palpebra-r | t=translate(118 91) translate(-118 -82) | op=-
+    sobrancelha-l | t=translate(82 72) rotate(16) translate(-82 -72) | op=-
+    sobrancelha-r | t=translate(118 72) rotate(-16) translate(-118 -72) | op=-
+    boca | t=translate(100 128) scale(1 -0.9) translate(-100 -125) | op=-
+rig anpd | t=translate(420 620) scale(-1.056 1.056) translate(-100 -320) | op=0
+    braco-r | t=translate(130 156) rotate(-44) translate(-130 -156) | op=-
+    cabeca | t=translate(100 132) rotate(-6) translate(-100 -132) | op=-
+rig mem | t=translate(330 620) scale(1.15 1.15) translate(-100 -320) | op=1
+    braco-l | t=translate(41 174) rotate(-1.802) translate(-41 -174) | op=-
+    corpo | t=translate(100 200) scale(1 0.992) translate(-100 -200) | op=-
+    braco-r | t=translate(159 160.84) rotate(-27.235) translate(-159 -174) | op=-
+    cabeca | t=translate(100 134) rotate(2.42) translate(-100 -134) | op=-
+    orelha-l | t=translate(66 92) rotate(10) translate(-66 -92) | op=-
+    orelha-r | t=translate(134 92) rotate(-10) translate(-134 -92) | op=-
+    palpebra-l | t=translate(76 77) translate(-76 -68) | op=-
+    palpebra-r | t=translate(124 77) translate(-124 -68) | op=-
+    sobrancelha-l | t=translate(76 58) rotate(16) translate(-76 -58) | op=-
+    sobrancelha-r | t=translate(124 58) rotate(-16) translate(-124 -58) | op=-
+    boca | t=translate(86 122) scale(1 -0.9) translate(-86 -119) | op=-
+rig form | t=translate(630 600) scale(1.15 1.15) translate(-100 -320) | op=0
+rig aviso | t=translate(640 560) scale(1.1 1.1) translate(-100 -320) | op=0
+rig cartao | t=translate(630 500) scale(1.2 1.2) translate(-100 -320) | op=0
+    corpo | t=- | op=0.55
+    marca | t=- | op=0
+rig selo | t=translate(840 360) scale(0.9 0.9) translate(-100 -320) | op=0
+rig ficha | t=translate(790 540) scale(1.05 1.05) translate(-100 -320) | op=0
+    corpo | t=translate(100 236) rotate(-6) translate(-100 -248) | op=-
+rig alarme | t=translate(1120 300) scale(0.85 0.85) translate(-100 -320) | op=1
+    raios | t=- | op=0
+    luz | t=- | op=0.22
+rig dado | t=translate(880 470) scale(0.9 0.9) translate(-100 -320) | op=1
+    halo | t=translate(100 286) scale(0.6 0.6) translate(-100 -286) | op=0.4
+    corpo | t=translate(100 286) scale(0.82 0.82) translate(-100 -286) | op=-
+    nucleo | t=translate(100 286) scale(0.5 0.5) translate(-100 -286) | op=-

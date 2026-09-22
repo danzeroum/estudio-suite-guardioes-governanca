@@ -1,0 +1,268 @@
+{
+ "alt": {
+  "base": "#a8703f",
+  "detalhe": "#8a5a9e",
+  "escuro": "#7a4e29"
+ },
+ "ancoras": {
+  "fala": [
+   152,
+   48
+  ],
+  "mao-l": [
+   41.5,
+   250
+  ],
+  "mao-r": [
+   158.5,
+   250
+  ],
+  "olhar": [
+   100,
+   88
+  ],
+  "topo": [
+   100,
+   16
+  ]
+ },
+ "escalaNatural": 0.88,
+ "estados": {
+  "apagado": {
+   "op": 0.32
+  },
+  "normal": {}
+ },
+ "expressoes": {
+  "feliz": {
+   "boca": {
+    "sy": 1.4
+   },
+   "orelha-l": {
+    "rot": -8
+   },
+   "orelha-r": {
+    "rot": 8
+   },
+   "palpebra-l": {
+    "y": 6
+   },
+   "palpebra-r": {
+    "y": 6
+   }
+  },
+  "neutro": {},
+  "preocupado": {
+   "boca": {
+    "sy": -0.9,
+    "y": 3
+   },
+   "orelha-l": {
+    "rot": 24
+   },
+   "orelha-r": {
+    "rot": -24
+   },
+   "palpebra-l": {
+    "y": 8
+   },
+   "palpebra-r": {
+    "y": 8
+   },
+   "sobrancelha-l": {
+    "rot": 17
+   },
+   "sobrancelha-r": {
+    "rot": -17
+   }
+  },
+  "surpreso": {
+   "boca": {
+    "s": 1.3
+   },
+   "olho-l": {
+    "s": 1.2
+   },
+   "olho-r": {
+    "s": 1.2
+   },
+   "orelha-l": {
+    "rot": -14
+   },
+   "orelha-r": {
+    "rot": 14
+   },
+   "palpebra-l": {
+    "y": -5
+   },
+   "palpebra-r": {
+    "y": -5
+   }
+  }
+ },
+ "hitbox": [
+  30,
+  14,
+  140,
+  306
+ ],
+ "origens": {
+  "adereco": [
+   30,
+   236
+  ],
+  "boca": [
+   100,
+   129
+  ],
+  "braco-l": [
+   41.5,
+   164
+  ],
+  "braco-r": [
+   158.5,
+   164
+  ],
+  "cabeca": [
+   100,
+   132
+  ],
+  "cauda": [
+   146,
+   236
+  ],
+  "corpo": [
+   100,
+   206
+  ],
+  "olho-l": [
+   78,
+   88
+  ],
+  "olho-r": [
+   122,
+   88
+  ],
+  "orelha-l": [
+   66,
+   58
+  ],
+  "orelha-r": [
+   134,
+   58
+  ],
+  "palpebra-l": [
+   78,
+   74
+  ],
+  "palpebra-r": [
+   122,
+   74
+  ],
+  "perna-l": [
+   84,
+   246
+  ],
+  "perna-r": [
+   116,
+   246
+  ],
+  "pupila-l": [
+   78,
+   88
+  ],
+  "pupila-r": [
+   122,
+   88
+  ],
+  "sobrancelha-l": [
+   78,
+   62
+  ],
+  "sobrancelha-r": [
+   122,
+   62
+  ]
+ },
+ "paleta": {
+  "base": "#c1502e",
+  "claro": "#fbe8d6",
+  "detalhe": "#e6b34a",
+  "escuro": "#8f3a1f",
+  "olho": "#ffffff",
+  "pupila": "#2a1810"
+ },
+ "paletaEscura": {
+  "base": "#e2825c",
+  "claro": "#f7e3d5",
+  "detalhe": "#efc76a",
+  "escuro": "#a85736",
+  "olho": "#ffffff",
+  "pupila": "#241610"
+ },
+ "poses": {
+  "andando": {
+   "cauda": {
+    "rot": 6
+   },
+   "corpo": {
+    "y": -3
+   },
+   "perna-l": {
+    "rot": 18
+   },
+   "perna-r": {
+    "rot": -18
+   }
+  },
+  "apontando": {
+   "braco-r": {
+    "rot": -48
+   },
+   "cabeca": {
+    "rot": -5
+   },
+   "cauda": {
+    "rot": -8
+   }
+  },
+  "entregando": {
+   "braco-l": {
+    "rot": -14
+   },
+   "braco-r": {
+    "rot": -74
+   },
+   "cabeca": {
+    "rot": 4
+   },
+   "corpo": {
+    "x": 4
+   }
+  },
+  "neutro": {},
+  "protegendo": {
+   "braco-l": {
+    "rot": -34
+   },
+   "braco-r": {
+    "rot": 34
+   },
+   "cabeca": {
+    "y": 3
+   },
+   "cauda": {
+    "rot": 12
+   },
+   "corpo": {
+    "sy": 0.97
+   }
+  }
+ },
+ "viewBox": [
+  0,
+  0,
+  200,
+  320
+ ]
+}

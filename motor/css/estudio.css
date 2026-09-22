@@ -1,0 +1,124 @@
+/* Estúdio dos Guardiões — casca das páginas (player, folha, jogos).
+   Tokens próprios com prefixo --est-*. As cores de guardião moram em
+   personagens.css, que é o arquivo que o teste de contraste lê. */
+:root{
+  --est-bg:#f7f4ee; --est-bg-soft:#eee8da; --est-surface:#ffffff;
+  --est-ink:#232520; --est-ink-soft:#62655c; --est-line:#e2dac6;
+  --est-accent:#8a5a9e; --est-radius:12px; --est-radius-lg:18px;
+  --est-shadow:0 2px 8px rgba(35,37,32,.05),0 12px 30px rgba(35,37,32,.06);
+  --est-head:'Manrope',ui-sans-serif,system-ui,sans-serif;
+  --est-body:'Newsreader','Lora',Georgia,serif;
+  --est-mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+  --cen-ceu:#e8eef2; --cen-chao:#d9d2c2; --cen-parede:#f0ece2; --cen-movel:#c9bfa8;
+  --cen-linha:#a89e88; --cen-vidro:#cfe0e8; --cen-destaque:#8a5a9e;
+  --cen-vao:#4a4438;
+}
+[data-theme="dark"]{
+  --est-bg:#181a17; --est-bg-soft:#1f2220; --est-surface:#232620;
+  --est-ink:#eeece3; --est-ink-soft:#a9ac9f; --est-line:#343830;
+  --est-accent:#c79bdb;
+  --est-shadow:0 2px 10px rgba(0,0,0,.35),0 14px 34px rgba(0,0,0,.32);
+  --cen-ceu:#1c2530; --cen-chao:#2a2b26; --cen-parede:#20231f; --cen-movel:#3a3b33;
+  --cen-linha:#4d4f44; --cen-vidro:#27353d; --cen-destaque:#c79bdb;
+  --cen-vao:#0c0e0b;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --est-bg:#181a17; --est-bg-soft:#1f2220; --est-surface:#232620;
+    --est-ink:#eeece3; --est-ink-soft:#a9ac9f; --est-line:#343830;
+    --est-accent:#c79bdb;
+    --est-shadow:0 2px 10px rgba(0,0,0,.35),0 14px 34px rgba(0,0,0,.32);
+    --cen-ceu:#1c2530; --cen-chao:#2a2b26; --cen-parede:#20231f; --cen-movel:#3a3b33;
+    --cen-linha:#4d4f44; --cen-vidro:#27353d; --cen-destaque:#c79bdb;
+    --cen-vao:#0c0e0b;
+  --cen-vao:#0c0e0b;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--est-bg);color:var(--est-ink);font-family:var(--est-body);
+  font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--est-head);font-weight:800;letter-spacing:-.3px;line-height:1.2}
+a{color:var(--est-accent)}
+code,kbd{font-family:var(--est-mono);font-size:.82em;background:var(--est-bg-soft);
+  padding:2px 6px;border-radius:6px}
+.est-wrap{max-width:1180px;margin:0 auto;padding:28px 20px 80px}
+.est-top{position:sticky;top:0;z-index:20;background:var(--est-bg);
+  border-bottom:1px solid var(--est-line);padding:10px 20px;display:flex;
+  flex-wrap:wrap;gap:10px;align-items:center}
+.est-top .est-marca{font-family:var(--est-head);font-weight:800;margin-right:auto;
+  text-decoration:none;color:var(--est-ink)}
+.est-btn{font-family:var(--est-head);font-size:13px;font-weight:700;cursor:pointer;
+  background:var(--est-surface);color:var(--est-ink);border:1px solid var(--est-line);
+  border-radius:999px;padding:7px 14px}
+.est-btn:hover{border-color:var(--est-accent)}
+.est-btn[aria-pressed="true"]{background:var(--est-accent);border-color:var(--est-accent);color:#fff}
+.est-btn:focus-visible{outline:3px solid var(--est-accent);outline-offset:2px}
+.est-card{background:var(--est-surface);border:1px solid var(--est-line);
+  border-radius:var(--est-radius-lg);box-shadow:var(--est-shadow);padding:20px;margin:22px 0}
+.est-nota{color:var(--est-ink-soft);font-size:14.5px}
+.est-erro-fatal{background:#c03a2b;color:#fff;padding:14px 18px;border-radius:10px;
+  font-family:var(--est-mono);font-size:13px;margin:16px 0;white-space:pre-wrap}
+
+/* ---- Palco do filme ---------------------------------------------------- */
+.est-palco{display:block;width:100%;height:auto;background:var(--cen-chao);
+  border-radius:var(--est-radius-lg)}
+.est-legenda{min-height:3.2em;display:flex;align-items:center;justify-content:center;
+  text-align:center;padding:10px 16px;font-family:var(--est-head);font-weight:700;
+  font-size:clamp(15px,1.6vw,19px);line-height:1.35}
+.est-legenda span{max-width:44ch}
+.est-legenda .ref{font-family:var(--est-mono);font-weight:600;font-size:.78em;
+  color:var(--est-ink-soft);display:block;margin-top:2px}
+.est-quadro{background:var(--est-surface);border:1px solid var(--est-line);
+  border-radius:var(--est-radius-lg);overflow:hidden}
+.est-quadro h3{font-size:14px;padding:12px 16px 0}
+.est-quadro .selo{font-family:var(--est-mono);font-size:11.5px;color:var(--est-ink-soft);
+  padding:0 16px 8px}
+
+/* ---- Transporte do player ---------------------------------------------- */
+/* Mesma regra que o site já usa em docs/assets/css/theme.css:301 — o estúdio
+   tem CSS próprio, então ela não vem de graça. */
+input[type=range]{flex:1;accent-color:var(--est-accent);min-height:28px;cursor:pointer}
+input[type=range]:focus-visible{outline:3px solid var(--est-accent);outline-offset:3px}
+.est-transporte{display:flex;gap:12px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.est-tempo{font-family:var(--est-mono);font-size:13px;color:var(--est-ink-soft);
+  white-space:nowrap;font-variant-numeric:tabular-nums}
+.est-selo{display:inline-block;margin-top:6px;font-family:var(--est-head);font-weight:700;
+  font-size:13px;text-decoration:none;border:2px solid currentColor;border-radius:999px;
+  padding:3px 12px}
+.est-selo[hidden]{display:none}
+.est-selo:hover{text-decoration:underline}
+.est-selo:focus-visible{outline:3px solid var(--est-accent);outline-offset:2px}
+.est-fala{display:block;width:100%;text-align:left;cursor:pointer;background:none;
+  border:0;border-radius:6px;padding:4px 8px;color:inherit;font:inherit;font-size:15px}
+.est-fala:hover{background:var(--est-bg-soft)}
+.est-fala time{font-family:var(--est-mono);font-size:12px;color:var(--est-ink-soft);
+  margin-right:8px}
+/* Região de estado: só ação do usuário passa por aqui, nunca o laço. */
+.est-vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);
+  clip-path:inset(50%);white-space:nowrap}
+
+/* ---- Jogos -------------------------------------------------------------- */
+.est-pedido{font-family:var(--est-head);font-weight:800;font-size:clamp(17px,2vw,22px);
+  text-align:center;margin:14px 0 4px;min-height:2.4em;display:flex;align-items:center;
+  justify-content:center}
+.est-prazo{height:8px;border-radius:999px;background:var(--est-bg-soft);overflow:hidden;margin:8px 0}
+.est-prazo::after{content:"";display:block;height:100%;width:calc(var(--f,1)*100%);
+  background:var(--est-accent);border-radius:999px}
+.est-prazo[hidden]{display:none}
+.est-opcoes{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  margin-top:12px}
+.est-opcao{display:flex;gap:10px;align-items:center;text-align:left;cursor:pointer;
+  font:inherit;font-size:15px;color:var(--est-ink);background:var(--est-surface);
+  border:2px solid var(--est-line);border-radius:var(--est-radius);padding:10px 14px}
+.est-opcao kbd{flex:none;font-family:var(--est-mono);font-size:12px;background:var(--est-bg-soft);
+  border-radius:6px;padding:2px 7px}
+.est-opcao:hover:not([aria-disabled="true"]){border-color:var(--est-accent)}
+.est-opcao[aria-current="true"]{border-color:var(--est-accent);box-shadow:0 0 0 2px var(--est-accent)}
+.est-opcao:focus-visible{outline:3px solid var(--est-accent);outline-offset:2px}
+.est-opcao.certa{border-color:var(--rig-tartaruga);background:var(--est-bg-soft)}
+.est-opcao.errada{border-color:var(--rig-raposa)}
+.est-opcao[aria-disabled="true"]{cursor:default}
+.est-feedback{min-height:3.2em;margin-top:12px;font-size:15px;line-height:1.5;
+  border-left:4px solid transparent;padding-left:12px}
+.est-feedback.certa{border-color:var(--rig-tartaruga);color:var(--rig-tartaruga-ink)}
+.est-feedback.errada{border-color:var(--rig-raposa);color:var(--rig-raposa-ink)}

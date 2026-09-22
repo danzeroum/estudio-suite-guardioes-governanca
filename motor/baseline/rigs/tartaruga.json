@@ -1,0 +1,233 @@
+{
+ "ancoras": {
+  "fala": [
+   150,
+   58
+  ],
+  "mao-l": [
+   42,
+   252
+  ],
+  "mao-r": [
+   158,
+   252
+  ],
+  "olhar": [
+   100,
+   96
+  ],
+  "topo": [
+   100,
+   58
+  ]
+ },
+ "escalaNatural": 0.84,
+ "estados": {
+  "apagado": {
+   "op": 0.32
+  },
+  "normal": {}
+ },
+ "expressoes": {
+  "feliz": {
+   "boca": {
+    "sx": 1.1,
+    "sy": 1.4
+   },
+   "palpebra-l": {
+    "y": 7
+   },
+   "palpebra-r": {
+    "y": 7
+   }
+  },
+  "neutro": {},
+  "preocupado": {
+   "boca": {
+    "sy": -0.9,
+    "y": 3
+   },
+   "palpebra-l": {
+    "y": 9
+   },
+   "palpebra-r": {
+    "y": 9
+   },
+   "sobrancelha-l": {
+    "rot": 16
+   },
+   "sobrancelha-r": {
+    "rot": -16
+   }
+  },
+  "surpreso": {
+   "boca": {
+    "s": 1.3
+   },
+   "cabeca": {
+    "y": -4
+   },
+   "olho-l": {
+    "s": 1.2
+   },
+   "olho-r": {
+    "s": 1.2
+   },
+   "palpebra-l": {
+    "y": -6
+   },
+   "palpebra-r": {
+    "y": -6
+   }
+  }
+ },
+ "hitbox": [
+  30,
+  58,
+  140,
+  262
+ ],
+ "origens": {
+  "adereco": [
+   158,
+   216
+  ],
+  "boca": [
+   100,
+   125
+  ],
+  "braco-l": [
+   42,
+   186
+  ],
+  "braco-r": [
+   158,
+   186
+  ],
+  "cabeca": [
+   100,
+   150
+  ],
+  "corpo": [
+   100,
+   206
+  ],
+  "olho-l": [
+   82,
+   96
+  ],
+  "olho-r": [
+   118,
+   96
+  ],
+  "palpebra-l": [
+   82,
+   82
+  ],
+  "palpebra-r": [
+   118,
+   82
+  ],
+  "perna-l": [
+   73,
+   252
+  ],
+  "perna-r": [
+   127,
+   252
+  ],
+  "pupila-l": [
+   82,
+   96
+  ],
+  "pupila-r": [
+   118,
+   96
+  ],
+  "sobrancelha-l": [
+   82,
+   72
+  ],
+  "sobrancelha-r": [
+   118,
+   72
+  ]
+ },
+ "paleta": {
+  "base": "#5aa07d",
+  "claro": "#dff0e6",
+  "detalhe": "#2f7d5c",
+  "escuro": "#1f5c42",
+  "olho": "#ffffff",
+  "pupila": "#12261d"
+ },
+ "paletaEscura": {
+  "base": "#7cc6a0",
+  "claro": "#e4f2ea",
+  "detalhe": "#63b78d",
+  "escuro": "#2e7d5c",
+  "olho": "#ffffff",
+  "pupila": "#10201a"
+ },
+ "poses": {
+  "andando": {
+   "braco-l": {
+    "rot": -12
+   },
+   "braco-r": {
+    "rot": 12
+   },
+   "corpo": {
+    "y": -3
+   },
+   "perna-l": {
+    "rot": 16
+   },
+   "perna-r": {
+    "rot": -16
+   }
+  },
+  "apontando": {
+   "braco-r": {
+    "rot": -50
+   },
+   "cabeca": {
+    "rot": -5
+   }
+  },
+  "entregando": {
+   "braco-l": {
+    "rot": 16
+   },
+   "braco-r": {
+    "rot": -74
+   },
+   "cabeca": {
+    "rot": 4
+   }
+  },
+  "neutro": {},
+  "protegendo": {
+   "braco-l": {
+    "rot": -30
+   },
+   "braco-r": {
+    "rot": 28,
+    "x": -16,
+    "y": -26
+   },
+   "cabeca": {
+    "y": 6
+   },
+   "corpo": {
+    "sy": 0.98
+   }
+  }
+ },
+ "viewBox": [
+  0,
+  0,
+  200,
+  320
+ ]
+}

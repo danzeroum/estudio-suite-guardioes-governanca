@@ -1,0 +1,67 @@
+/* =====================================================================
+   Estúdio dos Guardiões — tokens de cor e estilos dos personagens.
+
+   Este arquivo é a SEGUNDA FONTE de tools/test-contraste.py. A estrutura
+   dos blocos (:root e [data-theme="dark"]) imita livro-lgpd/assets/
+   guardioes.css de propósito, para que o mesmo helper leia os dois.
+
+   Por que duplicar em vez de @import de docs/assets/css/theme.css: o
+   estúdio não pode herdar a regra global de prefers-reduced-motion do
+   theme (ela zera toda animação e transição, inclusive a do palco). O
+   acoplamento é recuperado por teste, não por @import — check-filme.py
+   exige paridade entre as cores canônicas dos dois arquivos.
+
+   As variantes -ink deste arquivo são MAIS ESCURAS que as do livro. O
+   livro nunca põe texto sobre #eee8da (o --bg-soft do theme), e o
+   estúdio põe; sobre esse fundo as variantes do livro caem para 4,21-4,25
+   e reprovam. Os valores abaixo passam nos três fundos do estúdio.
+   ===================================================================== */
+:root{
+  --rig-coruja:#a8752a;    --rig-coruja-ink:#885f22;
+  --rig-aguia:#1f6f8b;     --rig-aguia-ink:#1f6f8b;
+  --rig-tartaruga:#2f7d5c; --rig-tartaruga-ink:#2b7355;
+  --rig-elefante:#5b6472;  --rig-elefante-ink:#5b6472;
+  --rig-raposa:#c1502e;    --rig-raposa-ink:#ab4729;
+}
+[data-theme="dark"]{
+  --rig-coruja:#d99a45;    --rig-coruja-ink:#d99a45;
+  --rig-aguia:#5fa8c9;     --rig-aguia-ink:#5fa8c9;
+  --rig-tartaruga:#63b78d; --rig-tartaruga-ink:#63b78d;
+  --rig-elefante:#9aa3b0;  --rig-elefante-ink:#9aa3b0;
+  --rig-raposa:#e2825c;    --rig-raposa-ink:#e2825c;
+}
+/* O estúdio também respeita a preferência do sistema, como theme.css. O
+   seletor abaixo NÃO é ':root{' nem '[data-theme="dark"]{', então não
+   confunde o leitor de tokens do teste de contraste. */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --rig-coruja:#d99a45;    --rig-coruja-ink:#d99a45;
+    --rig-aguia:#5fa8c9;     --rig-aguia-ink:#5fa8c9;
+    --rig-tartaruga:#63b78d; --rig-tartaruga-ink:#63b78d;
+    --rig-elefante:#9aa3b0;  --rig-elefante-ink:#9aa3b0;
+    --rig-raposa:#e2825c;    --rig-raposa-ink:#e2825c;
+  }
+}
+
+/* A paleta de CADA personagem usa o prefixo --p-*, nunca --rig-*, para não
+   ser confundida com um token de guardião pelo leitor do teste. Quem as
+   escreve é rig.js, na raiz do <g> do personagem. */
+.est-rig{ --p-base:#888; --p-claro:#ddd; --p-escuro:#555;
+          --p-detalhe:#c60; --p-olho:#fff; --p-pupila:#222; }
+
+/* Nenhuma animação CSS carrega semântica: quem move o personagem é sempre
+   rig.js escrevendo transform. A transição abaixo é só conforto visual na
+   folha de personagens e é a primeira coisa que o modo reduzido descarta. */
+.est-rig [data-part]{ transition:transform .28s cubic-bezier(.22,.61,.36,1) }
+@media (prefers-reduced-motion:reduce){
+  .est-rig [data-part]{ transition:none }
+}
+
+/* ---- Modo raio-X: contorno de cada parte, ponto na origem, hitbox ---- */
+.est-xray{ display:none }
+.debug-rig .est-xray{ display:block }
+.debug-rig .est-rig [data-part]{ transition:none }
+.est-xray-parte{ fill:none; stroke:#e11d9c; stroke-width:1; stroke-dasharray:3 3; opacity:.75 }
+.est-xray-origem{ fill:#e11d9c }
+.est-xray-hit{ fill:none; stroke:#0aa6ff; stroke-width:2 }
+.est-xray-ancora{ fill:#0aa6ff }

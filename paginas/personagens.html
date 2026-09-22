@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Folha de personagens — Estúdio dos Guardiões</title>
+<meta name="description" content="O elenco do Estúdio dos Guardiões: os cinco guardiões e o Dado, de corpo inteiro, com todas as poses e expressões, modo raio-X e teste de silhueta.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
+<link rel="stylesheet" href="../motor/css/estudio.css">
+<link rel="stylesheet" href="../motor/css/personagens.css">
+<style>
+  .grade{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+  .verba{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .verba svg{width:100%;height:auto;background:var(--est-bg-soft);border-radius:var(--est-radius)}
+  .verba figcaption{font-family:var(--est-mono);font-size:11.5px;color:var(--est-ink-soft)}
+  .ficha{display:grid;gap:22px;grid-template-columns:minmax(180px,240px) 1fr;align-items:start}
+  @media (max-width:640px){.ficha{grid-template-columns:1fr}}
+  .ficha h2{font-size:22px} .ficha .selo{font-size:13px;font-family:var(--est-mono)}
+  .retrato{background:var(--est-bg-soft);border-radius:var(--est-radius-lg);width:100%;height:auto}
+  .meta{list-style:none;font-size:14px;color:var(--est-ink-soft);margin-top:8px}
+  .meta b{color:var(--est-ink);font-weight:700}
+  .silhueta .verba svg{background:var(--est-ink);border-radius:8px}
+  .silhueta .verba svg .est-rig{filter:brightness(0)}
+  .silhueta figcaption{visibility:hidden}
+  .silhueta.revelar figcaption{visibility:visible}
+  .sliders{display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:14px}
+  .sliders label{display:flex;gap:8px;align-items:center;font-family:var(--est-head);font-weight:700;font-size:13px}
+</style>
+</head>
+<body>
+
+<header class="est-top">
+  <a class="est-marca" href="../index.html">🎬 Estúdio dos <strong>Guardiões</strong></a>
+  <button class="est-btn" id="btTema" aria-pressed="false">🌙 Tema escuro</button>
+  <button class="est-btn" id="btXray" aria-pressed="false">🔎 Raio-X</button>
+  <button class="est-btn" id="btSilhueta" aria-pressed="false">👤 Revelar nomes</button>
+</header>
+
+<main class="est-wrap">
+  <h1>Folha de personagens</h1>
+  <p class="est-nota" style="margin:10px 0 4px;max-width:70ch">
+    O elenco do filme <em>A jornada de um dado pessoal</em>. Esta página é o
+    <strong>portão da Fase 1</strong>: nenhuma linha de roteiro vira animação antes de a arte
+    ser aprovada aqui. Cada personagem é um único arquivo <code>*.rig.js</code> que serve ao
+    filme e, depois, aos jogos — sem redesenho.
+  </p>
+
+  <section class="est-card">
+    <h2>Teste de silhueta</h2>
+    <p class="est-nota">
+      A primeira validação, e a que manda: em escala pequena, em preto, <strong>com os nomes
+      escondidos</strong>, você consegue dizer qual animal é, qual guardião é e qual é o
+      adereço dele? Se não consegue, o problema é de silhueta e postura — não se resolve
+      acrescentando textura. Use o botão <kbd>Revelar nomes</kbd> só depois de tentar.
+    </p>
+    <div class="grade silhueta" id="gradeSilhueta" style="margin-top:16px"></div>
+  </section>
+
+  <div id="fichas"></div>
+
+  <section class="est-card">
+    <h2>Mistura de poses</h2>
+    <p class="est-nota">
+      O motor do filme não troca de pose num estalo: ele <em>mistura</em>. Os controles abaixo
+      mostram o mesmo mecanismo que a linha do tempo vai usar — e é por isso que uma pose é
+      dado, não código.
+    </p>
+    <div class="sliders" style="margin-top:14px">
+      <label>Pose <select id="selPose"></select></label>
+      <label>mistura <input type="range" id="rgPose" min="0" max="1" step="0.01" value="1"></label>
+      <label>Expressão <select id="selExpr"></select></label>
+      <label>mistura <input type="range" id="rgExpr" min="0" max="1" step="0.01" value="1"></label>
+    </div>
+    <div class="grade" id="gradeMistura" style="margin-top:16px"></div>
+  </section>
+</main>
+
+<script src="../motor/js/interp.js"></script>
+<script src="../motor/js/rig.js"></script>
+<script src="../motor/js/rigs/dado.rig.js"></script>
+<script src="../motor/js/rigs/raposa.rig.js"></script>
+<script src="../motor/js/rigs/coruja.rig.js"></script>
+<script src="../motor/js/rigs/aguia.rig.js"></script>
+<script src="../motor/js/rigs/tartaruga.rig.js"></script>
+<script src="../motor/js/rigs/elefante.rig.js"></script>
+<script src="../motor/js/personagens.js"></script>
+</body>
+</html>

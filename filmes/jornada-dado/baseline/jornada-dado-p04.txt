@@ -1,0 +1,43 @@
+cenario: balcao
+rotulo: O consentimento
+camera: translate(640 360) scale(1) translate(-640 -360)
+rig porta | t=translate(640 620) scale(1 1) translate(-100 -320) | op=0
+    planta | t=- | op=0
+rig ana | t=translate(300 620) scale(0.968 0.968) translate(-100 -320) | op=1
+    cauda | t=translate(146 236) rotate(-8) translate(-146 -236) | op=-
+    braco-r | t=translate(158.5 164) rotate(-48) translate(-158.5 -164) | op=-
+    cabeca | t=translate(100 132) rotate(-5) translate(-100 -132) | op=-
+    orelha-l | t=translate(66 58) rotate(-8) translate(-66 -58) | op=-
+    orelha-r | t=translate(134 58) rotate(8) translate(-134 -58) | op=-
+    palpebra-l | t=translate(78 80) translate(-78 -74) | op=-
+    palpebra-r | t=translate(122 80) translate(-122 -74) | op=-
+    boca | t=translate(100 129) scale(1 1.4) translate(-100 -129) | op=-
+rig dpo | t=translate(940 620) scale(-0.968 0.968) translate(-100 -320) | op=1
+    corpo | t=translate(104 206) translate(-100 -206) | op=-
+    braco-l | t=translate(41.5 164) rotate(-14) translate(-41.5 -164) | op=-
+    braco-r | t=translate(158.5 164) rotate(-74) translate(-158.5 -164) | op=-
+    cabeca | t=translate(100 132) rotate(4) translate(-100 -132) | op=-
+    orelha-l | t=translate(66 58) rotate(24) translate(-66 -58) | op=-
+    orelha-r | t=translate(134 58) rotate(-24) translate(-134 -58) | op=-
+    palpebra-l | t=translate(78 82) translate(-78 -74) | op=-
+    palpebra-r | t=translate(122 82) translate(-122 -74) | op=-
+    sobrancelha-l | t=translate(78 62) rotate(17) translate(-78 -62) | op=-
+    sobrancelha-r | t=translate(122 62) rotate(-17) translate(-122 -62) | op=-
+    boca | t=translate(100 132) scale(1 -0.9) translate(-100 -129) | op=-
+rig ctrl | t=translate(960 620) scale(-1.012 1.012) translate(-100 -320) | op=0
+    braco-r | t=translate(134 162) rotate(-46) translate(-134 -162) | op=-
+    cabeca | t=translate(100 136) rotate(-5) translate(-100 -136) | op=-
+rig op | t=translate(650 620) scale(-0.882 0.882) translate(-100 -320) | op=0
+rig anpd | t=translate(440 620) scale(-1.008 1.008) translate(-100 -320) | op=0
+rig mem | t=translate(860 620) scale(1.05 1.05) translate(-100 -320) | op=0
+rig form | t=translate(630 600) scale(1.15 1.15) translate(-100 -320) | op=0
+rig aviso | t=translate(640 560) scale(1.1 1.1) translate(-100 -320) | op=0
+rig cartao | t=translate(630 500) scale(1.2 1.2) translate(-100 -320) | op=1
+    volta | t=- | op=0
+rig selo | t=translate(640 620) scale(1 1) translate(-100 -320) | op=0
+    corpo | t=translate(100 258) scale(1.6 1.6) translate(-100 -258) | op=0
+rig ficha | t=translate(640 620) scale(1 1) translate(-100 -320) | op=0
+rig alarme | t=translate(640 620) scale(1 1) translate(-100 -320) | op=0
+    raios | t=- | op=0
+    luz | t=- | op=0.22
+rig dado | t=translate(630 372) scale(0.7 0.7) translate(-100 -320) | op=1

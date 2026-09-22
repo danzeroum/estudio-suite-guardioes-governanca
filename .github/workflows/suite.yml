@@ -1,0 +1,52 @@
+name: Estúdio Suite
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  # Ordem por custo: o que e barato falha primeiro. O validador nao precisa de
+  # navegador e leva segundos; e ele quem impede um filme de citar artigo que a
+  # lei nao tem, ou de atribui-lo ao guardiao errado.
+  fiscais:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # A lei NAO e versionada aqui. Ela e materializada do commit que lei.lock
+      # ancora, e conferida byte a byte -- um checkout no caminho vizinho evita
+      # uma busca pela rede, e o hash decide se serve.
+      - uses: actions/checkout@v4
+        with:
+          repository: danzeroum/guardioes-governanca
+          path: ../guardioes-governanca
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: O gate único
+        run: python3 ci/validar_tudo.py
+
+  navegador:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: danzeroum/guardioes-governanca
+          path: ../guardioes-governanca
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Instalar dependências
+        run: |
+          pip install playwright
+          python3 -m playwright install --with-deps chromium
+
+      # Inclui a fumaça em file://, que é a única forma de a regra
+      # "sem fetch, sem módulo ES" falhar em CI.
+      - name: O motor, em Chromium
+        run: python3 tests/test_navegador.py

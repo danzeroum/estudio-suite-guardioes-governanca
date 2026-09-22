@@ -1,0 +1,31 @@
+# A lei tem um dono, e NAO e esta suite.
+#
+# Este arquivo ancora o commit exato de onde o texto da LGPD e a atribuicao de
+# guardiao por artigo sao lidos. O CI materializa em workspace/lei/, fora do
+# versionamento, e confere byte a byte contra os hashes abaixo.
+#
+# Por que ancorar em vez de copiar: uma copia com uma linha removida faz o
+# validador dizer "nenhum achado" -- sem erro, sem aviso, indistinguivel de um
+# roteiro correto. A copia derivaria em silencio, e o filme passaria a ensinar
+# uma lei que ninguem escreveu.
+#
+# Para avancar a ancora: change-proposal (caminho protegido). Nunca em silencio,
+# porque avancar a lei pode mudar o que um filme ja publicado afirma.
+schema: estudio-suite/lei-lock@1
+
+origem:
+  repo: danzeroum/guardioes-governanca
+  url: https://github.com/danzeroum/guardioes-governanca
+  sha: 1c349ea92518c49da562082ca67779d173ee8fc4
+  ref_humana: "main @ Fase 7 (merge do PR #13)"
+
+arquivos:
+  docs/assets/data/lgpd-arts.json:
+    sha256: 1cab81b5dc546486d703ac02f3e722a5320bb60a112fd277f129baae063496d3
+    papel: "texto literal dos artigos da LGPD"
+  docs/assets/data/gap-matrix.json:
+    sha256: 1178c58d6f82646fb709e7b8b799977b39ee4a6f705e32a2032f63df67479863
+    papel: "qual guardiao responde por cada artigo"
+  docs/assets/css/theme.css:
+    sha256: 41e60629528c8b11dcd9ce35afcf5935ef1b98bfb5cf2da6ccab0d276b6d3532
+    papel: "a cor canonica de cada guardiao -- a arte da suite tem de bater com ela"

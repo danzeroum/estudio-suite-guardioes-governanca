@@ -1,0 +1,6 @@
+# A lei e materializada, nunca versionada aqui: quem a versiona e o dono dela.
+workspace/
+__pycache__/
+*.pyc
+.pytest_cache/
+relatorios/

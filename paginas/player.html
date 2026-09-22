@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Player — Estúdio dos Guardiões</title>
+<meta name="description" content="Toca qualquer filme da suíte: legendas, transcrição completa, régua de planos e modo quadrinhos para quem prefere movimento reduzido.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
+<link rel="stylesheet" href="../motor/css/estudio.css">
+<link rel="stylesheet" href="../motor/css/personagens.css">
+<style>
+  .regua{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:14px 0}
+  .est-marco{--m:var(--est-line);width:34px;height:34px;border-radius:50%;cursor:pointer;
+    border:2px solid var(--m);background:var(--est-surface);color:var(--est-ink);
+    font-family:var(--est-head);font-weight:800;font-size:13px}
+  .est-marco[aria-current="true"]{background:var(--m);color:#fff}
+  .est-marco:focus-visible{outline:3px solid var(--est-accent);outline-offset:2px}
+  .nav{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:8px}
+  .tit{text-align:center;font-family:var(--est-head);font-weight:800;font-size:17px;margin-top:14px}
+  details{margin-top:18px} summary{cursor:pointer;font-family:var(--est-head);font-weight:700}
+  details ol{margin:12px 0 0 22px;color:var(--est-ink-soft);font-size:15px}
+  details li{margin-bottom:6px}
+</style>
+</head>
+<body>
+
+<header class="est-top">
+  <a class="est-marca" href="../index.html">🎬 Estúdio dos <strong>Guardiões</strong></a>
+  <a class="est-btn" id="lkContato" href="folha-de-contato.html">Folha de contato</a>
+  <a class="est-btn" href="personagens.html">Personagens</a>
+  <button class="est-btn" id="btTema" aria-pressed="false">🌙 Tema escuro</button>
+</header>
+
+<main class="est-wrap" style="max-width:920px">
+  <h1 style="font-size:26px" id="h1">…</h1>
+  <p class="est-nota" style="margin:8px 0 18px">
+    <span id="duracaoTxt"></span>, sem áudio — a legenda carrega toda a informação. Teclado:
+    <kbd>espaço</kbd> tocar · <kbd>←</kbd><kbd>→</kbd> 5 s · <kbd>J</kbd><kbd>L</kbd> 10 s ·
+    <kbd>[</kbd><kbd>]</kbd> plano · <kbd>C</kbd> legendas · <kbd>S</kbd> quadrinhos.
+  </p>
+
+  <div id="palco"></div>
+  <div class="tit" id="titulo"></div>
+  <p class="est-legenda" id="legenda"></p>
+  <div style="text-align:center"><a class="est-selo" id="selo" hidden></a></div>
+
+  <div class="est-transporte">
+    <button class="est-btn" id="btPlay">▶ Tocar</button>
+    <input type="range" id="scrub" min="0" max="100" step="0.05" value="0"
+           aria-label="Posição no filme">
+    <span class="est-tempo" id="tempo">0:00</span>
+  </div>
+  <div class="regua" id="regua" role="group" aria-label="Planos do filme"></div>
+  <div class="nav">
+    <button class="est-btn" id="btLegendas" aria-pressed="false">💬 Legendas</button>
+    <button class="est-btn" id="btModo" aria-pressed="false">🗒️ Modo quadrinhos</button>
+  </div>
+
+  <p class="est-vh" id="status" role="status"></p>
+
+  <details open>
+    <summary id="sumTrans">Transcrição completa</summary>
+    <p class="est-nota" style="margin:8px 0">
+      Clique em qualquer fala para ir até ela. Esta é a versão completa do filme em texto.
+    </p>
+    <div id="transcricao"></div>
+  </details>
+</main>
+
+<script src="../motor/js/interp.js"></script>
+<script src="../motor/js/rig.js"></script>
+<script src="../motor/js/rigs/dado.rig.js"></script>
+<script src="../motor/js/rigs/raposa.rig.js"></script>
+<script src="../motor/js/rigs/coruja.rig.js"></script>
+<script src="../motor/js/rigs/aguia.rig.js"></script>
+<script src="../motor/js/rigs/tartaruga.rig.js"></script>
+<script src="../motor/js/rigs/elefante.rig.js"></script>
+<script src="../motor/js/props.js"></script>
+<script src="../motor/js/cenarios.js"></script>
+<script src="../motor/js/palco.js"></script>
+<script src="../motor/js/filme.js"></script>
+<script src="../motor/js/relogio.js"></script>
+<script src="../motor/js/chassi.js"></script>
+<script src="../motor/js/carregador.js"></script>
+<script src="../motor/js/player.js"></script>
+<script src="../suite.conf.js"></script>
+<script>
+(function () {
+  /* O motor e o elenco sao fixos e entram estaticos. O FILME nao: o numero
+     de filmes da suite e aberto, entao ele chega por id e o carregador o
+     traz -- inclusive os adereços que so ele usa. */
+  var qual = (location.search.match(/[?&]filme=([\w-]+)/) || [])[1]
+             || (window.ESTUDIO_CONF || {}).filmePadrao;
+
+  function fatal(msg) {
+    var d = document.createElement('div');
+    d.className = 'est-erro-fatal';
+    d.setAttribute('role', 'alert');
+    d.setAttribute('tabindex', '-1');
+    d.textContent = 'Estúdio — não foi possível tocar o filme:\n\n' + msg;
+    (document.querySelector('.est-wrap') || document.body).prepend(d);
+    d.focus();
+  }
+
+  if (!qual) { fatal('Nenhum filme pedido. Use ?filme=<id>.'); return; }
+
+  Estudio.carregarFilme(qual, '../').then(function () {
+    var p = Estudio.Player({
+      filme: qual, palco: 'palco', legenda: 'legenda', selo: 'selo',
+      status: 'status', regua: 'regua', titulo: 'titulo', transcricao: 'transcricao',
+      scrub: 'scrub', tempo: 'tempo', btPlay: 'btPlay', btLegendas: 'btLegendas',
+      btModo: 'btModo',
+      /* De onde vem a pagina de cada guardiao. Nao e desta suite: a lei e de
+         quem a publica, e lei.lock diz quem. */
+      baseGuardiao: (window.ESTUDIO_CONF || {}).baseGuardiao || ''
+    });
+    document.title = p.filme.titulo + ' — Estúdio dos Guardiões';
+    document.getElementById('h1').textContent = p.filme.titulo;
+    var seg = Math.round(p.filme.duracao);
+    document.getElementById('duracaoTxt').textContent =
+      seg >= 60 ? (Math.round(seg / 60) + ' minutos') : (seg + ' segundos');
+    document.getElementById('sumTrans').textContent =
+      'Transcrição completa — ' + p.filme.legendas.length + ' falas';
+    document.getElementById('lkContato').href = 'folha-de-contato.html?filme=' + qual;
+    document.getElementById('btTema').addEventListener('click', function () {
+      var lig = this.getAttribute('aria-pressed') !== 'true';
+      this.setAttribute('aria-pressed', String(lig));
+      this.textContent = lig ? '☀️ Tema claro' : '🌙 Tema escuro';
+      document.documentElement.setAttribute('data-theme', lig ? 'dark' : 'light');
+      p.filme.tema(lig ? 'escuro' : 'claro');
+      p.irPara(p.t());          /* o tema não mexe no tempo */
+    });
+    window.ESTUDIO_PLAYER = p;
+    document.body.setAttribute('data-pronto', 'sim');
+  }).catch(function (e) { fatal(e.message); });
+})();
+</script>
+</body>
+</html>

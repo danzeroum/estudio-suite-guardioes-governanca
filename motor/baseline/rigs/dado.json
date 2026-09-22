@@ -1,0 +1,92 @@
+{
+ "ancoras": {
+  "centro": [
+   100,
+   286
+  ],
+  "olhar": [
+   100,
+   286
+  ],
+  "topo": [
+   100,
+   254
+  ]
+ },
+ "escalaNatural": 1,
+ "estados": {
+  "apagado": {
+   "op": 0.25
+  },
+  "normal": {}
+ },
+ "expressoes": {
+  "neutro": {}
+ },
+ "hitbox": [
+  64,
+  250,
+  72,
+  72
+ ],
+ "origens": {
+  "corpo": [
+   100,
+   286
+  ],
+  "halo": [
+   100,
+   286
+  ],
+  "nucleo": [
+   100,
+   286
+  ]
+ },
+ "paleta": {
+  "base": "#8a5a9e",
+  "claro": "#f0e3f6",
+  "detalhe": "#efe3f4",
+  "escuro": "#5d3a6c",
+  "olho": "#ffffff",
+  "pupila": "#2a1c31"
+ },
+ "paletaEscura": {
+  "base": "#c79bdb",
+  "claro": "#f2e6f7",
+  "detalhe": "#f6eff9",
+  "escuro": "#8a5a9e",
+  "olho": "#ffffff",
+  "pupila": "#1d1423"
+ },
+ "poses": {
+  "aceso": {
+   "halo": {
+    "op": 1.8,
+    "s": 1.35
+   },
+   "nucleo": {
+    "s": 1.45
+   }
+  },
+  "neutro": {},
+  "retraido": {
+   "corpo": {
+    "s": 0.82
+   },
+   "halo": {
+    "op": 0.4,
+    "s": 0.6
+   },
+   "nucleo": {
+    "s": 0.5
+   }
+  }
+ },
+ "viewBox": [
+  0,
+  0,
+  200,
+  320
+ ]
+}

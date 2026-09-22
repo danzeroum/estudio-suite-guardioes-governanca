@@ -1,0 +1,31 @@
+cenario: principios
+rotulo: Situações concretas
+camera: translate(640 360) scale(1.098) translate(-689.2 -442)
+rig ana | t=translate(340 620) scale(0.968 0.968) translate(-100 -320) | op=0
+    orelha-l | t=translate(66 58) rotate(24) translate(-66 -58) | op=-
+    orelha-r | t=translate(134 58) rotate(-24) translate(-134 -58) | op=-
+    palpebra-l | t=translate(78 82) translate(-78 -74) | op=-
+    palpebra-r | t=translate(122 82) translate(-122 -74) | op=-
+    sobrancelha-l | t=translate(78 62) rotate(17) translate(-78 -62) | op=-
+    sobrancelha-r | t=translate(122 62) rotate(-17) translate(-122 -62) | op=-
+    boca | t=translate(100 132) scale(1 -0.9) translate(-100 -129) | op=-
+rig ctrl | t=translate(930 620) scale(-1.012 1.012) translate(-100 -320) | op=0
+    corpo | t=translate(103 206) translate(-100 -206) | op=-
+    braco-l | t=translate(66 162) rotate(12) translate(-66 -162) | op=-
+    braco-r | t=translate(134 162) rotate(-70) translate(-134 -162) | op=-
+    cabeca | t=translate(100 136) rotate(4) translate(-100 -136) | op=-
+rig op | t=translate(640 620) scale(1.008 1.008) translate(-100 -320) | op=1
+    braco-l | t=translate(42 186) rotate(-30) translate(-42 -186) | op=-
+    corpo | t=translate(100 206) scale(1 0.98) translate(-100 -206) | op=-
+    braco-r | t=translate(142 160) rotate(28) translate(-158 -186) | op=-
+    cabeca | t=translate(100 156) translate(-100 -150) | op=-
+rig mem | t=translate(640 620) scale(1 1) translate(-100 -320) | op=0
+    braco-l | t=translate(41 174) rotate(14) translate(-41 -174) | op=-
+    braco-r | t=translate(159 164) rotate(-62) translate(-159 -174) | op=-
+    cabeca | t=translate(100 134) rotate(4) translate(-100 -134) | op=-
+rig aviso | t=translate(640 620) scale(1 1) translate(-100 -320) | op=0
+    itens | t=- | op=0.25
+rig ficha | t=translate(640 620) scale(1 1) translate(-100 -320) | op=0
+rig dado | t=translate(960 440) scale(0.9 0.9) translate(-100 -320) | op=1
+rig dado2 | t=translate(640 620) scale(1 1) translate(-100 -320) | op=0
+rig dado3 | t=translate(640 620) scale(1 1) translate(-100 -320) | op=0

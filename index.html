@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estúdio dos Guardiões — a suíte</title>
+<meta name="description" content="A suíte que transforma uma história em prosa num filme HTML5 acessível, com os cinco guardiões da governança e o Dado.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
+<link rel="stylesheet" href="motor/css/estudio.css">
+<link rel="stylesheet" href="motor/css/personagens.css">
+<style>
+  .grade{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));margin-top:18px}
+  .cartao{border:1px solid var(--est-line);border-radius:var(--est-radius-lg);
+    background:var(--est-surface);padding:16px;display:flex;flex-direction:column;gap:6px}
+  .cartao h3{margin:0;font-size:17px}
+  .cartao .meta{font-family:var(--est-mono);font-size:12px;color:var(--est-ink-soft)}
+  .cartao .acoes{margin-top:auto;padding-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<header class="est-top">
+  <span class="est-marca">🎬 Estúdio dos <strong>Guardiões</strong></span>
+  <a class="est-btn" href="paginas/personagens.html">Personagens</a>
+  <button class="est-btn" id="btTema" aria-pressed="false">🌙 Tema escuro</button>
+</header>
+
+<main class="est-wrap">
+  <h1>A suíte</h1>
+  <p class="est-nota" style="max-width:74ch;margin:10px 0 4px">
+    Uma história em prosa entra; um filme HTML5 acessível sai. O motor, o elenco e os
+    portões são o padrão; cada filme é só <strong>dado</strong> — quem revisa o roteiro
+    não lê JavaScript.
+  </p>
+  <p class="est-nota" style="max-width:74ch;margin:0 0 6px">
+    Esta página <strong>descobre</strong> o que existe em vez de listar: a lista abaixo é
+    montada a partir dos próprios arquivos. Se um filme novo nasce, ele aparece aqui sem
+    ninguém editar esta página.
+  </p>
+
+  <h2 style="margin-top:26px">Filmes</h2>
+  <div class="grade" id="filmes"></div>
+
+  <h2 style="margin-top:26px">Jogos</h2>
+  <div class="grade" id="jogos"></div>
+
+  <p class="est-vh" id="status" role="status"></p>
+</main>
+
+<script src="motor/js/interp.js"></script>
+<script src="motor/js/rig.js"></script>
+<script src="motor/js/rigs/dado.rig.js"></script>
+<script src="motor/js/rigs/raposa.rig.js"></script>
+<script src="motor/js/rigs/coruja.rig.js"></script>
+<script src="motor/js/rigs/aguia.rig.js"></script>
+<script src="motor/js/rigs/tartaruga.rig.js"></script>
+<script src="motor/js/rigs/elefante.rig.js"></script>
+<script src="motor/js/props.js"></script>
+<script src="motor/js/cenarios.js"></script>
+<script src="motor/js/palco.js"></script>
+<script src="motor/js/filme.js"></script>
+<script src="motor/js/carregador.js"></script>
+<script src="suite.conf.js"></script>
+<script src="catalogo.js"></script>
+<script>
+(function () {
+  /* O catalogo e DERIVADO do disco por ci/sincronizar_readme.py, e um fiscal
+     reprova quando ele diverge. Escrever a lista a mao aqui seria uma segunda
+     descricao do diretorio -- envelheceria no primeiro filme novo. */
+  var cat = window.ESTUDIO_CATALOGO || { filmes: [], jogos: [] };
+
+  function cartao(dest, item, href, meta) {
+    var a = document.createElement('article');
+    a.className = 'cartao';
+    var h = document.createElement('h3');
+    h.textContent = item.titulo;
+    a.appendChild(h);
+    if (item.subtitulo) {
+      var s = document.createElement('p');
+      s.className = 'est-nota';
+      s.style.margin = '0';
+      s.textContent = item.subtitulo;
+      a.appendChild(s);
+    }
+    var m = document.createElement('p');
+    m.className = 'meta';
+    m.textContent = meta;
+    a.appendChild(m);
+    var acoes = document.createElement('div');
+    acoes.className = 'acoes';
+    href.forEach(function (par) {
+      var lk = document.createElement('a');
+      lk.className = 'est-btn';
+      lk.href = par[1];
+      lk.textContent = par[0];
+      acoes.appendChild(lk);
+    });
+    a.appendChild(acoes);
+    dest.appendChild(a);
+  }
+
+  cat.filmes.forEach(function (f) {
+    cartao(document.getElementById('filmes'), f,
+           [['▶ Tocar', 'paginas/player.html?filme=' + f.id],
+            ['Folha de contato', 'paginas/folha-de-contato.html?filme=' + f.id]],
+           f.planos + ' planos · ' + f.duracao + ' s · ' + f.legendas + ' falas');
+  });
+  cat.jogos.forEach(function (j) {
+    cartao(document.getElementById('jogos'), j,
+           [['▶ Jogar', 'paginas/jogo.html?jogo=' + j.id]],
+           j.situacoes + ' situações · Art. ' + j.artigo);
+  });
+
+  document.getElementById('btTema').addEventListener('click', function () {
+    var lig = this.getAttribute('aria-pressed') !== 'true';
+    this.setAttribute('aria-pressed', String(lig));
+    this.textContent = lig ? '☀️ Tema claro' : '🌙 Tema escuro';
+    document.documentElement.setAttribute('data-theme', lig ? 'dark' : 'light');
+    document.getElementById('status').textContent = lig ? 'Tema escuro' : 'Tema claro';
+  });
+  document.body.setAttribute('data-pronto', 'sim');
+})();
+</script>
+</body>
+</html>

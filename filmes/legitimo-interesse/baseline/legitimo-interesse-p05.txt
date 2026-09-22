@@ -1,0 +1,24 @@
+cenario: arquivo
+rotulo: E a ANPD pode pedir o relatório
+camera: translate(640 360) scale(0.908) translate(-640 -360)
+rig ana | t=translate(340 620) scale(0.968 0.968) translate(-100 -320) | op=0
+    orelha-l | t=translate(66 58) rotate(-8) translate(-66 -58) | op=-
+    orelha-r | t=translate(134 58) rotate(8) translate(-134 -58) | op=-
+    palpebra-l | t=translate(78 80) translate(-78 -74) | op=-
+    palpebra-r | t=translate(122 80) translate(-122 -74) | op=-
+    boca | t=translate(100 129) scale(1 1.4) translate(-100 -129) | op=-
+rig ctrl | t=translate(930 620) scale(-1.012 1.012) translate(-100 -320) | op=0
+    braco-r | t=translate(134 162) rotate(-46) translate(-134 -162) | op=-
+    cabeca | t=translate(100 136) rotate(-5) translate(-100 -136) | op=-
+rig op | t=translate(330 620) scale(1.008 1.008) translate(-100 -320) | op=0
+    braco-r | t=translate(158 186) rotate(-50) translate(-158 -186) | op=-
+    cabeca | t=translate(100 150) rotate(-5) translate(-100 -150) | op=-
+rig mem | t=translate(420 620) scale(1.05 1.05) translate(-100 -320) | op=1
+    braco-l | t=translate(41 174) rotate(14) translate(-41 -174) | op=-
+    braco-r | t=translate(159 164) rotate(-62) translate(-159 -174) | op=-
+    cabeca | t=translate(100 134) rotate(4) translate(-100 -134) | op=-
+rig aviso | t=translate(640 560) scale(1.05 1.05) translate(-100 -320) | op=0
+rig ficha | t=translate(760 520) scale(1 1) translate(-100 -320) | op=1
+rig dado | t=translate(980 430) scale(0.75 0.75) translate(-100 -320) | op=1
+rig dado2 | t=translate(910 430) scale(0.8 0.8) translate(-100 -320) | op=0
+rig dado3 | t=translate(1060 430) scale(0.8 0.8) translate(-100 -320) | op=0
