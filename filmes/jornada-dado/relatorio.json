@@ -3,17 +3,17 @@
  "alvo": "jornada-dado",
  "checagens_ok": 14,
  "nota": "14 checagem(ns) verdes",
- "quando": "2026-09-22T22:48:21+00:00",
+ "quando": "2026-09-22T22:55:45+00:00",
  "sonorizacao": {
   "estado": "verde",
   "medidas": {
    "clipping.clipped_sample_pct": 0.0,
-   "glitch.glitch_event_count": 32920.0,
+   "glitch.glitch_event_count": 32948.0,
    "inspect.metadata": null,
-   "loudness.integrated_loudness": -16.19,
-   "true_peak.true_peak": -1.023
+   "loudness.integrated_loudness": -16.3,
+   "true_peak.true_peak": -1.562
   },
   "nota": "dentro das ancoras do perfil",
-  "quando": "2026-09-22T22:48:47+00:00"
+  "quando": "2026-09-22T22:55:14+00:00"
  }
 }
