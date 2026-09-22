@@ -33,11 +33,13 @@ from .comum import ErroDeDados, FILMES, RAIZ, dados_do_filme
 from . import fala
 from . import voz as _voz
 
-# Loudness de ancora da CP-004 (placeholder documentado; o Sprint 5 calibra
-# empiricamente contra o audio-suite). O true peak alvo deixa folga de 0.5 dB
-# sob o teto de -1 dBTP do perfil, porque o codificador opus tambem toca o
-# pico.
-LOUDNESS_LUFS, TRUE_PEAK_DBTP = -16.0, -1.5
+# Loudness de ancora da CP-004 (calibrado no Sprint 5 contra a audio-suite:
+# os dois filmes medidos ficaram a -16.19/-16.21 LUFS, centrados na ancora).
+# O true peak alvo DEIXA 1.0 dB de folga sob o teto de -1 dBTP do perfil:
+# medido no Sprint 5, o codificador opus devolve o pico ~0.48 dB ACIMA do
+# alvo do loudnorm (target -1.5 decodificou como -1.02) -- sem a folga, a
+# trilha passava no portao por 0.02 dB, que nao e margem, e coincidencia.
+LOUDNESS_LUFS, TRUE_PEAK_DBTP = -16.0, -2.0
 TAXA, CANAIS, BITRATE = 48000, 1, "40k"
 
 # A tolerancia do orcamento de tempo e a quantizacao da amostra, nao margem

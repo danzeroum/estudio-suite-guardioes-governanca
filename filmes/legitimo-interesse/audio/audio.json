@@ -11,7 +11,7 @@
   "taxa_hz": 48000,
   "canais": 1,
   "loudness_alvo_lufs": -16.0,
-  "true_peak_alvo_dbtp": -1.5
+  "true_peak_alvo_dbtp": -2.0
  },
  "clipes": [
   {
