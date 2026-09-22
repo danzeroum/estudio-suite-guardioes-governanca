@@ -1,0 +1,284 @@
+# Mudanca proposta a partir de EVIDENCIA, nao de gosto.
+# Declarada antes de executada; fica como registro mesmo depois.
+#
+# A CP-005 nasce do preco que a CP-004 declarou ao comprar determinismo:
+# noise_scale=0 achata a prosodia, e o PR #5 fechou deixando escrito no
+# proprio dublar.py -- "a prosodia menos variada e o preco" -- com o backlog
+# apontando timbre/vozes como proximo passo. O timbre animal e a via que
+# devolve diferenciacao de personagem SEM reabrir o lock de ruido: e camada
+# de processamento de sinal sobre a voz ja derivada, codigo puro, inteiro em
+# diff. Cada sprint para em PR proprio; o backlog declarado abaixo e
+# PROIBIDO nesta CP.
+schema: estudio-suite/change-proposal@1
+
+proposta:
+  id: CP-005
+  titulo: "Timbre dos guardioes: portadoras animais sobre a voz derivada"
+  autor: agente/curador
+  criada_em: "2026-09-23T00:00:00Z"
+  estado: em-execucao          # um PR por sprint; merge e decisao humana
+
+  sinal:
+    tipo: diferenciacao-perdida
+    chave: "timbre-dos-guardioes"
+    evidencia: >
+      A CP-004 provou byte-determinismo fixando noise_scale=0 e noise_w_scale=0,
+      e o preco foi a prosodia achatada: todas as vozes saem do MESMO modelo
+      pt_BR-faber-medium, e quem ouve nao distingue guardiao por timbre -- so
+      por ritmo (length_scale). O PR #5 registrou o ponto pendente real: "a
+      prosodia menos variada e o preco, e o Sprint 5 ouve" (dublar.py), e o
+      backlog da CP-004 nomeia "baselines por guardiao + vozes compare" e os
+      earcons do Dado como candidatos a CP-005. O que resolve sem violar a
+      doutrina: nao reabrir o lock de ruido, e por isso mesmo buscar a
+      diferenciacao na camada que o determinismo permite -- o timbre da
+      portadora animal imposto a voz sintetica, como vocoder de canais.
+
+  doutrina:                    # regras que a CP nao pode violar, em nenhum sprint
+    - >
+      A legenda segue a UNICA fonte do TEXTO. O timbre e camada sobre a voz ja
+      derivada; nada nesta CP cria conteudo verbal novo.
+    - >
+      Camada aditiva. O filme mudo continua byte-identico; o botao "Som"
+      continua DESLIGADO por padrao; baselines visuais nao mudam. mistura: 0
+      reproduz byte a byte o audio da CP-004 -- a camada so existe quando
+      declarada, e comecar conservador e regra, nao modestia.
+    - >
+      Determinismo total. A cadeia legenda -> fala -> TTS -> timbre -> mix e
+      byte-deterministica (mesmo sha256 entre execucoes), como a CP-004 provou
+      com noise zero + muxer bitexact. O timbre NAO introduz aleatoriedade:
+      filtro e envelope sao operacoes deterministicas de scipy.
+    - >
+      Nada de "arte gerada por modelo". Voice conversion por IA (seed-vc, RVC,
+      so-vits-svc e afins) e PROIBIDA nesta CP: peso de modelo generativo no
+      meio da cadeia de voz e exatamente o que voz.lock existe para impedir.
+      O timbre vem de processamento de sinal deterministico (vocoder de
+      canais / cross-sintese), codigo puro, revisavel linha a linha no diff.
+    - >
+      Somente amostras CC0 ou CC-BY. Cada portadora precisa de licenca livre
+      para comercial e derivadas. Freesound com filtro de licenca e a fonte
+      canonica. Xeno-canto (CC-BY-NC / NC-ND), BBC Sound Effects (RemArc:
+      pesquisa/educacao, licenca que veda uso em sistemas de sintese/IA) e
+      qualquer licenca NC ou ND estao terminantemente proibidos.
+    - >
+      amostras.lock e o terceiro hash-lock da suite (irmao de lei.lock e
+      voz.lock): por portadora, id da fonte, URL, licenca, sha256 do arquivo
+      baixado e atribuicao. Amostra em uso sem entrada no lock e VERMELHO --
+      som sem ancora e pirataria em potencial.
+    - >
+      Time-stretch proibido -- vale tambem para as portadoras e earcons.
+      Portadora mais curta que o clipe faz loop (repeticao, nao esticamento);
+      mais longa, trunca. Nada e reamostrado para caber.
+    - >
+      "Nao consegui medir" NAO e "esta errado". Qualquer nova medicao que o
+      portao nao saiba interpretar vira INDECISO/needs_review, nunca VERMELHO.
+      Descritor nunca reprova (regra R1 da audio-suite).
+    - >
+      Privacidade: a voz segue 100% sintetica (Piper). Som de animal nao e
+      dado pessoal, mas a atribuicao CC-BY vai aos CREDITOS.md quando exigida.
+      PROIBIDO usar voz humana como portadora ou alvo de timbre.
+    - >
+      Regra de ouro: abstracao so na segunda repeticao. Codigo de timbre
+      simples e medido vence codigo sofisticado. audio.js vive no limite do
+      orcamento -- enxugar comentarios antes de pedir folga.
+
+  escolha_de_portadora:        # dados de partida; ancorados no amostras.lock (Sprint 6)
+    aguia:
+      portadora: aguia-guincho
+      nota: >
+        Chirp de aguia-careca REAL (Haliaeetus leucocephalus), perspectiva
+        proxima -- o anti-cliche deliberado: o "grito de aguia" do cinema e
+        gavião-de-cauda-vermelha, e a CP pede explicitamente para nao usar o
+        clichê quando houver o som verdadeiro em CC0. Ha, e foi o escolhido.
+      origem: "Freesound 751269 (TheKingOfGeeks360, CC0)"
+    coruja:
+      portadora: coruja-pio
+      nota: >
+        Pio de coruja-do-mato (Strix aluco) -- a Strix que a nota de campo
+        pedia, grave, com bandas harmonicas estaveis: a portadora ideal para
+        vocoder de canais.
+      origem: "Freesound 745208 (Patrick_Corra, CC0)"
+    elefante:
+      portadora: elefante-trompa
+      nota: >
+        Trompa grave e potente. O aviso de campo se confirmou na medicao: RMS
+        ~-10 dB, a mais alta das quatro -- o motor de timbre normaliza o ganho
+        da portadora de forma deterministica antes de vocodar, e o headroom
+        do mix segue ancorado pelo loudnorm da CP-004.
+      origem: "Freesound 663855 (Brazilio123, CC0)"
+    raposa:
+      portadora: raposa-latido
+      nota: >
+        Latido de raposa, curto e aspero -- a textura que falta na voz
+        sintetica limpa.
+      origem: "Freesound 397655 (gadzooks, CC0)"
+    tartaruga:
+      portadora: null
+      decisao: >
+        DECISAO (b): Tartaruga permanece SEM timbre animal, so com ritmo. As
+        razoes, registradas: (1) tartarugas quase nao vocalizam -- e problema
+        honesto declarado desde a nota de campo; (2) a busca CC0 nao devolveu
+        NENHUMA gravacao de tartaruga utilizavel (volta tartaruga-POMBA e
+        sons sem relacao); (3) portadora de "sopro/ambiente" seria timbre de
+        ar, nao de animal -- fingir personagem com ruido e pior que nao ter;
+        (4) o precedente do Dado mudo mostra que personagem sem voz nao e
+        falta: e identidade. O ritmo lento (length_scale do bloco voz) ja e a
+        assinatura sonora dela.
+
+  politica_de_licencas:
+    permitidas:
+      - "Creative Commons 0"
+      - "Creative Commons Attribution"
+    fonte_canonica: >
+      Freesound, com o filtro de licenca da propria busca (o mesmo da
+      interface web). O lock ancora o PREVIEW publico do CDN
+      (cdn.freesound.org/previews/...), que dispensa chave de API: a coleta e
+      reproduzivel em qualquer maquina e no CI, e o sha256 trava os bytes.
+    divergencia_declarada: >
+      O prompt da CP-005 pedia download "via API" do Freesound. A API v2
+      responde 401 sem FREESOUND_API_KEY, e nenhuma chave foi fornecida ao
+      agente. A licenca de cada candidata foi VERIFICADA na pagina publica do
+      som (onde a licenca vive) no momento do lock, e a partir dai quem
+      garante a licenca e o proprio amostras.lock -- que so avanca por
+      change-proposal, como lei.lock e voz.lock. Amostras com origem externa
+      entram por lock revisado em PR, nunca por download autonomo do dublar.
+    proibidas:
+      - nome: "Xeno-canto"
+        licenca: "CC-BY-NC / CC-BY-NC-ND"
+        porque: >
+          Nao-comercial mata a suite no dia em que um filme sair do repositorio;
+          ND (sem derivadas) mata o vocoder na entrada -- impor envelope de
+          fala a uma portadora E derivada.
+      - nome: "BBC Sound Effects"
+        licenca: "RemArc"
+        porque: >
+          Licenca de pesquisa/educacao que alem de nao ser livre VEDA uso em
+          sistemas de sintese/IA -- a cadeia de dublagem inteira e sintese.
+      - nome: "qualquer NC ou ND"
+        licenca: "-"
+        porque: >
+          A suite publica filmes; o timbre deriva a portadora. Sem comercial
+          e sem derivadas, nao ha como usar -- e nao ha como usar "so um
+          pouquinho".
+
+  tecnica:
+    motor: >
+      Vocoder de canais deterministico (estudio_suite/timbre.py, Sprint 7):
+      banco de filtros passa-banda log-espacado; o envelope de cada banda da
+      FALA e extraido (retificacao + passa-baixa) e imposto a banda
+      correspondente da PORTADORA animal; o resultado e misturado a voz limpa
+      na proporcao `mistura`. Sem libs de IA: scipy puro, inteiro em diff.
+    onde_moram_os_parametros: >
+      No bloco voz do rig -- timbre mora onde a voz mora:
+      voz.timbre: { portadora: 'aguia-guincho', mistura: 0.35, bandas: 16 }.
+      mistura: 0 = voz limpa da CP-004, byte-identico (provado em teste).
+    earcons_do_dado: >
+      aceso (brilho ascendente ~300 ms), retraido (tom descendente ~400 ms),
+      citar (carimbo percussivo ~150 ms) -- sintetizados por codigo (senoides
+      + envelope, timbre.py), commitados como .wav em sons/, tocando junto da
+      trilha a ~-10 dB sob a voz (volume hard-coded), posicionados via
+      audio.json pelos eventos/poses do Dado que JA existem como dado no
+      filme. Ganham entrada no amostras.lock (origem: sintetizado) -- trocar
+      o som do Dado tambem e ato revisado, nao edicao silenciosa.
+    portadora_no_mix: >
+      A portadora e normalizada (ganho deterministico pelo RMS da fala),
+      repetida por loop quando mais curta que o clipe, truncada quando mais
+      longa -- nunca esticada. O loudness do mix continua o da CP-004.
+
+  escopo:
+    sprint_6: >
+      Contrato e materia-prima ancorada, nenhum som aplicado: esta CP;
+      amostras.lock na raiz (topologia de lei.lock/voz.lock) com as 4
+      portadoras e a decisao da Tartaruga; estudio_suite/amostras.py, coleta
+      deterministica (baixa da URL do lock, confere sha256, normaliza para
+      48 kHz mono .wav em workspace/amostras/, fora do versionamento) e falha
+      com mensagem clara se o sha divergir ou a licenca nao constar; fiscal
+      de amostras no pipeline (portadora em uso sem entrada no lock ->
+      VERMELHO); voz_do_rig passa a ler o sub-bloco timbre (dado declarado,
+      sem logica de aplicacao); comando `python3 -m estudio_suite amostras`.
+    sprint_7: >
+      O motor e os earcons: estudio_suite/timbre.py (vocoder de canais,
+      scipy); integracao no dublar.py na cadeia fala -> piper -> timbre (se o
+      rig tiver portadora) -> posicionar -> mixar, sempre bit-deterministica;
+      audio.json registra por clipe os parametros de timbre e o sha256 da
+      portadora; o fiscal de redublagem passa a cobrar redublagem tambem
+      quando parametro de timbre mudar; earcons do Dado sintetizados,
+      commitados, ancorados no lock e posicionados via audio.json; dublar
+      rodado nos dois filmes publicados, artefatos commitados, mesmo sha256
+      em duas execucoes demonstrado no PR.
+    sprint_8: >
+      Carteira de voz mensuravel e recalibracao honesta: `python3 -m
+      estudio_suite vozes compare <id>` (baselines por rig, F0 mediana /
+      pitch_stab, taxa silabica / speech_rate, centroide / spectral_health
+      via audio-suite compare; descritor nunca reprova -- divergencia e
+      needs_review/INDECISO); recalibracao documentada do portao: as
+      portadoras injetam textura nos trechos calibrados como "silencio
+      digital" (o detector de glitch contava ~44k eventos sobre silencio
+      puro), medir os dois filmes timbrados, registrar os numeros no
+      guardioes-narracao.yaml a maneira da ADR-0002 e ajustar ou reafirmar
+      limiares SOMENTE com medicao -- antes de medir, INDECISO e comportamento
+      correto; CREDITOS.md por filme com cada portadora (fonte, autor,
+      licenca) e a nota de que timbre e DSP sobre voz sintetica; README com
+      uma linha na secao da CP-004 apontando a CP-005; relatorio final com os
+      3 PRs, estado dos checks e decisoes pendentes.
+
+  impacto:
+    - "estudio_suite/dublar.py :: a cadeia por legenda ganha o estagio de timbre; voz_do_rig le o sub-bloco timbre"
+    - "filmes/<id>/audio/audio.json :: por clipe, parametros de timbre aplicados + sha256 da portadora; earcons posicionados"
+    - "estudio_suite/pipeline.py :: fiscal_amostras; fiscal_redublagem cobra mudanca de parametro de timbre"
+    - "motor/js/rigs/*.rig.js :: bloco voz ganha timbre {...} (dados; referencias de arte NAO mudam)"
+    - "harness/perfis/guardioes-narracao.yaml :: recalibracao medida no Sprint 8"
+    - "filmes/<id>/audio/CREDITOS.md, README.md :: atribuicao das portadoras; uma linha na CP-004"
+    - "tests/test_amostras.py (Sprint 6), tests/test_timbre.py (Sprint 7), tests/test_vozes.py (Sprint 8) + passos no workflow"
+
+  caminhos_afetados:
+    - esta-suite :: harness/change-proposals/CP-005-timbre-guardioes.yaml, amostras.lock, estudio_suite/{amostras,timbre,dublar,pipeline,__main__,vozes}.py
+    - esta-suite :: motor/js/rigs/*.rig.js (bloco voz.timbre), sons/ (earcons .wav, Sprint 7)
+    - esta-suite :: filmes/*/audio/{audio.json,CREDITOS.md}, harness/perfis/guardioes-narracao.yaml, README.md
+    - esta-suite :: tests/test_{amostras,timbre,vozes}.py, .github/workflows/suite.yml
+
+  risco:
+    nivel: medio
+    porque: >
+      A camada nova toca o mix ja aprovado e introduz materia-prima externa
+      (sons de terceiros) na suite. O risco e contido por tres travas: (1)
+      mistura 0 e provado byte-identico a CP-004 -- a camada e aditiva de
+      verdade, nao de declaracao; (2) o fiscal de amostras reprova portadora
+      sem ancora ANTES de qualquer som entrar em filme; (3) a licenca e
+      travada pelo lock, que so avanca por change-proposal. O risco residuo e
+      o mesmo da lei e da voz: o dia em que a fonte externa mudar, o lock
+      diverge -- alto e claro, nunca em silencio.
+
+  aval_humano_necessario: true   # merge de cada PR e decisao humana
+
+  como_se_prova:
+    - sprint_6: >
+      lock valido e licenca declarada por portadora; coleta reproduzivel
+      (mesmo sha, mesmo wav); fiscal detecta amostra pirata em teste
+      automatizado; CI verde; NENHUM som aplicado a filme.
+    - sprint_7: >
+      determinismo comprovado (mesmo sha256 em duas execucoes); mistura 0
+      reproduz byte-identico o audio da CP-004; fiscal de redublagem cobra
+      mudanca de timbre; CI verde.
+    - sprint_8: >
+      vozes compare gera relatorio por falante; nenhuma reprovacao automatica
+      por descritor (divergencia -> needs_review/INDECISO); recalibracao do
+      portao documentada com numeros; CI verde; creditos completos.
+
+  backlog:                      # PROIBIDO nesta CP; candidatos a CP-006
+    - >
+      Expressoes -> prosodia (feliz / preocupado / surpreso): os rigs ja
+      declaram as expressoes como dado inerte desde a CP-004; liga-las a voz
+      exige resintese de F0 com duracao preservada -- CP propria, com teste de
+      snapshot da ordem da cadeia.
+    - >
+      Modo quadrinhos "ouvir este plano": continua silencioso nesta CP.
+    - >
+      Voice conversion por IA (seed-vc, RVC, so-vits-svc): exigiria
+      governanca de modelo propria (o que voz.lock existe para impedir).
+      Vedado permanentemente enquanto nao houver CP que governe o modelo.
+    - >
+      Mixlirous / trilha de fundo musical por filme: depende de CLI que nao
+      existe la; fora.
+    - resposta_padrao: >
+        Se um revisor perguntar por esses itens: "backlog da CP-005, proposta
+        como CP-006" -- nao e esquecimento.
