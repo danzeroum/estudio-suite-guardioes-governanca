@@ -1,0 +1,34 @@
+# Identidade e limites da suite. Raso e legivel de proposito: e lido por um
+# parser de tres linhas, e quem o edita nao precisa saber YAML avancado.
+schema: estudio-suite/suite@1
+nome: Estúdio Suite dos Guardiões
+versao: 0.2.0
+
+# Orcamento de tamanho, em bytes gzip. Nao e meta, e TETO -- e o ponto dele nao
+# e o numero, e a conversa que ele forca quando alguem se aproxima. Foi assim
+# que chassi.js nasceu: player.js bateu 91% e a resposta certa nao era negociar
+# o limite, era separar o que roda por quadro do que roda uma vez.
+#
+#   aviso em 70%  ·  congela em 85%
+orcamento:
+  aviso: 0.70
+  congela: 0.85
+  arquivos:
+    motor/js/interp.js: 2048
+    motor/js/rig.js: 6144
+    motor/js/palco.js: 2048
+    motor/js/cenarios.js: 4096
+    motor/js/props.js: 5120
+    motor/js/filme.js: 6144
+    motor/js/relogio.js: 2048
+    motor/js/chassi.js: 2048
+    motor/js/carregador.js: 2048
+    motor/js/player.js: 5120
+    motor/js/jogo.js: 5120
+    motor/js/personagens.js: 4096
+    motor/css/estudio.css: 3072
+    motor/css/personagens.css: 3072
+  padroes:
+    motor/js/rigs/*.rig.js: 5120
+    filmes/*/*.filme.js: 20480
+    jogos/*/*.jogo.js: 8192

@@ -30,6 +30,9 @@ jobs:
       - name: O gate único
         run: python3 ci/validar_tudo.py
 
+      - name: O módulo de automelhorias, nos dois sentidos
+        run: python3 tests/test_melhorias.py
+
   navegador:
     runs-on: ubuntu-latest
     steps:

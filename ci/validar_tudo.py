@@ -49,8 +49,13 @@ def _fiscais():
               f"({len(a['arquivos'])} arquivos).")
         return 0
 
+    from estudio_suite import orcamento as _orc
+    _aud = importlib.import_module("ci.auditar_melhorias")
+
     return [("lei ancorada", lei),
             ("roteiros e jogos", _rot.main),
+            ("orcamento de tamanho", _orc.main),
+            ("modulo de automelhorias", _aud.main),
             ("artefatos derivados", lambda: _sinc.main())]
 
 

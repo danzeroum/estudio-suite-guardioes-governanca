@@ -13,6 +13,8 @@ AJUDA = """estudio — a suite que transforma historia em filme
   etapas <id>   onde este filme esta nas cinco etapas, e o que falta
   novo-filme <id> [--de <pedido.md>]   cria o esqueleto e mostra a proxima etapa
   lei           materializa e confere a lei ancorada
+  melhorias     os sinais de hoje e as propostas que eles geram
+                (--escrever grava as propostas em harness/change-proposals/)
 
   --json        onde fizer sentido, a saida crua
   --refazer-lei rebaixa workspace/lei e busca de novo
@@ -88,6 +90,20 @@ def main(argv=None) -> int:
                 print(f"  {m[v.estado]} {v.etapa:<12} {v.nota}")
                 for a in v.achados:
                     print(f"           · {a}")
+            return 0
+
+        if cmd == "melhorias":
+            from .melhorias import evidencias, propor
+            print(evidencias.resumo())
+            novas = propor.gerar(escrever="--escrever" in resto)
+            print()
+            if novas:
+                verbo = "gravada(s)" if "--escrever" in resto else "a gravar"
+                print(f"  {len(novas)} proposta(s) {verbo}:")
+                for n in novas:
+                    print(f"    {n}")
+            else:
+                print("  nenhuma proposta nova: sinal sem acao nao vira fila.")
             return 0
 
         if cmd == "lei":

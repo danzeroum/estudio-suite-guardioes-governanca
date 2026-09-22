@@ -1,0 +1,44 @@
+# Mudanca proposta a partir de EVIDENCIA, nao de gosto.
+# Declarada antes de executada; fica como registro mesmo depois.
+schema: estudio-suite/change-proposal@1
+
+proposta:
+  id: CP-001
+  titulo: "Levar de volta a origem a correcao da referencia de arte vazia"
+  autor: agente/curador
+  criada_em: "2026-09-22T21:30:00Z"
+  estado: aprovada
+
+  sinal:
+    tipo: defeito-na-origem
+    chave: "referencia-de-arte-vazia"
+    evidencia: >
+      Ao portar o teste da Fase 7 para esta suite, as seis referencias de arte
+      dos rigs mostraram poses, expressoes, origens, ancoras e paletas como {}.
+      A causa: JSON.stringify(r, Object.keys(r).sort(), 1) foi escrito achando
+      que o segundo argumento ordenava. Em forma de lista ele e uma ALLOWLIST
+      de chaves, aplicada em TODOS os niveis -- entao todo objeto aninhado saia
+      vazio. A guarda nao afirmava nada sobre justamente o que dizia proteger:
+      "uma origem empurrada dois pixels passa despercebida na revisao".
+      Corrigido aqui passando a ordenacao para o Python (sort_keys=True) e
+      regravando as seis referencias com conteudo real.
+
+  caminhos_afetados:
+    - danzeroum/guardioes-governanca :: tools/test-estudio.py
+    - danzeroum/guardioes-governanca :: tools/baseline/estudio/rigs/*.json
+
+  risco:
+    nivel: medio
+    porque: >
+      O defeito esta em main no repositorio de origem, mergeado. Enquanto nao
+      for corrigido la, aquele repositorio tem uma guarda que passa sempre --
+      pior do que nao ter guarda, porque alguem confia nela. A correcao em si e
+      pequena; o risco e de ESQUECER, e e por isso que a proposta existe em vez
+      de uma anotacao.
+
+  aval_humano_necessario: true
+
+  como_se_prova:
+    - as seis referencias regravadas deixam de ser objetos vazios
+    - mudar uma origem de rig passa a reprovar (teste negativo)
+    - a suite de origem continua verde no resto
