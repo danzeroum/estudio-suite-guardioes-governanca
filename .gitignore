@@ -1,5 +1,6 @@
 # A lei e materializada, nunca versionada aqui: quem a versiona e o dono dela.
 workspace/
+_lei-origem/
 __pycache__/
 *.pyc
 .pytest_cache/

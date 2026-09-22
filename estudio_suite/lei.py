@@ -88,8 +88,12 @@ def materializar(forcar: bool = False) -> Path:
     completo = all((DESTINO / rel).exists() for rel in a["arquivos"])
     if forcar or not completo:
         DESTINO.mkdir(parents=True, exist_ok=True)
-        vizinho = RAIZ.parent / a["repo"].split("/")[-1]
-        if not _copiar_de(vizinho, a):
+        # Onde um checkout da origem pode estar. No CI o actions/checkout
+        # recusa path fora do workspace, entao ele cai em _lei-origem/ aqui
+        # dentro -- que o .gitignore recusa, para nao virar copia versionada.
+        nome = a["repo"].split("/")[-1]
+        candidatos = [RAIZ / "_lei-origem", RAIZ.parent / nome, WORKSPACE / nome]
+        if not any(_copiar_de(c, a) for c in candidatos):
             _buscar_do_remoto(a)
 
     # A conferencia roda SEMPRE, inclusive quando nada foi baixado: o arquivo
