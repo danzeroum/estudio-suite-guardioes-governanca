@@ -49,6 +49,13 @@ jobs:
             python3 ci/validar_tudo.py --sem-lei
           fi
 
+      # O ffmpeg e dependencia declarada da suite (dublar, portao de
+      # sonorizacao) mas NAO vem mais na imagem ubuntu-24.04 do runner. O
+      # teste da ancora de amostras (CP-005) deriva wavs de verdade, como a
+      # coleta real deriva -- o CI prova o mesmo caminho que a maquina local.
+      - name: Instalar ffmpeg
+        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+
       - name: O módulo de automelhorias, nos dois sentidos
         run: python3 tests/test_melhorias.py
 
