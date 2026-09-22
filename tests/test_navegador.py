@@ -116,10 +116,25 @@ def abrir(pw):
 
 
 ok, bad = [], []
+POR_ALVO = {}
+ALVOS_CONHECIDOS = sorted(
+    [d.name for d in (RAIZ / "filmes").iterdir() if d.is_dir()]
+    + [d.name for d in (RAIZ / "jogos").iterdir() if d.is_dir()])
 
 
 def chk(c, msg):
     (ok if c else bad).append(msg)
+    # A evidencia por filme e o que o modulo de automelhorias le depois. Sem
+    # isto o unico registro de uma execucao seria "passou" ou "falhou", e um
+    # portao que reprova sempre no mesmo filme ficaria indistinguivel de um
+    # que reprovou uma vez.
+    for alvo in ALVOS_CONHECIDOS:
+        if alvo in msg:
+            POR_ALVO.setdefault(alvo, {"ok": 0, "achados": []})
+            if c:
+                POR_ALVO[alvo]["ok"] += 1
+            else:
+                POR_ALVO[alvo]["achados"].append(msg)
 
 
 def servidor():
@@ -1322,6 +1337,38 @@ def contrato_da_api(nav):
     pgk.close()
 
 
+def escrever_relatorios():
+    """Uma execucao deixa evidencia por filme, nao so um numero global.
+
+    E disto que o agente `curador` vive: portao que reprova no mesmo lugar em
+    varios filmes nao e um filme ruim, e um portao errado ou uma ferramenta que
+    falta. Nao da para descobrir isso a partir de "198 passaram".
+    """
+    import datetime
+    quando = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+    for alvo, d in POR_ALVO.items():
+        pasta = (RAIZ / "filmes" / alvo) if (RAIZ / "filmes" / alvo).is_dir() else (RAIZ / "jogos" / alvo)
+        if not pasta.is_dir():
+            continue
+        rel = {"alvo": alvo, "quando": quando,
+               "checagens_ok": d["ok"],
+               "achados": {f"achado-{i+1}": a for i, a in enumerate(d["achados"])},
+               "nota": (f"{d['ok']} checagem(ns) verdes" if not d["achados"]
+                        else f"{len(d['achados'])} achado(s)")}
+        (pasta / "relatorio.json").write_text(
+            json.dumps(rel, ensure_ascii=False, indent=1, sort_keys=True) + "\n",
+            encoding="utf-8")
+    # E o acumulado, que e o que o curador varre.
+    hist = RAIZ / "harness" / "runs"
+    hist.mkdir(parents=True, exist_ok=True)
+    (hist / f"run-{quando.replace(':', '')}.json").write_text(
+        json.dumps({"quando": quando, "ok": len(ok), "falhas": len(bad),
+                    "achados": bad, "por_alvo": POR_ALVO},
+                   ensure_ascii=False, indent=1, sort_keys=True) + "\n",
+        encoding="utf-8")
+    print(f"  evidencia: {len(POR_ALVO)} relatorio(s) por alvo + harness/runs/")
+
+
 def main():
     estaticos()
     links_do_estudio()
@@ -1350,6 +1397,7 @@ def main():
     for m in bad:
         print("  FALHOU", m)
     print(f"\n  {len(ok)} passaram, {len(bad)} falharam")
+    escrever_relatorios()
     raise SystemExit(1 if bad else 0)
 
 

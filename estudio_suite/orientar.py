@@ -45,6 +45,16 @@ def _lei_em_dia():
             if n.isdigit() else f"{a['sha'][:12]} (distancia desconhecida)")
 
 
+def _todos_os_filmes():
+    """Todo diretorio com ao menos um artefato de etapa -- terminado ou nao."""
+    if not FILMES.is_dir():
+        return []
+    return sorted(d.name for d in FILMES.iterdir()
+                  if d.is_dir() and any((d / n).exists()
+                                        for n in ("pedido.md", "roteiro.md",
+                                                  f"{d.name}.filme.js")))
+
+
 def _etapas_do_filme(fid):
     """Que artefatos deste filme ja existem. A etapa seguinte e o primeiro que falta."""
     d = FILMES / fid
@@ -69,14 +79,17 @@ def texto() -> str:
              f"{len(jogos_existentes())} jogo(s)")
     L.append("")
     L.append("  filme                 pedido roteiro storyb anima acaba   proxima etapa")
-    for fid in filmes_existentes():
+    # Filme EM ANDAMENTO e o que mais importa a quem esta orientando, e ele nao
+    # aparece em filmes_existentes(): aquilo exige o .filme.js, que so nasce na
+    # terceira etapa. Listar so o que ja terminou esconderia o trabalho aberto.
+    for fid in _todos_os_filmes():
         et = _etapas_do_filme(fid)
         marcas = "  ".join(" ok  " if ok else " --  " for _, ok in et)
         prox = next((n for n, ok in et if not ok), "completo")
         L.append(f"  {fid:<20}  {marcas}  {prox}")
     L.append("")
     locais = {fid: sorted(p.name for p in (FILMES / fid / "local").glob("*.js"))
-              for fid in filmes_existentes()}
+              for fid in _todos_os_filmes()}
     locais = {k: v for k, v in locais.items() if v}
     if locais:
         L.append("  adereços locais (candidatos a promocao no SEGUNDO uso):")
