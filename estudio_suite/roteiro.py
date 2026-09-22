@@ -326,6 +326,17 @@ def main():
                 if i and L["em"] < legs[i - 1]["ate"] - 1e-6:
                     falha(f"{pid}: legendas {legs[i - 1]['em']} e {L['em']} se sobrepoem")
 
+                # --- QUEM FALA (CP-004) ----------------------------------
+                # O audio deriva da legenda, e a legenda pode nomear o
+                # ator. O campo e opcional: sem ele, fala o guardiao do
+                # plano (ou o Narrador, em plano sem guardiao). Quando
+                # existe, tem de apontar o ELENCO -- "dado" e prop, e
+                # prop nao fala.
+                if L.get("quem") is not None and L["quem"] not in d.get("elenco", {}):
+                    falha(f"{pid}: legenda {L['em']}-{L['ate']} diz quem='{L['quem']}', "
+                          f"que nao esta no elenco. O campo aponta uma chave de "
+                          f"elenco, e o padrao vem de plano.guardiao.")
+
                 # --- A CITACAO: o texto que o espectador le ---------------
                 for m in re.finditer(r"Arts?\.\s*(\d+)", L["txt"]):
                     num = m.group(1)
