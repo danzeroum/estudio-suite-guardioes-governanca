@@ -41,7 +41,7 @@ Depois disso, leia `CLAUDE.md` (a doutrina e as proibições duras) e
 python3 -m estudio_suite novo-filme <id> --de exemplos/pedido-curto.md
 ```
 
-O agente percorre cinco etapas, cada uma com **um artefato revisável e um portão**. Ele
+O agente percorre seis etapas, cada uma com **um artefato revisável e um portão**. Ele
 itera dentro da etapa e nunca avança com portão vermelho:
 
 | Etapa | Artefato | O portão pergunta |
@@ -51,6 +51,7 @@ itera dentro da etapa e nunca avança com portão vermelho:
 | `storyboard` | `<id>.filme.js` + folha de contato | **a história se lê sem som e sem movimento?** |
 | `animacao` | referências de palco | pureza de `renderizar(t)`, câmera neutra, elenco por plano |
 | `acabamento` | `relatorio.json` | acessibilidade, contraste, orçamento, legibilidade da legenda |
+| `sonorizacao` | `audio/<id>.opus` + `audio.json` | a trilha declarada está dentro das âncoras? (audio-suite externa; ausente → INDECISO) |
 
 A ordem é cara de inverter. A etapa `roteiro` **não tem uma linha de código** de propósito:
 errar o roteiro custa uma edição de texto; errar depois custa refilmagem.
@@ -173,10 +174,36 @@ leitura barata venceria.
 Sem servidor: as páginas abrem por `file://`. Não há `fetch` nem módulo ES em lugar nenhum,
 e há teste que reprova quem introduzir um dos dois.
 
+## A camada de áudio (CP-004)
+
+O filme nasce mudo e **continua completo sem som**: a legenda carrega toda a
+informação, e o modo quadrinhos entrega o filme inteiro em texto. O áudio é
+camada **aditiva e derivada** — a única fonte do texto narrado é o `txt` da
+legenda, normalizado por `estudio_suite/fala.py` ("(Art. 10)" vira "artigo
+dez"). Não existe roteiro de áudio separado.
+
+- **`python3 -m estudio_suite dublar <id>`** sintetiza um clipe por legenda
+  (Piper local, modelo ancorado por sha256 em `voz.lock`, o `lei.lock` das
+  vozes) e mixa em `filmes/<id>/audio/<id>.opus` — 48 kHz, mono, loudness
+  −16 LUFS. Clipe que estoura o tempo da legenda **reprova**: nunca
+  time-stretch, nunca reamostrar — encurta-se a legenda.
+- No player, o botão **Som nasce desligado**; sem trilha, ele nem aparece.
+  `renderizar(t)` segue pura: o áudio é escravo do tempo, nunca dono dele.
+- O **fiscal de redublagem** reprova quem edita legenda sem redublar — mesmo
+  espírito do "editar o filme sem regravar a referência".
+- O portão **`sonorizacao`** mede a trilha com a
+  [audio-suite](https://github.com/danzeroum/audio-suite) (CLI externa,
+  perfil `harness/perfis/guardioes-narracao.yaml`): 0 → VERDE, 1 → VERMELHO,
+  ausência ou códigos 2/3 → **INDECISO** — porque "não consegui medir" não é
+  "está errado", e descritor nunca reprova.
+
+> **Privacidade de voz:** proibida a clonagem de voz humana real sem
+> contrato de cessão expressa. Todas as vozes são sintéticas (Piper,
+> `pt_BR-faber-medium`, ancorado em `voz.lock`) e declaradas nos créditos de
+> cada filme — `filmes/<id>/audio/CREDITOS.md`.
+
 ## O que esta suíte não faz
 
-- **Áudio e narração.** O filme é mudo por decisão de acessibilidade — a legenda carrega
-  toda a informação, e o modo quadrinhos entrega o filme inteiro em texto.
 - **Arte gerada por modelo.** Os rigs são SVG revisável, que passa pelo teste de silhueta e
   aparece num diff. Imagem gerada não faz nem uma coisa nem outra.
 - **Publicar.** Quem publica é o repositório consumidor.
