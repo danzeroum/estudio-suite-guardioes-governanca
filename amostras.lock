@@ -1,0 +1,62 @@
+# As portadoras do timbre tem ancora, no mesmo espirito do lei.lock e do
+# voz.lock.
+#
+# O timbre da CP-005 e processamento de sinal sobre voz sintetica -- mas a
+# materia-prima (a portadora animal) vem de terceiros, e som de terceiro sem
+# procedencia e pirataria em potencial. Cada portadora abaixo esta travada por
+# sha256: dublar com outra portadora produziria OUTRO timbre do que o revisado
+# -- silenciosamente. O que e derivado tem de ser derivavel.
+#
+# LICENCAS: somente CC0 ou CC-BY (politica completa na CP-005). A licenca de
+# cada amostra foi verificada na pagina publica do som no momento deste lock;
+# a partir daqui, quem garante a licenca e este arquivo, que so avanca por
+# change-proposal. Xeno-canto (NC/ND), BBC Sound Effects (RemArc) e qualquer
+# NC ou ND estão proibidos.
+#
+# A URL ancorada e o PREVIEW publico do CDN do Freesound: dispensa chave de
+# API (a API v2 exige token que esta suite nao tem), e a coleta fica
+# reproduzivel em qualquer maquina. Os bytes travados sao os do preview.
+#
+# Para avancar a ancora: change-proposal (caminho protegido). Nunca em
+# silencio, porque trocar a portadora muda o timbre de filmes ja publicados.
+schema: estudio-suite/amostras-lock@1
+
+amostras:
+  aguia-guincho:
+    origem: https://freesound.org/people/TheKingOfGeeks360/sounds/751269/
+    url: https://cdn.freesound.org/previews/751/751269_15895934-hq.mp3
+    licenca: "Creative Commons 0"
+    sha256: eb221b21fe673c90fee3df38ea6e1be8b9f151c3d899a8e37ca3b8246fe8b082
+    atribuicao: "TheKingOfGeeks360 — Birds of Prey: Bald Eagle Chirping, Close Perspective"
+    papel: "portadora do timbre da Aguia (vocoder de canais) — o chirp real da aguia-careca, nao o gaviao do cinema"
+
+  coruja-pio:
+    origem: https://freesound.org/people/Patrick_Corra/sounds/745208/
+    url: https://cdn.freesound.org/previews/745/745208_8711646-hq.mp3
+    licenca: "Creative Commons 0"
+    sha256: b0964fd40d099ac3d4e000a6dd3ee76c75bca44edd329382fda04dfa3673d242
+    atribuicao: "Patrick_Corra — Tawny owl hooting (coruja-do-mato, Strix aluco)"
+    papel: "portadora do timbre da Coruja — grave, bandas harmonicas estaveis, a portadora ideal do vocoder"
+
+  elefante-trompa:
+    origem: https://freesound.org/people/Brazilio123/sounds/663855/
+    url: https://cdn.freesound.org/previews/663/663855_14509684-hq.mp3
+    licenca: "Creative Commons 0"
+    sha256: 07112f7433e00e4193483382f11d77bec23257ee615385e12aa0becae4d4cbbd
+    atribuicao: "Brazilio123 — elephant_sad.wav"
+    papel: "portadora do timbre do Elefante — grave e potente (RMS ~-10 dB, a mais alta: ganho normalizado no motor)"
+
+  raposa-latido:
+    origem: https://freesound.org/people/gadzooks/sounds/397655/
+    url: https://cdn.freesound.org/previews/397/397655_44431-hq.mp3
+    licenca: "Creative Commons 0"
+    sha256: 0369b103ca84aca6605052b9825db53c33e3e8ad35806f39039be53089d08657
+    atribuicao: "gadzooks — Fox Barking"
+    papel: "portadora do timbre da Raposa — curto e aspero"
+
+  # Tartaruga: DECISAO (b) da CP-005 — sem timbre animal, so ritmo.
+  # Tartaruga quase nao vocaliza; a busca CC0 nao devolveu gravacao utilizavel
+  # (volta tartaruga-pomba e sons sem relacao); portadora de sopro/ambiente
+  # seria timbre de ar, nao de personagem. O precedente e o Dado mudo:
+  # personagem sem voz nao e falta, e identidade. O ritmo (length_scale) ja e
+  # a assinatura sonora dela.
