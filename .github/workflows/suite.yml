@@ -52,6 +52,12 @@ jobs:
       - name: O módulo de automelhorias, nos dois sentidos
         run: python3 tests/test_melhorias.py
 
+      # CP-004: a fala deriva da legenda, e o normalizador e quem garante.
+      # Roda aqui porque e barato (segundos, sem navegador) -- o erro de
+      # texto e o que custa menos achar, e por isso falha primeiro.
+      - name: O normalizador de fala (CP-004)
+        run: python3 tests/test_fala.py
+
   navegador:
     runs-on: ubuntu-latest
     steps:

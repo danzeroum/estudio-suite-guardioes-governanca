@@ -1,0 +1,209 @@
+# Mudanca proposta a partir de EVIDENCIA, nao de gosto.
+# Declarada antes de executada; fica como registro mesmo depois.
+#
+# A CP-004 nasce dividida em sprints porque a dublagem toca tres fronteiras de
+# uma vez (dado, comando offline, player) e um PR so nao seria revisavel. Cada
+# sprint para em PR proprio, e o backlog declarado abaixo e PROIBIDO nesta CP.
+schema: estudio-suite/change-proposal@1
+
+proposta:
+  id: CP-004
+  titulo: "Dublagem derivada das legendas: camada de audio aditiva"
+  autor: agente/curador
+  criada_em: "2026-09-23T00:00:00Z"
+  estado: em-execucao          # um PR por sprint; merge e decisao humana
+
+  sinal:
+    tipo: camada-faltante
+    chave: "audio-derivado-das-legendas"
+    evidencia: >
+      O filme e mudo por decisao de acessibilidade, e a legenda carrega toda a
+      informacao -- o modo quadrinhos entrega o filme inteiro em texto. Mas o
+      README ja responde "audio e narracao" na secao do que a suite NAO faz, e
+      o pedido volta: quem assiste quer OUvir o guardiao do plano, sem que a
+      legenda deixe de ser a fonte unica.
+
+      A resposta que respeita a doutrina ja existe no dado: o texto narrado E
+      o txt da legenda normalizado ("(Art. 10)" vira "artigo dez"). Audio nao
+      e roteiro novo -- e camada ADITIVA e DERIVADA. O filme mudo continua
+      byte-identico, o botao "Som" nasce desligado, e renderizar(t) continua
+      pura: o audio vive no player, nunca em filme.js.
+
+  doutrina:                    # regras que a CP nao pode violar, em nenhum sprint
+    - >
+      A legenda e a UNICA fonte do audio. O texto narrado e o txt da legenda
+      normalizado por estudio_suite/fala.py. PROIBIDO criar roteiro de audio
+      separado.
+    - >
+      O audio e camada aditiva e derivada. O filme mudo continua
+      byte-identico; o botao "Som" nasce DESLIGADO; nenhum filme muda
+      comportamento visual ou hash de baseline.
+    - >
+      renderizar(t) permanece pura. O audio vive no player (motor/js/), nunca
+      em filme.js. O filme abre por file://, sem fetch, sem modulos ES: o
+      player usa <audio src="audio/<id>.opus">.
+    - >
+      O modelo de TTS e fixado por hash em voz.lock, no mesmo espirito do
+      lei.lock. Sem lock verde, nao ha dublagem.
+    - >
+      Time-stretch proibido. Clipe que estoura ate - em NAO se estica nem se
+      reamostra: encurta-se a legenda (vale o teto de <=15 caracteres por
+      segundo). "Nao consegui medir" nao e "esta errado": ausencia da
+      audio-suite, ou seus codigos 2 e 3, mapeiam para INDECISO -- descritor
+      nunca reprova.
+    - >
+      Privacidade: proibido clonar voz humana real sem contrato de cessao;
+      vozes sinteticas sao declaradas nos creditos de cada filme.
+    - >
+      Regra de ouro do repositorio: abstracao so na segunda repeticao. A
+      solucao simples que funciona vence a elegante prematura.
+
+  escopo:
+    sprint_1: >
+      Fundacao documental e de dados, nenhum som: esta CP; campo opcional
+      "quem" por legenda (padrao vem de plano.guardiao, "quem" sobrescreve
+      apontando para o elenco; a validacao aceita e reprova ator inexistente);
+      bloco voz {...} em cada *.rig.js -- voz e atributo do personagem, no
+      mesmo espirito de var(--p-*) para cores; estudio_suite/fala.py, o
+      normalizador legenda -> texto falavel (numerais, siglas, "(Art. N)",
+      pontuacao de pausa), com testes em tests/; formato do voz.lock declarado
+      aqui (o arquivo real so nasce no Sprint 2, quando o modelo for fixado).
+    sprint_2: >
+      O comando offline e travado: python3 -m estudio_suite dublar <id>, TTS
+      local PT-BR com Piper (pt_BR-faber-medium como sugestao
+      parametrizavel); voz.lock na raiz (modelo, versao, sha256 dos pesos);
+      um clipe por legenda posicionado no seu "em", mixado em
+      filmes/<id>/audio/<id>.opus (48 kHz, mono voz); REPROVA em vez de
+      esticar -- clipe que exceda ate - em devolve erro apontando a legenda
+      exata a encurtar; filmes/<id>/audio/audio.json com sha256 do texto
+      normalizado de cada legenda, posicoes e duracoes; fiscal de redublagem
+      no pipeline (editar legenda sem rodar dublar e VERMELHO); dublar rodado
+      nos filmes existentes e artefatos commitados.
+    sprint_3: >
+      O player sonoro, sem tocar na pureza do motor: reprodutor escravo em
+      motor/js/ controlado por filme.t; ao tocar ou buscar,
+      audio.currentTime = filme.t, ressincronizando a cada quadro quando o
+      drift passar de 80 ms; botao "Som" iniciando DESLIGADO, com
+      aria-pressed e rotulo acessivel; sem audio/<id>.opus o botao nao aparece
+      (filme mudo e o fallback natural); modo quadrinhos permanece silencioso
+      e funcional.
+    sprint_4: >
+      O sexto portao: sonorizacao no pipeline, executado somente para filmes
+      que declaram audio (existencia de audio/<id>.opus + flag no filme); o
+      portao invoca a audio-suite como CLI externa (codigo dela NAO e copiado)
+      com o perfil guardioes-narracao.yaml, derivado do podcast.yaml;
+      limiares ancora de partida (calibrar empiricamente conforme ADR-0002 da
+      audio-suite; nesta fase, placeholder documentado): loudness integrado
+      -16 LUFS +-1; true peak <= -1 dBTP; clipping e glitch ativos; saida 0 ->
+      VERDE, 1 -> VERMELHO, 2, 3 ou ausencia do binario/perfil -> INDECISO;
+      passo correspondente em ci/ e .github/workflows/suite.yml; estado
+      publicado no relatorio.json do filme.
+    sprint_5: >
+      Calibracao empirica e conformidade: rodar o portao nos filmes,
+      registrar as medicoes no PR e ajustar o guardioes-narracao.yaml com
+      justificativa; creditos por filme declarando vozes sinteticas (Piper,
+      modelo, versao do voz.lock); secao no README.md descrevendo a camada
+      aditiva e atualizando a nota "Audio e narracao"; linha explicita
+      proibindo clonagem de voz humana sem contrato de cessao; validacao
+      final: pipeline completo verde (ou INDECISO justificado) e relatorio
+      fechando com a lista dos 5 PRs.
+
+  regra_legenda_fala:
+    fonte: "o campo txt de cada legenda, nada mais"
+    normalizador: estudio_suite/fala.py
+    exemplos:
+      - '"A lei da nome a isso: dado pessoal.\n(Art. 5)"' : '"A lei da nome a isso: dado pessoal. artigo cinco"'
+      - '"(Art. 10)"' : '"artigo dez"'
+      - '"(Arts. 37 e 38)"' : '"artigos trinta e sete e trinta e oito"'
+      - '"Ana digita o CPF num formulario."' : '"Ana digita o cê-pé-éfe num formulario."'
+    quem_fala:
+      padrao: "o guardiao do plano (plano.guardiao) narra o plano"
+      sobrescrita: 'campo opcional "quem" aponta para uma chave do elenco do filme'
+      sem_guardiao: "Narrador -- parametros de partida em estudio_suite/fala.py (NARRADOR), pois narrador nao e rig"
+
+  voz_lock_formato_planejado:   # o arquivo real nasce no Sprint 2, com o sha256 dos pesos
+    schema: estudio-suite/voz-lock@1
+    modelo:
+      nome: "pt_BR-faber-medium"     # sugestao parametrizavel; Piper local
+      origem: "https://huggingface.co/rhasspy/piper-voices"
+      sha256_onnx: "<hex de 64>"
+      sha256_json: "<hex de 64>"
+    nota: >
+      Mesmo espirito do lei.lock: divergencia entre o modelo local e o lock
+      falha com mensagem clara, porque dublar com outro modelo produziria
+      outro audio do que o revisado -- silenciosamente.
+
+  portao_sonorizacao:
+    cli_externa: "audio-suite analyze <audio> --profile guardioes-narracao.yaml"
+    perfil: "guardioes-narracao.yaml, derivado do podcast.yaml da audio-suite"
+    mapeamento:
+      "0": "VERDE"
+      "1": "VERMELHO"
+      "2 ou 3": "INDECISO"
+      "binario ou perfil ausentes": "INDECISO"
+    limiares_de_partida:         # placeholder documentado; calibrar empiricamente (ADR-0002) no Sprint 5
+      loudness_integrado_lufs: "-16 +- 1"
+      true_peak_dbtp: "<= -1"
+      clipping: "ativo"
+      glitch: "ativo"
+
+  impacto_em_motor:
+    - >
+      motor/js/rigs/*.rig.js ganham o bloco voz (dado declarativo; as
+      referencias de arte NAO mudam -- arte_dos_rigs compara poses, expressoes,
+      origens, ancoras, estados, paletas, escala, viewBox e hitbox, e voz nao
+      entra na lista).
+    - >
+      motor/js/player.js ganha o reprodutor escravo (Sprint 3): o audio nao
+      adiciona metodo publico ao CONTRATO sem cliente real; a sincronizacao
+      vive no fechamento do player, e o unico tempo continua sendo filme.t.
+    - >
+      filme.js NAO muda: renderizar(t) continua pura, e nenhuma linha de
+      audio entra no interpretador do roteiro.
+
+  caminhos_afetados:
+    - esta-suite :: harness/change-proposals/CP-004-dublagem-derivada.yaml
+    - esta-suite :: estudio_suite/fala.py, estudio_suite/roteiro.py, estudio_suite/pipeline.py, estudio_suite/__main__.py
+    - esta-suite :: motor/js/rigs/*.rig.js (bloco voz), motor/js/player.js (Sprint 3)
+    - esta-suite :: filmes/*/audio/ (Sprint 2), voz.lock (Sprint 2), ci/ e .github/workflows/suite.yml (Sprint 4)
+    - esta-suite :: tests/test_fala.py, README.md (Sprint 5)
+
+  risco:
+    nivel: medio
+    porque: >
+      Tocar no player e tocar na fronteira mais cara da suite: existe UM
+      tempo (filme.t) e o teste de pureza existe para protege-lo. O risco e
+      contido porque o audio e escravo -- nunca escreve o tempo, apenas o le
+      -- e nasce desligado. O risco real e doutrinario: alguem, depois, querer
+      esticar um clipe que estourou "so um pouquinho". Por isso a reprova e
+      no comando, apontando a legenda exata, e o time-stretch e proibicao
+      nomeada -- nao guideline.
+
+  aval_humano_necessario: true   # merge de cada PR e decisao humana
+
+  como_se_prova:
+    - sprint_1: "validacao passa com e sem 'quem'; nenhum hash de baseline visual muda; testes do normalizador verdes"
+    - sprint_2: "dublar deterministico (mesma entrada + mesmo lock -> mesmo sha256); fiscal detecta edicao de legenda em teste automatizado; CI verde"
+    - sprint_3: "abre em file:// e toca; com Som desligado, comportamento byte-identico ao mudo atual; baselines visuais inalteradas; modo quadrinhos intacto; CI verde"
+    - sprint_4: "sem audio-suite instalado, o portao marca INDECISO e o CI NAO quebra; com trilha dentro dos limites, VERDE; workflow suite verde"
+    - sprint_5: "CI verde; documentacao atualizada; nenhuma reprovacao automatica por descritor (divergencia -> needs_review / INDECISO)"
+
+  backlog:                      # PROIBIDO nesta CP; candidatos a CP-005
+    - >
+      Earcons do Dado (aceso / retraido / citar): o Dado mudo e coerente com o
+      roteiro; earcons sao polimento. Quando entrarem: sintetizados por
+      codigo, deterministicos, commitados como .wav, ~-10 dB sob a voz.
+    - >
+      Expressoes -> prosodia (feliz / preocupado / surpreso): os dados PODEM
+      constar declarados no rig como referencia futura, mas sem NENHUMA
+      logica de aplicacao nesta CP.
+    - >
+      Modo quadrinhos "ouvir este plano": a trilha continua ja cobre o caso
+      principal.
+    - >
+      Baselines por guardiao + comando "vozes compare" (F0 mediana, taxa
+      silabica, centroide): o voz.lock e o determinismo do Sprint 2 ja dao
+      rastreabilidade; medicao acustica por falante entra depois.
+    - resposta_padrao: >
+        Se um revisor perguntar por esses itens: "backlog da CP-004, proposta
+        como CP-005" -- nao e esquecimento.

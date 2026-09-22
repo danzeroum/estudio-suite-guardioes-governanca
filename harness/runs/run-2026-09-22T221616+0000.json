@@ -1,0 +1,16 @@
+{
+ "achados": [],
+ "falhas": 0,
+ "ok": 211,
+ "por_alvo": {
+  "jornada-dado": {
+   "achados": [],
+   "ok": 14
+  },
+  "legitimo-interesse": {
+   "achados": [],
+   "ok": 6
+  }
+ },
+ "quando": "2026-09-22T22:16:16+00:00"
+}

@@ -76,5 +76,14 @@ Estudio.Rig.registrar({
   },
   estados: { 'normal': {}, 'apagado': { op: .32 } },
 
-  hitbox: [30, 58, 140, 262]
+  hitbox: [30, 58, 140, 262],
+
+  /* Voz — atributo do personagem, como a paleta (CP-004). Parâmetros de
+     partida do Apêndice A; `dublar` traduz ritmo em length_scale do Piper.
+     Pitch é dado declarado: deslocá-lo exigiria reamostrar, e reamostrar é
+     proibido. Sem cliente no motor — quem lê é o estudio_suite. */
+  voz: {
+    registro: 'metódica, sem pressa',
+    pitch: 'medio-grave', ritmo: -0.20, variacao: 'nenhuma'
+  }
 });
