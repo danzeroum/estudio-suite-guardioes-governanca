@@ -87,5 +87,21 @@ Estudio.Rig.registrar({
   },
   estados: { 'normal': {}, 'apagado': { op: .32 } },
 
-  hitbox: [30, 14, 140, 306]
+  hitbox: [30, 14, 140, 306],
+
+  /* Voz — atributo do personagem, como a paleta (CP-004). Parâmetros de
+     partida do Apêndice A; `dublar` traduz ritmo em length_scale do Piper.
+     Pitch é dado declarado: deslocá-lo exigiria reamostrar, e reamostrar é
+     proibido. Sem cliente no motor — quem lê é o estudio_suite.
+     A Raposa tem DOIS registros: o mesmo corpo, dois papéis — como o
+     tingimento `alt` marca o Encarregado na arte, `registros` o marca na
+     voz. O registro entra por papel do elenco do filme. */
+  voz: {
+    registro: 'ágil, calorosa, curiosa',
+    pitch: 'mais-agudo', ritmo: 0.05,
+    registros: {
+      titular:     { pitch: 'mais-agudo', ritmo: 0.05 },
+      encarregado: { pitch: 'medio', ritmo: 0, variacao: 'pouca' }
+    }
+  }
 });

@@ -37,5 +37,11 @@ Estudio.Rig.registrar({
   expressoes: { 'neutro': {} },
   estados: { 'normal': {}, 'apagado': { op: .25 } },
 
-  hitbox: [64, 250, 72, 72]
+  hitbox: [64, 250, 72, 72],
+
+  /* Voz — atributo do personagem, como a paleta (CP-004). O Dado é MUDO
+     por roteiro: quem transporta o filme é a legenda. Earcons (aceso /
+     retraido / citar) são backlog da CP-004, propostos como CP-005 —
+     sintetizados por código, nunca voz. */
+  voz: { mudo: true }
 });
