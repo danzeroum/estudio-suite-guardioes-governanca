@@ -34,7 +34,7 @@
 <main class="est-wrap" style="max-width:920px">
   <h1 style="font-size:26px" id="h1">…</h1>
   <p class="est-nota" style="margin:8px 0 18px">
-    <span id="duracaoTxt"></span>, sem áudio — a legenda carrega toda a informação. Teclado:
+    <span id="duracaoTxt"></span>, <span id="audioTxt">sem áudio</span> — a legenda carrega toda a informação. Teclado:
     <kbd>espaço</kbd> tocar · <kbd>←</kbd><kbd>→</kbd> 5 s · <kbd>J</kbd><kbd>L</kbd> 10 s ·
     <kbd>[</kbd><kbd>]</kbd> plano · <kbd>C</kbd> legendas · <kbd>S</kbd> quadrinhos.
   </p>
@@ -52,6 +52,7 @@
   </div>
   <div class="regua" id="regua" role="group" aria-label="Planos do filme"></div>
   <div class="nav">
+    <button class="est-btn" id="btSom" hidden aria-pressed="false">🔊 Som</button>
     <button class="est-btn" id="btLegendas" aria-pressed="false">💬 Legendas</button>
     <button class="est-btn" id="btModo" aria-pressed="false">🗒️ Modo quadrinhos</button>
   </div>
@@ -80,6 +81,7 @@
 <script src="../motor/js/palco.js"></script>
 <script src="../motor/js/filme.js"></script>
 <script src="../motor/js/relogio.js"></script>
+<script src="../motor/js/audio.js"></script>
 <script src="../motor/js/chassi.js"></script>
 <script src="../motor/js/carregador.js"></script>
 <script src="../motor/js/player.js"></script>
@@ -109,7 +111,7 @@
       filme: qual, palco: 'palco', legenda: 'legenda', selo: 'selo',
       status: 'status', regua: 'regua', titulo: 'titulo', transcricao: 'transcricao',
       scrub: 'scrub', tempo: 'tempo', btPlay: 'btPlay', btLegendas: 'btLegendas',
-      btModo: 'btModo',
+      btModo: 'btModo', btSom: 'btSom',
       /* De onde vem a pagina de cada guardiao. Nao e desta suite: a lei e de
          quem a publica, e lei.lock diz quem. */
       baseGuardiao: (window.ESTUDIO_CONF || {}).baseGuardiao || ''
@@ -119,6 +121,11 @@
     var seg = Math.round(p.filme.duracao);
     document.getElementById('duracaoTxt').textContent =
       seg >= 60 ? (Math.round(seg / 60) + ' minutos') : (seg + ' segundos');
+    /* A camada de som é aditiva (CP-004): a nota não mente — diz que há
+       camada OPCIONAL quando o filme a declara, e mantém a doutrina de que
+       a legenda carrega toda a informação. */
+    document.getElementById('audioTxt').textContent =
+      p._som ? 'com camada de áudio opcional' : 'sem áudio';
     document.getElementById('sumTrans').textContent =
       'Transcrição completa — ' + p.filme.legendas.length + ' falas';
     document.getElementById('lkContato').href = 'folha-de-contato.html?filme=' + qual;
