@@ -127,6 +127,61 @@ def portao_roteiro(fid):
 
 
 # ---- storyboard ------------------------------------------------------------
+def fiscal_redublagem(fid):
+    """O audio deriva da legenda; legenda que mudou sem redublar e divida.
+
+    Mesmo espirito do "editar o filme sem regravar a referencia": audio.json
+    carrega o sha256 do texto NORMALIZADO de cada legenda, e quem edita o
+    texto (ou o tempo) sem rodar `dublar` deixa a divida aqui. Nao ha falso
+    positivo: filme sem audio/ simplesmente nao e fiscalizado -- a camada e
+    aditiva, e o filme mudo continua valido por completo.
+    """
+    import hashlib
+    import json
+    from . import fala
+
+    manifesto = FILMES / fid / "audio" / "audio.json"
+    if not manifesto.exists():
+        return []
+    d = dados_do_filme(fid)
+    gravado = json.loads(manifesto.read_text(encoding="utf-8"))
+    por_chave = {(c["plano"], round(c["em"], 3)): c for c in gravado.get("clipes", [])}
+
+    achados = []
+    cursor = 0.0
+    atuais = 0
+    for P in d["planos"]:
+        for L in P.get("legendas") or []:
+            atuais += 1
+            em = round(cursor + L["em"], 3)
+            c = por_chave.get((P["id"], em))
+            if c is None:
+                achados.append(
+                    f"{P['id']}: legenda em {em:.1f}s nao existe na dublagem — "
+                    f"o audio foi mixado antes desta legenda. Rode: "
+                    f"python3 -m estudio_suite dublar {fid}")
+                continue
+            if abs(c["ate"] - (cursor + L["ate"])) > 0.01:
+                achados.append(
+                    f"{P['id']}: legenda termina em {cursor + L['ate']:.1f}s, mas a "
+                    f"dublagem gravou {c['ate']:.1f}s — o tempo mudou e o audio "
+                    f"continua no tempo antigo. Rode: python3 -m estudio_suite dublar {fid}")
+            texto = fala.normalizar(L["txt"])
+            hash_atual = hashlib.sha256(texto.encode("utf-8")).hexdigest()
+            if c["texto_sha256"] != hash_atual:
+                achados.append(
+                    f"{P['id']}: legenda {em:.1f}s mudou de texto desde a dublagem "
+                    f"(sha256 diverge). Rode: python3 -m estudio_suite dublar {fid}")
+        cursor += P["dur"]
+
+    gravados = len(gravado.get("clipes", []))
+    if gravados > atuais:
+        achados.append(
+            f"a dublagem tem {gravados} clipe(s) para {atuais} legenda(s) — "
+            f"legenda apagada sem redublar. Rode: python3 -m estudio_suite dublar {fid}")
+    return achados
+
+
 def portao_storyboard(fid):
     """O dado existe, e o validador completo passa sobre ele."""
     js = FILMES / fid / f"{fid}.filme.js"
@@ -150,6 +205,8 @@ def portao_storyboard(fid):
     meus = [f for f in _rot.falhas if fid in f]
     outros = [f for f in _rot.falhas if fid not in f]
     _rot.falhas.clear(); _rot.falhas.extend(antes); _rot.checados = antes_n
+    # A dublagem deriva do dado: se o dado mudou, o audio gravado e divida.
+    meus += fiscal_redublagem(fid)
     nota = f"{len(outros)} achado(s) em outros filmes" if outros else ""
     return _v("storyboard", meus, nota=nota)
 
