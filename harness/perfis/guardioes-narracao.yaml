@@ -12,15 +12,31 @@
 #     MONO de voz -- medir cancelamento L/R em mono e medir o vazio),
 #     spectral_health, lra e demais DESCRITORES (regra R1 do audio-suite:
 #     descritor nunca reprova), speech_intelligibility e speech_rate
-#     (calibrar empiricamente antes de travar -- ADR-0002; candidatos ao
-#     Sprint 5 desta CP, com justificativa medida).
+#     (calibrar empiricamente antes de travar -- ADR-0002; candidatos a
+#     calibracao futura com corpus maior).
+#
+# CALIBRACAO (Sprint 5 da CP-004, 2026-09-23, audio-suite local + dublar com
+# true peak alvo em -2.0 dBTP apos a primeira rodada):
+#
+#   jornada-dado        loudness -16.30 LUFS · TP -1.56 dBTP · clip 0.0% · glitch 32.948 (warning)
+#   legitimo-interesse  loudness -16.36 LUFS · TP -1.64 dBTP · clip 0.0% · glitch 10.829 (warning)
+#
+#   Decisoes tomadas com essas medicoes:
+#   1. loudness e true_peak MANTIDOS: as ancoras seguram com margem real
+#      (TP passava por 0.02 dB com o alvo de dublar em -1.5 -- o codificador
+#      opus devolve o pico ~0.48 dB acima do alvo do loudnorm; o alvo de
+#      dublar foi para -2.0, e a folga agora e honesta).
+#   2. glitch PERMANECE warning, sem escalada e sem tunagem: o detector v1
+#      conta eventos de "repeticao" sobre o SILENCIO digital entre clipes
+#      (30s de silencio puro: ~44k eventos -- medido). Tunar
+#      repeat_min_samples nao alcanca runs longos de silencio, e promover a
+#      fail seria reprovar o silencio de proposito. Quando o detector ganhar
+#      contexto de silencio (Fase 2/3 dele), reavaliar COM medicao.
 #
 # Lembra ADR-0002: tolerancia e limiar se DERIVAM de medicao, nao se escolhem.
-# Estes sao os ancoras de PARTIDA declarados na CP-004; o Sprint 5 mede os
-# filmes reais, registra as medicoes no PR e ajusta este arquivo com
-# justificativa. Ajustar sem medir e o anti-padrao que a ADR existe para pegar.
+# Ajustar este arquivo sem medir e o anti-padrao que a ADR existe para pegar.
 name: guardioes-narracao
-version: "1.0.0"
+version: "1.1.0"
 data_classification: internal
 
 analyzers:
