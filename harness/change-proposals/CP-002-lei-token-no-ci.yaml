@@ -1,0 +1,49 @@
+# Mudanca proposta a partir de EVIDENCIA, nao de gosto.
+# Declarada antes de executada; fica como registro mesmo depois.
+schema: estudio-suite/change-proposal@1
+
+proposta:
+  id: CP-002
+  titulo: "Dar ao CI acesso de leitura a lei, por segredo LEI_TOKEN"
+  autor: agente/curador
+  criada_em: "2026-09-22T21:40:00Z"
+  estado: aprovada        # decidido pelo dono; falta so o segredo existir
+
+  sinal:
+    tipo: fiscal-sem-alcance
+    chave: "lei-inalcancavel-no-ci"
+    evidencia: >
+      Quatro execucoes de CI vermelhas em sequencia, todas no mesmo ponto.
+      danzeroum/guardioes-governanca e um repositorio PRIVADO: nenhuma rota
+      anonima o alcanca -- git (pede usuario e morre sem tty),
+      raw.githubusercontent (404) e Pages (404, nao publicado). O GITHUB_TOKEN
+      de um repositorio nao alcanca outro, entao actions/checkout responde
+      "Not Found", que e o mesmo texto de um repositorio inexistente.
+
+      Consequencia medida: no CI, os dois fiscais que dependem da lei nao
+      rodam. Citacao de artigo e atribuicao de guardiao -- as duas coisas que
+      mais caro custou acertar nas sete fases -- ficam sem medicao.
+
+  caminhos_afetados:
+    - .github/workflows/suite.yml        (ja preparado, espera o segredo)
+    - Configuracao do repositorio :: Settings > Secrets > LEI_TOKEN
+
+  risco:
+    nivel: medio
+    porque: >
+      Um segredo a mais para manter, com prazo de validade. Em troca, o CI
+      volta a medir o que importa. A alternativa que nao exige segredo seria
+      copiar a lei para ca -- e copia com uma linha removida faz o validador
+      dizer "nenhum achado" sem erro nem aviso, que e o modo de falhar que
+      lei.lock existe para eliminar.
+
+      Enquanto o segredo nao existe, o gate roda PARCIAL e anuncia isso em
+      toda execucao. Chamar de verde uma validacao que nao mediu citacao seria
+      pior do que ficar vermelho, porque alguem confiaria nela.
+
+  aval_humano_necessario: true
+
+  como_se_prova:
+    - com o segredo, o passo "Trazer a lei" deixa de ser continue-on-error na pratica
+    - o gate roda os cinco fiscais e a saida NAO traz "(PARCIAL: sem a lei)"
+    - sem o segredo, continua parcial e anunciando -- a degradacao nao regride

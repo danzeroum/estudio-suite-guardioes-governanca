@@ -1,0 +1,49 @@
+# Mudanca proposta a partir de EVIDENCIA, nao de gosto.
+schema: estudio-suite/change-proposal@1
+
+proposta:
+  id: CP-003
+  titulo: "Remover estudio/ de guardioes-governanca, que passa a consumir a suite"
+  autor: agente/curador
+  criada_em: "2026-09-22T21:40:00Z"
+  estado: adiada          # decidido: depois de a suite fechar verde no CI
+
+  sinal:
+    tipo: duas-copias
+    chave: "motor-em-dois-lugares"
+    evidencia: >
+      O motor existe hoje em dois repositorios: guardioes-governanca/estudio/
+      (28 arquivos) e nesta suite. As duas copias ja divergiram uma vez, em
+      menos de um dia: o link do selo virou opcao da pagina aqui e continua
+      fixo em '../docs/' la; o carregador dinamico existe so aqui.
+
+      Enquanto as duas existirem, toda correcao precisa ser feita duas vezes --
+      e a segunda e a que se esquece. A correcao da referencia de arte vazia ja
+      teve de ser portada a mao (CP-001).
+
+  caminhos_afetados:
+    - danzeroum/guardioes-governanca :: estudio/ (28 arquivos)
+    - danzeroum/guardioes-governanca :: tools/check-filme.py, test-estudio.py
+    - danzeroum/guardioes-governanca :: tools/baseline/estudio/
+    - danzeroum/guardioes-governanca :: .github/workflows/guardioes.yml
+
+  risco:
+    nivel: alto
+    porque: >
+      Apagar 28 arquivos de um repositorio cujo PR acabou de ser mergeado nao
+      se desfaz sem revert. E o estudio de la funciona e esta testado hoje --
+      nao ha urgencia que justifique pressa.
+
+      Por isso a ordem decidida: sai depois de a suite fechar verde no CI, o
+      que hoje depende da CP-002. Ate la os dois convivem, e o README do
+      estudio na origem ja avisa que a migracao comecou -- quem chega la nao
+      le um estudio que esta saindo sem saber disso.
+
+  aval_humano_necessario: true
+
+  depende_de: CP-002
+
+  como_se_prova:
+    - os fiscais do livro em guardioes-governanca seguem verdes sem o motor
+    - tools/test-links.py e test-regressao.py nao referenciam estudio/
+    - a suite fecha verde nos dois jobs, com a lei medida
