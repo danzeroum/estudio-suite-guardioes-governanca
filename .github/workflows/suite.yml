@@ -25,8 +25,29 @@ jobs:
         with:
           python-version: '3.11'
 
+      # A lei mora num repositorio PRIVADO, e o GITHUB_TOKEN desta suite nao
+      # alcanca outro repositorio. Com o segredo LEI_TOKEN (leitura em
+      # danzeroum/guardioes-governanca), o gate roda inteiro. Sem ele, roda a
+      # parte que nao depende da lei e DIZ que foi parcial -- porque chamar de
+      # verde uma validacao que nao mediu citacao seria pior do que ficar
+      # vermelho.
+      - name: Trazer a lei (quando ha segredo)
+        id: lei
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: danzeroum/guardioes-governanca
+          path: _lei-origem
+          token: ${{ secrets.LEI_TOKEN }}
+
       - name: O gate único
-        run: python3 ci/validar_tudo.py
+        run: |
+          if [ -d _lei-origem/docs/assets/data ]; then
+            python3 ci/validar_tudo.py
+          else
+            echo "::warning::sem LEI_TOKEN — validação parcial, sem medir citações"
+            python3 ci/validar_tudo.py --sem-lei
+          fi
 
       - name: O módulo de automelhorias, nos dois sentidos
         run: python3 tests/test_melhorias.py

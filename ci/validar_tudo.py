@@ -36,7 +36,7 @@ def _passo(nome, fn):
         return 2, buf.getvalue() + f"  ERRO: {nome} nao conseguiu rodar: {e}\n"
 
 
-def _fiscais():
+def _fiscais(com_lei=True):
     from estudio_suite import lei as _lei
     from estudio_suite import roteiro as _rot
     import importlib
@@ -52,18 +52,27 @@ def _fiscais():
     from estudio_suite import orcamento as _orc
     _aud = importlib.import_module("ci.auditar_melhorias")
 
-    return [("lei ancorada", lei),
-            ("roteiros e jogos", _rot.main),
-            ("orcamento de tamanho", _orc.main),
-            ("modulo de automelhorias", _aud.main),
-            ("artefatos derivados", lambda: _sinc.main())]
+    # Os dois primeiros PRECISAM da lei; os tres ultimos, nao. Rodar so os
+    # tres e uma medicao MENOR, e ela e anunciada como tal -- o que nao se
+    # pode e chamar de verde uma validacao que nao mediu o que importa.
+    com = [("lei ancorada", lei), ("roteiros e jogos", _rot.main)]
+    sem = [("orcamento de tamanho", _orc.main),
+           ("modulo de automelhorias", _aud.main),
+           ("artefatos derivados", lambda: _sinc.main())]
+    return (com + sem) if com_lei else sem
 
 
 def main(argv=None) -> int:
     argv = list(argv or [])
+    com_lei = "--sem-lei" not in argv
     sys.argv = [sys.argv[0], "--check"]          # o sincronizador so confere aqui
+    if not com_lei:
+        print("  ATENCAO: rodando SEM a lei. Citacao de artigo e atribuicao de")
+        print("  guardiao NAO foram medidas nesta execucao. Isto e uma validacao")
+        print("  PARCIAL, e dizer que passou seria dizer menos do que parece.")
+        print()
     pior = 0
-    for nome, fn in _fiscais():
+    for nome, fn in _fiscais(com_lei):
         cod, saida = _passo(nome, fn)
         marca = "ok  " if cod == 0 else ("FALHOU" if cod == 1 else "NAO RODOU")
         print(f"[{marca}] {nome}")
@@ -72,7 +81,9 @@ def main(argv=None) -> int:
                 print(f"    {l.strip()}")
         pior = max(pior, cod)
     print()
-    print({0: "  conforme.", 1: "  DIVERGENCIA entre o declarado e o real.",
+    sufixo = "" if com_lei else "  (PARCIAL: sem a lei)"
+    print({0: "  conforme." + sufixo,
+           1: "  DIVERGENCIA entre o declarado e o real." + sufixo,
            2: "  algum fiscal NAO CONSEGUIU fiscalizar."}[pior])
     return pior
 

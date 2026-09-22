@@ -12,7 +12,6 @@ passaria a medir os roteiros contra uma lei que ninguem declarou -- e diria
 import hashlib
 import re
 import shutil
-import subprocess
 from pathlib import Path
 
 from .comum import ErroDeDados, RAIZ, WORKSPACE, json_de_js  # noqa: F401
@@ -58,39 +57,51 @@ def _copiar_de(origem: Path, a: dict) -> bool:
 
 
 def _buscar_do_remoto(a: dict) -> None:
-    repo = WORKSPACE / "lei-git"
-    repo.mkdir(parents=True, exist_ok=True)
-    def git(*args, **kw):
-        return subprocess.run(["git", "-C", str(repo), *args],
-                              capture_output=True, text=True, **kw)
-    if not (repo / ".git").exists():
-        git("init", "-q")
-        git("remote", "add", "origem", a["url"])
-    # Buscar o SHA direto e o caminho barato, e funciona em repositorio
-    # publico quando o commit e alcancavel por um ref. Quando o servidor
-    # recusa, buscar o ref e resolver dali custa mais rede e da no mesmo --
-    # e a alternativa seria exigir um token para ler dado publico.
-    r = git("fetch", "--depth", "1", "origem", a["sha"])
-    if r.returncode != 0:
-        alt = git("fetch", "--depth", "50", "origem", "HEAD")
-        if alt.returncode == 0:
-            r = git("rev-parse", "--verify", a["sha"] + "^{commit}")
-            if r.returncode == 0:
-                git("update-ref", "FETCH_HEAD", a["sha"])
-        if r.returncode != 0:
-            raise ErroDeDados(
-                f"nao consegui buscar a lei em {a['repo']} no commit {a['sha'][:12]}.\n"
-                f"  git: {(r.stderr or '').strip()[:200]}\n"
-                f"  Sem rede? Deixe um checkout de {a['repo']} ao lado desta suite,\n"
-                f"  ou em _lei-origem/ dentro dela."
-            )
+    """Baixa cada arquivo ancorado por HTTPS simples, no commit exato.
+
+    Nao usa git. O protocolo git pedindo um SHA solto faz o GitHub responder
+    de um jeito que leva o cliente a pedir usuario -- e num runner sem tty isso
+    vira "could not read Username", que nao se parece nem um pouco com a causa.
+    Foi assim que quatro execucoes de CI morreram.
+
+    raw.githubusercontent.com serve o arquivo NO COMMIT, sem autenticacao e sem
+    clonar a arvore inteira. E o hash de lei.lock que decide se o que chegou
+    serve: a origem do byte importa menos do que ele ser o byte declarado.
+    """
+    import urllib.error
+    import urllib.request
+
+    dono_repo = a["repo"]
     for rel in a["arquivos"]:
-        r = git("checkout", "FETCH_HEAD", "--", rel)
-        if r.returncode != 0:
-            raise ErroDeDados(f"o commit ancorado nao tem '{rel}': {(r.stderr or '').strip()[:160]}")
+        url = f"https://raw.githubusercontent.com/{dono_repo}/{a['sha']}/{rel}"
+        try:
+            with urllib.request.urlopen(url, timeout=30) as r:
+                dados = r.read()
+        except urllib.error.HTTPError as e:
+            extra = ""
+            if e.code in (401, 403, 404):
+                # 404 do GitHub cobre "nao existe" E "voce nao pode ver".
+                # danzeroum/guardioes-governanca e PRIVADO, entao esta rota
+                # anonima nunca serve para ele -- e dizer "sem rede" aqui
+                # mandaria quem le procurar o problema no lugar errado.
+                extra = (f"\n  {dono_repo} pode ser privado: esta rota e anonima e "
+                         f"nao ve repositorio fechado.\n"
+                         f"  Deixe um checkout dele ao lado desta suite, ou em "
+                         f"_lei-origem/ dentro dela.\n"
+                         f"  No CI, isso exige um segredo com permissao de leitura.")
+            raise ErroDeDados(
+                f"nao consegui baixar '{rel}' de {dono_repo} no commit "
+                f"{a['sha'][:12]}: HTTP {e.code}.{extra}"
+            ) from None
+        except Exception as e:
+            raise ErroDeDados(
+                f"nao consegui alcancar {dono_repo} para buscar a lei: {e}\n"
+                f"  Sem rede? Deixe um checkout de {dono_repo} ao lado desta "
+                f"suite, ou em _lei-origem/ dentro dela."
+            ) from None
         alvo = DESTINO / rel
         alvo.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(repo / rel, alvo)
+        alvo.write_bytes(dados)
 
 
 def materializar(forcar: bool = False) -> Path:
