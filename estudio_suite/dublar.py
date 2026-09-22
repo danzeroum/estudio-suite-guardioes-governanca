@@ -68,28 +68,67 @@ def _bloco(txt: str, campo: str):
 
 
 def _pares_simples(bloco: str) -> dict:
-    """Chaves de valor simples (string ou numero) de um bloco literal."""
+    """Chaves de valor simples (string ou numero) de um bloco literal.
+
+    As chaves nos rigs vem SEM aspas (objeto literal JS); os valores, entre
+    aspas simples ou numericos. A versao da CP-004 so casava chave entre
+    aspas -- chave que nenhum rig usa -- e o bloco voltava {}: o ritmo
+    declarado de cada guardiao (Coruja -0.10, Elefante -0.15, Tartaruga
+    -0.20, Raposa +0.05) era silenciosamente ignorado, e tudo sintetizava
+    em length_scale 1.0. Descoberto ao estender a leitura para o sub-bloco
+    timbre da CP-005; corrigido aqui, com teste de regressao que le os rigs
+    REAIS em tests/test_amostras.py. O declarado e o real tem de ser a
+    mesma coisa -- e isso que o lock existe para garantir.
+    """
     out = {}
-    for m in re.finditer(r"'([\w-]+)':\s*('[^']*'|[-\d.]+)", bloco):
+    for m in re.finditer(r"(?<![\w'-])([\w-]+):\s*('[^']*'|[-\d.]+)", bloco):
         v = m.group(2)
         out[m.group(1)] = v[1:-1] if v.startswith("'") else float(v)
     return out
 
 
+def _tirar_subbloco(bloco: str, campo: str) -> str:
+    """Apaga o par 'campo: {...}' de primeiro nivel do bloco.
+
+    Sem isso, as chaves DENTRO do sub-bloco (ex.: o ritmo de um registro da
+    Raposa) casariam como se fossem do nivel de cima, e a ultima ocorrencia
+    no texto sobrescreveria o valor declarado no topo. O sub-bloco volta
+    depois, lido separado.
+    """
+    m = re.search(rf"\b{campo}:\s*\{{", bloco)
+    if not m:
+        return bloco
+    i, nivel = m.end() - 1, 0
+    for j in range(i, len(bloco)):
+        nivel += (bloco[j] == "{") - (bloco[j] == "}")
+        if nivel == 0:
+            return bloco[:m.start()] + bloco[j + 1:]
+    return bloco
+
+
 def voz_do_rig(rig_id: str) -> dict:
-    """O bloco voz {...} de um *.rig.js. Voz e atributo do personagem."""
+    """O bloco voz {...} de um *.rig.js. Voz e atributo do personagem.
+
+    Sub-blocos conhecidos: registros (Raposa, por papel do elenco) e timbre
+    (CP-005: portadora/mistura/bandas -- dado declarado, ainda sem logica
+    de aplicacao nesta leitura).
+    """
     f = RAIZ / "motor/js/rigs" / f"{rig_id}.rig.js"
     if not f.exists():
         return {}
     bloco = _bloco(f.read_text(encoding="utf-8"), "voz")
     if not bloco:
         return {}
-    base = _pares_simples(bloco)
     regs = _bloco(bloco, "registros")
+    tim = _bloco(bloco, "timbre")
+    raso = _tirar_subbloco(_tirar_subbloco(bloco, "registros"), "timbre")
+    base = _pares_simples(raso)
     if regs:
         base["registros"] = {_sem_acento(k): _pares_simples(v)
                              for k, v in re.findall(
                                  r"(\w+):\s*(\{[^{}]*\})", regs)}
+    if tim:
+        base["timbre"] = _pares_simples(tim)
     return base
 
 

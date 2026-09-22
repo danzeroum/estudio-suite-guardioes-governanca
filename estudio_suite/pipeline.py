@@ -191,6 +191,55 @@ def fiscal_redublagem(fid):
     return achados
 
 
+def fiscal_amostras(fid):
+    """Portadora de timbre em uso tem de estar ancorada no amostras.lock (CP-005).
+
+    Som de terceiro sem ancora e pirataria em potencial -- e dublar com
+    portadora "parecida" produziria um timbre que ninguem revisou. O fiscal
+    ve o que o filme USA (o rig de quem fala em cada legenda) e confere se a
+    portadora declarada no bloco voz.timbre do rig tem entrada no lock.
+    Filme cujo elenco nao declara timbre simplesmente nao e fiscalizado --
+    a camada e aditiva, e a CP-005 aplica timbre a nenhum filme ainda.
+    """
+    from . import amostras as _am
+    from .dublar import voz_do_rig
+
+    d = dados_do_filme(fid)
+    rigs_em_uso = set()
+    for P in d["planos"]:
+        for L in P.get("legendas") or []:
+            quem = L.get("quem")
+            if quem:
+                rig = (d.get("elenco", {}).get(quem) or {}).get("rig")
+            else:
+                rig = P.get("guardiao")
+            if rig:
+                rigs_em_uso.add(rig)
+
+    declarados = {}
+    for rig in sorted(rigs_em_uso):
+        t = (voz_do_rig(rig) or {}).get("timbre") or {}
+        if t.get("portadora"):
+            declarados[rig] = t["portadora"]
+    if not declarados:
+        return []
+
+    try:
+        ancoradas = _am.ancora()
+    except Exception as e:
+        return [f"o elenco declara timbre, mas a ancora falhou: {e}"]
+
+    achados = []
+    for rig, portadora in sorted(declarados.items()):
+        if portadora not in ancoradas:
+            achados.append(
+                f"{rig}: o bloco voz.timbre declara a portadora '{portadora}', "
+                f"que NAO consta em amostras.lock -- som sem ancora e pirataria "
+                f"em potencial. Ancore a portadora (lock + change-proposal, com "
+                f"licenca verificada) ou remova o timbre do rig.")
+    return achados
+
+
 def portao_storyboard(fid):
     """O dado existe, e o validador completo passa sobre ele."""
     js = FILMES / fid / f"{fid}.filme.js"
@@ -216,6 +265,9 @@ def portao_storyboard(fid):
     _rot.falhas.clear(); _rot.falhas.extend(antes); _rot.checados = antes_n
     # A dublagem deriva do dado: se o dado mudou, o audio gravado e divida.
     meus += fiscal_redublagem(fid)
+    # O timbre deriva de portadora de terceiros: sem entrada no lock, e divida
+    # tambem -- e a divida que a CP-005 nao deixa ouvir (pirataria em potencial).
+    meus += fiscal_amostras(fid)
     nota = f"{len(outros)} achado(s) em outros filmes" if outros else ""
     return _v("storyboard", meus, nota=nota)
 
