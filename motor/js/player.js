@@ -20,6 +20,10 @@
 
   E.Player = function (opc) {
     var el = {}, filme, palco, modo = 'movimento';
+    /* A camada de som (CP-004): escrava do tempo, nunca dona dele. Nasce
+       desligada e só existe quando o filme DECLARA ter trilha — o campo
+       audio: true no dado, o mesmo que o portão de sonorizacao lê. */
+    var som = null;
     /* O selo leva a pagina do guardiao, que NAO e desta suite: a lei e de
        quem a publica. O prefixo entra por opcao, e a pagina o declara a
        partir de lei.lock -- fixar '../docs/' aqui amarrava o motor ao
@@ -53,10 +57,12 @@
       if (relogio.tocando() || modo === 'quadrinhos') return;
       if (agora() >= filme.duracao) irPara(0);
       relogio.tocar();
+      if (som) som.tocar();
       cromo(); anunciar('Tocando');
     }
     function parar(quieto) {
       relogio.parar();
+      if (som) som.pausar();
       cromo(); if (!quieto) anunciar('Pausado');
     }
     function alternar() { relogio.tocando() ? parar() : tocar(); }
@@ -92,6 +98,7 @@
     function cromo() {
       var t = agora(), i = filme.planoIndice(t), P = filme.planos[i];
       var q = modo === 'quadrinhos';
+      if (som) som.porQuadro(t, relogio.tocando(), q);
 
       if (P !== planoAtual) {
         planoAtual = P;
@@ -180,9 +187,18 @@
     /* ---- construção -------------------------------------------------- */
     try {
       ['palco', 'legenda', 'status', 'regua', 'titulo', 'selo', 'transcricao',
-       'scrub', 'tempo', 'btPlay', 'btLegendas', 'btModo'].forEach(function (k) { el[k] = id(k); });
+       'scrub', 'tempo', 'btPlay', 'btLegendas', 'btModo', 'btSom'].forEach(function (k) { el[k] = id(k); });
       palco = E.Palco.criar(el.palco);
       filme = E.Filme.carregar(opc.filme, { palco: palco, tema: opc.tema || 'claro' });
+      if (el.btSom && filme.dados.audio && E.Som) {
+        som = E.Som.criar({ bt: el.btSom, filme: filme,
+                            base: opc.baseAudio || '../', anunciar: anunciar });
+        el.btSom.addEventListener('click', function () {
+          /* silencioso quando o filme nao esta tocando: armar sem tocar.
+             O audio nunca avança sem o filme (CP-004, escravo do tempo). */
+          som.alternar(modo === 'quadrinhos' || !relogio.tocando());
+        });
+      }
 
       E.Chassi.regua(el.regua, filme, irPlano);
       E.Chassi.transcricao(el.transcricao, filme, function (t) {
@@ -262,6 +278,7 @@
       tocando: relogio.tocando,
       modo: function () { return modo; },
       indice: function () { return filme.planoIndice(agora()); },
+      _som: som,                /* o hook de teste, como _raf e _quadro */
       _raf: relogio._raf,
       _quadro: relogio._quadro
     };

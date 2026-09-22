@@ -21,6 +21,7 @@ orcamento:
     motor/js/props.js: 5120
     motor/js/filme.js: 6144
     motor/js/relogio.js: 2048
+    motor/js/audio.js: 2048
     motor/js/chassi.js: 2048
     motor/js/carregador.js: 2048
     motor/js/player.js: 5120

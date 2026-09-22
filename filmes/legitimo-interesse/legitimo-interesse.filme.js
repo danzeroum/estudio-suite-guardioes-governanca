@@ -11,6 +11,7 @@ window.ESTUDIO_FILMES=window.ESTUDIO_FILMES||{};window.ESTUDIO_FILMES["legitimo-
  "id": "legitimo-interesse",
  "titulo": "O teste do legítimo interesse",
  "duracao": 42,
+ "audio": true,
  "palco": {
   "w": 1280,
   "h": 720
