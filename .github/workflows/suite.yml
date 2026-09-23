@@ -96,6 +96,11 @@ jobs:
       - name: A carteira de voz (CP-005)
         run: python3 tests/test_vozes.py
 
+      # CP-006: a prosodia expressiva. Ordem da cadeia em snapshot, duracao
+      # preservada, neutro byte-identico, pitch declarado-nao-aplicado.
+      - name: A prosodia expressiva (CP-006)
+        run: python3 tests/test_prosodia.py
+
       # CP-004: o sexto portao. A audio-suite NAO esta instalada no runner:
       # o portao devolve INDECISO, publicado por filme, e o build SEGUE --
       # so FINDING (saida 1) reprova. "Nao consegui medir" nao e "esta errado",

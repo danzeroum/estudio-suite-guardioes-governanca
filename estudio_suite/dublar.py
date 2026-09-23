@@ -14,11 +14,18 @@ CP-004 ate o mix, a CP-005 acrescentando o estagio de timbre:
    ancorada em amostras.lock, o clipe passa pelo vocoder de canais DEPOIS
    do piper e ANTES de posicionar -- fala -> piper -> timbre -> posicionar
    -> mixar. mistura 0 devolve o clipe intocado, byte a byte.
-5. EARCONS do Dado (CP-005): os momentos do Dado que JA existem como dado
+5. PROSODIA (CP-006): a batida de expressao do filme (acao {alvo,
+   expressao, em, dur} no MESMO rig do falante, janela sobreposta a da
+   legenda) modula a voz ANTES do timbre: delta de ritmo entra pelo
+   length_scale do Piper (sintese nativa, nunca time-stretch do audio),
+   ganho entra como envelope deterministico, e pitch fica DECLARADO no
+   manifesto enquanto pyworld nao for aprovado. A ordem e fixa e datada:
+   fala -> piper -> PROSODIA -> TIMBRE -> posicionar -> mixar.
+6. EARCONS do Dado (CP-005): os momentos do Dado que JA existem como dado
    no filme (pose aceso/retraido, evento citar, aceso visual via para.op=1)
    ganham carimbo sintetizado de sons/, a ~-10 dB sob a voz (ganho fixo),
    posicionados pelo `em` da acao. O Dado continua mudo: earcon nao e voz.
-6. Um clipe por legenda, posicionado no seu `em` absoluto, mixado com
+7. Um clipe por legenda, posicionado no seu `em` absoluto, mixado com
    loudness ancorado (-16 LUFS, true peak -2.0 dBTP) em <id>.opus 48 kHz mono.
 
 Determinismo: piper 1.3 amostra ruido do prior (noise_scale / noise_w_scale).
@@ -41,6 +48,7 @@ from pathlib import Path
 
 from .comum import ErroDeDados, FILMES, RAIZ, dados_do_filme
 from . import fala
+from . import prosodia as _pros
 from . import voz as _voz
 
 # Loudness de ancora da CP-004 (calibrado no Sprint 5 contra a audio-suite:
@@ -323,7 +331,12 @@ def dublar(fid: str) -> int:
     for P in d["planos"]:
         for L in P.get("legendas") or []:
             texto, ritmo, rotulo, tim = quem_fala(P, L, elenco)
-            pcm, dur = sintetizar(voice, texto, ritmo)
+            expressao = _pros.expressao_da_fala(P, L, elenco)
+            pcm, dur = sintetizar(voice, texto, _pros.ritmo_total(ritmo, expressao))
+            # ordem fixa da cadeia (CP-006, snapshot em test_prosodia):
+            # a voz nasce expressiva e SO ENTAO o animal entra por cima.
+            pcm = _pros.aplicar_ganho(pcm,
+                                      _pros.EXPRESSOES.get(expressao, {}).get("ganho_db", 0.0))
             if tim:
                 from . import timbre as _tim
                 pcm = _tim.aplicar(pcm, wavs_amostras[tim["portadora"]],
@@ -352,6 +365,9 @@ def dublar(fid: str) -> int:
                     "bandas": int(tim.get("bandas", 16) or 16),
                     "portadora_sha256": _am.ancora()[tim["portadora"]]["sha256"],
                 }
+            mani_pros = _pros.manifesto(expressao)
+            if mani_pros is not None:
+                mani["prosodia"] = mani_pros
             manifestos.append(mani)
         cursor += P["dur"]
 
@@ -398,6 +414,14 @@ def dublar(fid: str) -> int:
     timbrados = sum(1 for c in manifestos if c.get("timbre"))
     if timbrados:
         print(f"  timbre: {timbrados} clipe(s) com portadora animal (vocoder de canais)")
+    expressivos = {}
+    for c in manifestos:
+        e = (c.get("prosodia") or {}).get("expressao")
+        if e and e != "neutro":
+            expressivos[e] = expressivos.get(e, 0) + 1
+    if expressivos:
+        detalhe = ", ".join(f"{v} clipe(s) {k}" for k, v in sorted(expressivos.items()))
+        print(f"  prosodia: {detalhe} (pitch declarado, nao aplicado sem pyworld)")
     if earcons_agenda:
         print(f"  earcons do Dado: {len(earcons_agenda)} momento(s) a {GANHO_EARCON_DB} dB")
     print(f"  loudness ancorado em {LOUDNESS_LUFS} LUFS / true peak "

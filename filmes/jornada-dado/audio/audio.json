@@ -112,7 +112,7 @@
    "plano": "p04",
    "em": 24.3,
    "ate": 28.5,
-   "dur": 2.009,
+   "dur": 1.962,
    "voz": "raposa",
    "texto_sha256": "39fd93c44029c7a10971ac0003680b8239d1ac883354b51151682f88b98aa46a",
    "timbre": {
@@ -120,6 +120,13 @@
     "mistura": 0.35,
     "bandas": 16,
     "portadora_sha256": "0369b103ca84aca6605052b9825db53c33e3e8ad35806f39039be53089d08657"
+   },
+   "prosodia": {
+    "expressao": "feliz",
+    "ritmo": 0.04,
+    "ganho_db": 1.0,
+    "pitch_st": 1.0,
+    "pitch_aplicado": false
    }
   },
   {
@@ -262,7 +269,7 @@
    "plano": "p08",
    "em": 73.6,
    "ate": 77.4,
-   "dur": 2.136,
+   "dur": 2.078,
    "voz": "elefante",
    "texto_sha256": "099b668b13e332422d4bd71a46674d544e0dba32494e6b73a8f9bc06bdd4b3ba",
    "timbre": {
@@ -270,6 +277,13 @@
     "mistura": 0.35,
     "bandas": 16,
     "portadora_sha256": "07112f7433e00e4193483382f11d77bec23257ee615385e12aa0becae4d4cbbd"
+   },
+   "prosodia": {
+    "expressao": "feliz",
+    "ritmo": 0.04,
+    "ganho_db": 1.0,
+    "pitch_st": 1.0,
+    "pitch_aplicado": false
    }
   },
   {
@@ -332,7 +346,7 @@
    "plano": "p10",
    "em": 91.3,
    "ate": 94.6,
-   "dur": 1.602,
+   "dur": 1.776,
    "voz": "elefante",
    "texto_sha256": "21e32989191bf4b425b8f4736c63fd630fec930a8cfca92b2a264860a8168dd9",
    "timbre": {
@@ -340,6 +354,13 @@
     "mistura": 0.35,
     "bandas": 16,
     "portadora_sha256": "07112f7433e00e4193483382f11d77bec23257ee615385e12aa0becae4d4cbbd"
+   },
+   "prosodia": {
+    "expressao": "preocupado",
+    "ritmo": -0.08,
+    "ganho_db": -2.5,
+    "pitch_st": 0.0,
+    "pitch_aplicado": false
    }
   },
   {
@@ -354,6 +375,13 @@
     "mistura": 0.35,
     "bandas": 16,
     "portadora_sha256": "07112f7433e00e4193483382f11d77bec23257ee615385e12aa0becae4d4cbbd"
+   },
+   "prosodia": {
+    "expressao": "neutro",
+    "ritmo": 0.0,
+    "ganho_db": 0.0,
+    "pitch_st": 0.0,
+    "pitch_aplicado": false
    }
   },
   {
@@ -368,6 +396,13 @@
     "mistura": 0.35,
     "bandas": 16,
     "portadora_sha256": "07112f7433e00e4193483382f11d77bec23257ee615385e12aa0becae4d4cbbd"
+   },
+   "prosodia": {
+    "expressao": "neutro",
+    "ritmo": 0.0,
+    "ganho_db": 0.0,
+    "pitch_st": 0.0,
+    "pitch_aplicado": false
    }
   },
   {

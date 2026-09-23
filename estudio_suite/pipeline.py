@@ -224,6 +224,28 @@ def fiscal_redublagem(fid):
                     f"{P['id']}: legenda {em:.1f}s tem timbre divergente entre o rig "
                     f"e a dublagem ({'; '.join(detalhe)}). Rode: "
                     f"python3 -m estudio_suite dublar {fid}")
+            # prosodia (CP-006): a expressao deriva do dado do filme; batida
+            # que mudou sem redublar e a mesma divida das outras camadas.
+            from .prosodia import expressao_da_fala, manifesto as _mpro
+            esperado_pros = _mpro(expressao_da_fala(P, L, d.get("elenco", {})))
+            gravado_pros = c.get("prosodia")
+            if esperado_pros is None and gravado_pros:
+                achados.append(
+                    f"{P['id']}: legenda {em:.1f}s foi dublada COM prosodia "
+                    f"({gravado_pros.get('expressao')}), mas a batida de expressao "
+                    f"do falante nao existe mais no filme. Rode: "
+                    f"python3 -m estudio_suite dublar {fid}")
+            elif esperado_pros is not None and not gravado_pros:
+                achados.append(
+                    f"{P['id']}: legenda {em:.1f}s ganhou expressao "
+                    f"'{esperado_pros['expressao']}' no filme desde a dublagem. "
+                    f"Rode: python3 -m estudio_suite dublar {fid}")
+            elif esperado_pros is not None and gravado_pros != esperado_pros:
+                achados.append(
+                    f"{P['id']}: legenda {em:.1f}s tem prosodia divergente entre o "
+                    f"filme e a dublagem ({gravado_pros.get('expressao')} gravada, "
+                    f"{esperado_pros['expressao']} esperada — ou o mapa em "
+                    f"prosodia.py mudou). Rode: python3 -m estudio_suite dublar {fid}")
         cursor += P["dur"]
 
     gravados = len(gravado.get("clipes", []))
