@@ -88,9 +88,13 @@ def _filme_fantasma():
 
 
 def _dublagem(clipes, earcons=None):
+    # O ambiente do lock via junto: dublagem "em dia" desde a CP-007 nasce
+    # com ele -- o fantasma em sincronia carrega o que o dublar gravaria.
+    from estudio_suite import voz as _voz
     d = FILMES / FANTASMA / "audio"
     d.mkdir(parents=True, exist_ok=True)
-    manifesto = {"filme": FANTASMA, "clipes": clipes}
+    manifesto = {"filme": FANTASMA, "clipes": clipes,
+                 "ambiente": _voz.ancora()["ambiente"]}
     if earcons is not None:
         manifesto["earcons"] = earcons
     (d / "audio.json").write_text(

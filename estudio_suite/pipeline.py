@@ -20,6 +20,7 @@ Portao que nao consegue decidir NAO devolve verde. Ele devolve `indeciso`, que
 e um terceiro estado -- porque "o navegador nao estava disponivel" e "o filme
 esta correto" sao coisas diferentes, e colapsa-las faz a leitura barata vencer.
 """
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -159,6 +160,36 @@ def fiscal_redublagem(fid):
     gravado = json.loads(manifesto.read_text(encoding="utf-8"))
     por_chave = {(c["plano"], round(c["em"], 3)): c for c in gravado.get("clipes", [])}
 
+    # CP-007: o audio.json nasce com o ambiente que sintetizou (as versoes
+    # efetivas, == voz.lock por construcao). Sem o campo, a dublagem e de
+    # ambiente desconhecido; com ambiente divergente do lock, o audio
+    # commitado nao e o que o lock reproduz -- as duas coisas sao divida,
+    # e a divida se resolve com o mesmo comando das outras.
+    from . import voz as _voz
+    try:
+        esperado_amb = _voz.ancora()["ambiente"]
+    except Exception as e:
+        esperado_amb = None
+        achados_ambiente = [f"o voz.lock nao entrega o bloco ambiente ({e})"]
+    else:
+        gravado_amb = gravado.get("ambiente")
+        if not gravado_amb:
+            achados_ambiente = [
+                f"audio.json sem o campo ambiente — dublagem de ambiente nao "
+                f"ancorado (CP-007). Rode: python3 -m estudio_suite dublar {fid}"]
+        elif gravado_amb != esperado_amb:
+            detalhe = []
+            for k in sorted(set(gravado_amb) | set(esperado_amb)):
+                if gravado_amb.get(k) != esperado_amb.get(k):
+                    detalhe.append(
+                        f"{k}: {gravado_amb.get(k)} gravado, "
+                        f"{esperado_amb.get(k)} no lock")
+            achados_ambiente = [
+                f"o ambiente da dublagem diverge do voz.lock ({'; '.join(detalhe)})"
+                f". Rode: python3 -m estudio_suite dublar {fid}"]
+        else:
+            achados_ambiente = []
+
     from . import amostras as _am
     try:
         shas_de_lock = {k: v["sha256"] for k, v in _am.ancora().items()}
@@ -176,7 +207,7 @@ def fiscal_redublagem(fid):
             "portadora_sha256": shas_de_lock.get(tim["portadora"], None),
         }
 
-    achados = []
+    achados = list(achados_ambiente)
     cursor = 0.0
     atuais = 0
     for P in d["planos"]:
@@ -400,6 +431,19 @@ def _tem_audio_suite() -> bool:
     return shutil.which("audio-suite") is not None
 
 
+def _exige_audio_suite() -> bool:
+    """O ambiente PROMETEU a audio-suite (CP-007: o job do CI promete).
+
+    ESTUDIO_EXIGIR_AUDIO_SUITE=1 e promessa local e explicita: quem a fez
+    instalou a ferramenta (pinada por SHA) e quer que a ausencia dela
+    REPROVE -- no CI, a medicao e contrato do job, e promessa quebrada e
+    divida de infraestrutura. Na maquina local sem a variavel, o INDECISO
+    nomeado segue de pe: "nao consegui medir" continua nao sendo "esta
+    errado".
+    """
+    return os.environ.get("ESTUDIO_EXIGIR_AUDIO_SUITE") == "1"
+
+
 def _publicar_sonorizacao(fid, estado, medidas=None, nota=""):
     """O estado do portao vira evidencia no relatorio.json do filme.
 
@@ -458,6 +502,14 @@ def portao_sonorizacao(fid):
             f"a declaracao e o contrato da camada aditiva. Decida: declare, ou apague."])
 
     if not _tem_audio_suite():
+        if _exige_audio_suite():
+            _publicar_sonorizacao(fid, "vermelho", nota="audio-suite exigida e ausente")
+            return _v("sonorizacao", [
+                "ESTUDIO_EXIGIR_AUDIO_SUITE=1 promete a audio-suite, e ela nao "
+                "esta no PATH — neste ambiente a ausencia da ferramenta e "
+                "promessa quebrada (VERMELHO), nao INDECISO. Instale a "
+                "audio-suite (isolada, pinada por SHA) ou desfaca a promessa."],
+                nota="audio-suite exigida (ESTUDIO_EXIGIR_AUDIO_SUITE=1) e ausente")
         _publicar_sonorizacao(fid, "indeciso", nota="audio-suite ausente")
         return _v("sonorizacao", [], indeciso=True,
                   nota="audio-suite ausente — NAO consigo medir (INDECISO, "
@@ -506,10 +558,15 @@ def portao_sonorizacao(fid):
         pass                                   # saida ilegivel cai no mapa abaixo
 
     if r.returncode == 0:
+        # LUFS e true peak na frente: sao a ancora que um humano le, e a
+        # CP-007 pediu as medidas reais publicadas por filme no portao.
+        destaque = [k for k in ("loudness.integrated_loudness",
+                                "true_peak.true_peak") if k in medidas]
+        destaque += [k for k in sorted(medidas) if k not in destaque][:1]
         _publicar_sonorizacao(fid, "verde", medidas, "dentro das ancoras do perfil")
-        return _v("sonorizacao", [], nota="trilha dentro das ancoras do perfil "
-                                          + " · ".join(f"{k}={v}" for k, v in
-                                                       sorted(medidas.items())[:3]))
+        return _v("sonorizacao", [],
+                  nota="trilha dentro das ancoras do perfil "
+                       + " · ".join(f"{k}={medidas[k]}" for k in destaque))
     if r.returncode == 1:
         _publicar_sonorizacao(fid, "vermelho", medidas, "audio-suite reprovou")
         return _v("sonorizacao", reprovas or ["audio-suite reprovou a trilha"],

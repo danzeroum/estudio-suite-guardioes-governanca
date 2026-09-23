@@ -5,7 +5,12 @@ CP-004 ate o mix, a CP-005 acrescentando o estagio de timbre:
 
 1. A legenda e a UNICA fonte. Nao ha roteiro de audio: o texto e
    fala.normalizar(txt), e quem fala vem de `quem`/`plano.guardiao`/Narrador.
-2. O modelo e o do voz.lock, conferido por sha256 ANTES de sintetizar.
+2. O modelo E O AMBIENTE sao os do voz.lock, conferidos ANTES de
+   sintetizar e de escrever qualquer arquivo (CP-007): pesos iguais em
+   ambiente diferente produzem .opus diferente -- medido, duracoes
+   deslocam ate +0,08 s em outra maquina, e a menor folga da jornada e
+   0,07 s. Divergencia levanta ErroDeDados nomeando pacote, versao
+   esperada, instalada e o comando que corrige. Sem contorno.
 3. Clipe que estoura o tempo da legenda REPROVA, apontando a legenda exata.
    Nao estica, nao reamostra para caber: encurta-se a legenda. (Converter a
    taxa 22050->48000 e mudanca de FORMATO, com duracao identica -- isso o
@@ -321,8 +326,14 @@ def _clipes_por_plano(opus: Path, d: dict, dir_audio: Path, fid: str) -> list:
 
 def dublar(fid: str) -> int:
     d = dados_do_filme(fid)
-    base = _voz.materializar()
+    # CP-007: o ambiente e conferido ANTES de materializar o modelo -- nem
+    # o workspace e tocado em ambiente divergente. O lock de pesos responde
+    # "que modelo"; o de ambiente responde "com o que ele rodou": sem os
+    # dois, redublagem em outra maquina mudaria bytes de clipe que ninguem
+    # editou, e o diff mentiria sobre o que mudou.
     a = _voz.ancora()
+    amb = _voz.conferir_ambiente(a["ambiente"])
+    base = _voz.materializar()
     onnx = base / f"{a['nome']}.onnx"
 
     try:
@@ -331,8 +342,8 @@ def dublar(fid: str) -> int:
         raise ErroDeDados(
             "piper-tts nao esta instalado. O dublar e offline e local:\n"
             "  pip install piper-tts\n"
-            "  (no CI ele nao roda: o portao de sonorizacao cai em INDECISO, "
-            "nunca quebra o build)") from None
+            "  (no CI ele nao roda: o portao de sonorizacao mede a trilha "
+            "commitada pela audio-suite, nao sintetiza)") from None
     voice = PiperVoice.load(onnx)
 
     elenco = d.get("elenco", {})
@@ -434,6 +445,11 @@ def dublar(fid: str) -> int:
         "modelo": {"nome": a["nome"],
                    "sha256_onnx": a["arquivos"][f"{a['nome']}.onnx"],
                    "sha256_json": a["arquivos"][f"{a['nome']}.onnx.json"]},
+        # CP-007: as versoes efetivas que assinaram estes bytes, == voz.lock
+        # por construcao (a conferencia levanta na divergencia). O fiscal de
+        # redublagem cobra este campo contra o lock: dublagem de ambiente
+        # desconhecido e divida, como texto editado sem redublar.
+        "ambiente": amb,
         "mix": {"arquivo": opus.name, "taxa_hz": TAXA, "canais": CANAIS,
                 "loudness_alvo_lufs": LOUDNESS_LUFS,
                 "true_peak_alvo_dbtp": TRUE_PEAK_DBTP},
@@ -467,6 +483,9 @@ def dublar(fid: str) -> int:
         print(f"  earcons do Dado: {len(earcons_agenda)} momento(s) a {GANHO_EARCON_DB} dB")
     if quadrinhos:
         print(f"  quadrinhos: {len(quadrinhos)} clipe(s) por plano com fala (modo \"ouvir este plano\")")
+    print(f"  ambiente do lock conferido: python {amb['python']}, piper-tts "
+          f"{amb['piper-tts']}, onnxruntime {amb['onnxruntime']}, "
+          f"numpy {amb['numpy']}/scipy {amb['scipy']}, ffmpeg {amb['ffmpeg']}")
     print(f"  loudness ancorado em {LOUDNESS_LUFS} LUFS / true peak "
           f"{TRUE_PEAK_DBTP} dBTP; manifesto em audio/audio.json")
     return 0

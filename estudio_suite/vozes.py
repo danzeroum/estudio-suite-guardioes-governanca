@@ -18,9 +18,13 @@ errada".
 
 A audio-suite e CLI externa (codigo dela nunca e copiado). Sem o binario,
 a carteira NAO consegue medir: INDECISO nomeado, exit 2 -- o mesmo contrato
-do portao de sonorizacao.
+do portao de sonorizacao. EXCECAO (CP-007): quando o ambiente PROMETE a
+ferramenta (ESTUDIO_EXIGIR_AUDIO_SUITE=1, o job do CI), a ausencia vira
+VERMELHO, exit 1 -- promessa quebrada e divida de infraestrutura, nao
+julgamento de descritor: o R1 continua valendo para o que se mediu.
 """
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -38,6 +42,11 @@ TAXA, CANAIS = 48000, 1
 
 def _tem_audio_suite() -> bool:
     return shutil.which("audio-suite") is not None
+
+
+def _exige_audio_suite() -> bool:
+    """O ambiente prometeu a ferramenta (CP-007): o job do CI promete."""
+    return os.environ.get("ESTUDIO_EXIGIR_AUDIO_SUITE") == "1"
 
 
 def _voz_arquivo(voz: str) -> str:
@@ -111,8 +120,11 @@ def compare(fid: str, gravar: bool = False) -> int:
     """A carteira de um filme: gravar baselines ou medir contra elas.
 
     Saidas: 0 baselines gravadas ou tudo em linha com a baseline ·
-    2 needs_review/INDECISO (descritor divergiu, ou audio-suite ausente).
-    NUNCA 1: descritor nao reprova (R1) -- a carteira aponta, o humano decide.
+    2 needs_review/INDECISO (descritor divergiu, ou audio-suite ausente
+    sem promessa). Descritor NUNCA reprova (R1) -- a carteira aponta, o
+    humano decide. A unica saida 1 e a da CP-007: audio-suite exigida
+    (ESTUDIO_EXIGIR_AUDIO_SUITE=1) e ausente -- promessa quebrada do
+    AMBIENTE, nao veredito sobre a voz.
     """
     dir_audio = FILMES / fid / "audio"
     manifesto = dir_audio / "audio.json"
@@ -123,6 +135,16 @@ def compare(fid: str, gravar: bool = False) -> int:
     if not PERFIL.exists():
         print(f"  INDECISO: falta o perfil {PERFIL.relative_to(RAIZ)}")
         return 2
+    if not _tem_audio_suite() and _exige_audio_suite():
+        # CP-007: a promessa mudou o contrato. Sem ela, ausencia e INDECISO
+        # nomeado; com ela, o ambiente mentiu sobre a propria infraestrutura
+        # -- e carteira sem medida em quem prometeu medir e VERMELHO.
+        _publicar(fid, "vermelho", {},
+                  "audio-suite exigida (ESTUDIO_EXIGIR_AUDIO_SUITE=1) e ausente")
+        print("  VERMELHO: audio-suite exigida (ESTUDIO_EXIGIR_AUDIO_SUITE=1) "
+              "e ausente — o ambiente prometeu medir; carteira sem medida "
+              "aqui e divida de infraestrutura, nao INDECISO.")
+        return 1
 
     d = dados_do_filme(fid)
     m = json.loads(manifesto.read_text(encoding="utf-8"))

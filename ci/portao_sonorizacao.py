@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
-"""O portao de sonorizacao, no formato que o CI aguenta (CP-004).
+"""O portao de sonorizacao, no formato que o CI aguenta (CP-004, CP-007).
 
 Diferenca de proposito em relacao aos outros fiscais: a audio-suite NAO e
-dependencia da suite -- e uma CLI externa, e o runner do CI nao a tem. O
-portao devolve INDECISO quando ela falta, e INDECISO NAO quebra o build:
-so o VERMELHO (saida 1 da audio-suite, FINDING) reprova aqui. O estado e
-publicado por filme, alto e claro -- porque "nao medido" tambem tem de
-aparecer como nao medido, nao como aprovado.
+dependencia da suite -- e uma CLI externa. O portao devolve INDECISO
+quando ela falta, e INDECISO NAO quebra o build: so o VERMELHO (saida 1
+da audio-suite, FINDING) reprova aqui. O estado e publicado por filme,
+alto e claro -- porque "nao medido" tambem tem de aparecer como nao
+medido, nao como aprovado.
 
-Saidas: 0 conforme (ou indeciso documentado) · 1 trilha reprovada.
+CP-007: o job do CI agora INSTALA a audio-suite (isolada, pinada por SHA)
+e promete isso no ambiente (ESTUDIO_EXIGIR_AUDIO_SUITE=1). Promessa feita,
+ausencia vira VERMELHO -- tirar a ferramenta do job derruba o build. Na
+maquina local sem a promessa, o INDECISO nomeado segue valendo.
+
+Saidas: 0 conforme (ou indeciso documentado) · 1 trilha reprovada -- ou
+audio-suite prometida e ausente.
 """
 import sys
 from pathlib import Path

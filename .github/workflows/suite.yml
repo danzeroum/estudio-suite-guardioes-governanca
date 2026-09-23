@@ -11,6 +11,14 @@ jobs:
   # lei nao tem, ou de atribui-lo ao guardiao errado.
   fiscais:
     runs-on: ubuntu-latest
+    env:
+      # CP-007: este job PROMETE a audio-suite (instalada abaixo, isolada e
+      # pinada por SHA). Promessa feita, ausencia vira VERMELHO no portao de
+      # sonorizacao e na carteira de vozes -- no CI, "nao consegui medir"
+      # deixa de ser estado terminal: a ferramenta faz parte do contrato
+      # do job. Na maquina local, sem a variavel, o INDECISO nomeado segue
+      # valendo. Tirar a audio-suite do job derruba o build -- de proposito.
+      ESTUDIO_EXIGIR_AUDIO_SUITE: "1"
     steps:
       - uses: actions/checkout@v4
 
@@ -40,15 +48,6 @@ jobs:
           path: _lei-origem
           token: ${{ secrets.LEI_TOKEN }}
 
-      - name: O gate único
-        run: |
-          if [ -d _lei-origem/docs/assets/data ]; then
-            python3 ci/validar_tudo.py
-          else
-            echo "::warning::sem LEI_TOKEN — validação parcial, sem medir citações"
-            python3 ci/validar_tudo.py --sem-lei
-          fi
-
       # O ffmpeg e dependencia declarada da suite (dublar, portao de
       # sonorizacao) mas NAO vem mais na imagem ubuntu-24.04 do runner. O
       # teste da ancora de amostras (CP-005) deriva wavs de verdade, como a
@@ -59,8 +58,32 @@ jobs:
       # O motor de timbre da CP-005 e scipy/numpy puro (vocoder de canais,
       # deterministico). Dependencia declarada da suite desde a CP-005 -- e
       # o teste do motor prova no PCM, no runner, o que a maquina local prova.
+      # Desde a CP-007 instala ANTES do gate unico: o fiscal de redublagem
+      # entrou no gate e importa numpy via prosodia -- dependencia depois do
+      # passo que a usa e dependencia quebrada.
       - name: Instalar numpy e scipy (CP-005)
         run: pip install --quiet numpy scipy
+
+      # CP-007: a audio-suite entra no CI pela porta certa -- ISOLADA (pipx,
+      # venv proprio) e pinada por SHA. No ambiente da suite ela NAO pode
+      # morar: exige numpy<2.2 e scipy<1.15 e REBAIXARIA o que o motor de
+      # timbre usa (medido localmente: 2.4.4 -> 2.1.3 e 1.17.1 -> 1.14.1).
+      # O pin por SHA e o rollback: cada estagio validado, caminho de volta
+      # mantido. So o binario vai pro PATH, nunca o python do venv dela.
+      - name: Instalar a audio-suite (isolada, pinada por SHA)
+        run: |
+          pipx install "git+https://github.com/danzeroum/audio-suite@296226eb803adbe380f1473c25c5a22ebb857029"
+          pipx list --short
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: O gate único
+        run: |
+          if [ -d _lei-origem/docs/assets/data ]; then
+            python3 ci/validar_tudo.py
+          else
+            echo "::warning::sem LEI_TOKEN — validação parcial, sem medir citações"
+            python3 ci/validar_tudo.py --sem-lei
+          fi
 
       - name: O módulo de automelhorias, nos dois sentidos
         run: python3 tests/test_melhorias.py
@@ -71,9 +94,10 @@ jobs:
       - name: O normalizador de fala (CP-004)
         run: python3 tests/test_fala.py
 
-      # CP-004: o fiscal de redublagem compara TEXTO e TEMPO, nao bytes de
-      # audio -- por isso roda em CI, onde piper nao existe. Piper ausente no
-      # runner nunca quebra o build: dublar e comando de maquina local.
+      # CP-004: o fiscal de redublagem compara TEXTO, TEMPO e AMBIENTE, nao
+      # bytes de audio -- por isso roda em CI, onde piper nao existe. Piper
+      # ausente no runner nunca quebra o build: dublar e comando de maquina
+      # local. Desde a CP-007 o fiscal roda TAMBEM no gate unico.
       - name: O fiscal de redublagem (CP-004)
         run: python3 tests/test_dublar.py
 
@@ -90,9 +114,10 @@ jobs:
       - name: O motor de timbre e os earcons (CP-005)
         run: python3 tests/test_timbre.py
 
-      # CP-005: a carteira de voz por falante. Sem audio-suite no runner, o
-      # teste prova o caminho INDECISO nomeado -- o mesmo contrato do portao
-      # de sonorizacao. Descritor nunca reprova: divida de voz e review.
+      # CP-005: a carteira de voz por falante. Com a audio-suite no runner
+      # (CP-007), o teste mede de verdade e ainda prova os dois contratos:
+      # INDECISO nomeado sem promessa, VERMELHO com ESTUDIO_EXIGIR_AUDIO_SUITE
+      # e ferramenta ausente. Descritor nunca reprova: divida de voz e review.
       - name: A carteira de voz (CP-005)
         run: python3 tests/test_vozes.py
 
@@ -101,10 +126,11 @@ jobs:
       - name: A prosodia expressiva (CP-006)
         run: python3 tests/test_prosodia.py
 
-      # CP-004: o sexto portao. A audio-suite NAO esta instalada no runner:
-      # o portao devolve INDECISO, publicado por filme, e o build SEGUE --
-      # so FINDING (saida 1) reprova. "Nao consegui medir" nao e "esta errado",
-      # e chamar de verde uma medida que nao houve seria pior do que o silencio.
+      # CP-004/CP-007: o sexto portao, agora MEDINDO de verdade -- a
+      # audio-suite esta instalada (isolada, pinada) e o job a prometeu no
+      # env. O portao publica LUFS e true peak reais por filme; FINDING
+      # (saida 1) reprova; e se alguem tirar a ferramenta do job, o
+      # VERMELHO da promessa quebrada derruba o build -- de proposito.
       - name: O portão de sonorização (CP-004)
         run: python3 ci/portao_sonorizacao.py
 

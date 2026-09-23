@@ -12,9 +12,15 @@ Duas frases explicam quase todas as decisões daqui:
 ## Antes de encerrar qualquer tarefa
 
 ```bash
-python3 ci/validar_tudo.py        # exatamente o que o CI roda
-python3 tests/test_navegador.py   # o motor, quando você tocou em motor/ ou paginas/
+python3 ci/validar_tudo.py        # o gate único: lei, roteiros, orçamento, redublagem, derivados
+python3 tests/test_*.py             # cada camada tem seu teste — o CI roda todos
+python3 ci/portao_sonorizacao.py    # a trilha dublada, medida pela audio-suite (com ela instalada)
+python3 tests/test_navegador.py     # o motor, quando você tocou em motor/ ou paginas/
 ```
+
+O `validar_tudo` é o gate, não a íntegra do CI: os testes de cada camada e o
+portão de sonorização são passos próprios do workflow — e o portão, no CI,
+mede de verdade (a audio-suite é instalada isolada e pinada por SHA).
 
 Códigos: `0` conforme · `1` divergência entre o declarado e o real · `2` algum fiscal
 **não conseguiu** fiscalizar. Os dois últimos são estados diferentes de propósito.
@@ -47,13 +53,16 @@ Códigos: `0` conforme · `1` divergência entre o declarado e o real · `2` alg
 
 ## Caminhos protegidos
 
-`motor/`, `lei.lock`, `ci/`, `tests/`, `harness/policies/`, `.github/`, `CLAUDE.md`.
+`motor/`, `lei.lock`, `voz.lock`, `amostras.lock`, `ci/`, `tests/`,
+`harness/policies/`, `.github/`, `CLAUDE.md`.
 
 Mudança neles começa por uma **change-proposal** em `harness/change-proposals/`, declarada
-antes de executada. O que uma história precisa e não existe nasce em `filmes/<id>/local/`,
-e sobe ao elenco compartilhado só com prova de segundo uso.
+antes de executada. Os três locks (`lei.lock`, `voz.lock`, `amostras.lock`) são âncoras
+por hash — avançar qualquer delas muda o que o repositório reproduz, e é CP sempre. O que
+uma história precisa e não existe nasce em `filmes/<id>/local/`, e sobe ao elenco
+compartilhado só com prova de segundo uso.
 
-## As quatro coisas que se erra aqui
+## As cinco coisas que se erra aqui
 
 **Pedir pose que não existe.** Não dá erro de sintaxe — dá filme que não monta. O núcleo é
 mínimo de propósito. `python3 -m estudio_suite inventario` responde antes.
@@ -64,6 +73,11 @@ ele na fonte canônica. Seguir a intuição narrativa já produziu seis planos e
 **Afirmar número sobre a lei.** "Os onze direitos do Art. 18" chegou a ser publicado, e o
 artigo tem nove. Toda afirmação contável de uma legenda é conferida contra os incisos do
 caput — e a guarda existe porque o erro passou.
+
+**Editar legenda sem redublar.** O áudio é derivado da legenda (texto, tempo, campo
+`quem`, timbre do rig, ambiente do `voz.lock`): a dublagem gravada continua sendo a do
+texto anterior, e o fiscal acusa no portão storyboard. A dívida só aparece quando alguém
+OUVE — rodar `dublar <id>` custa minutos, refilmagem custa o filme.
 
 **Editar o filme sem regravar a referência.** As referências de palco em
 `filmes/<id>/baseline/` pegam regressão de enquadramento. Regravar é comando separado

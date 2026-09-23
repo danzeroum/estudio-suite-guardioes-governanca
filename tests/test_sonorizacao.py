@@ -2,16 +2,20 @@
 """O sexto portao, provado nos dois sentidos — inclusive o que o CI prova.
 
 O contrato do portao de sonorizacao (CP-004) tem uma clausula incomum:
-AUSENCIA da ferramenta nao reprova. O runner do CI nao tem a audio-suite, e
-o portao la devolve INDECISO — publicado, nomeado, nunca chamado de verde.
-Aqui os casos locais provam o resto: verde com trilha dentro das ancoras,
-vermelho com trilha estourada, e as duas formas de a declaracao divergir do
-real.
+AUSENCIA da ferramenta nao reprova — quando ninguem prometeu nada. O
+runner do CI nao tinha a audio-suite e o portao la devolvia INDECISO —
+publicado, nomeado, nunca chamado de verde. CP-007: o CI agora INSTALA a
+ferramenta (isolada, pinada) e a promete no env
+(ESTUDIO_EXIGIR_AUDIO_SUITE=1) — promessa feita, ausencia vira VERMELHO
+e derruba o build. Aqui se provam os DOIS contratos, e o resto: verde
+com trilha dentro das ancoras, vermelho com trilha estourada, e as duas
+formas de a declaracao divergir do real.
 
-Quando a audio-suite nao esta na maquina, os casos de MEDIDA REAL se anunciam
-como nao medidos — sem fingir verificacao que nao houve.
+Quando a audio-suite nao esta na maquina, os casos de MEDIDA REAL se
+anunciam como nao medidos — sem fingir verificacao que nao houve.
 """
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -92,17 +96,34 @@ def main():
     chk(v.estado == "vermelho" and "decida" in " ".join(v.achados).lower(),
         f"trilha sem declaracao: VERMELHO ({v.achados})")
 
-    # --- o caso do CI: sem audio-suite, INDECISO e ponto -----------------
+    # --- sem audio-suite e SEM promessa: INDECISO e ponto (a maquina local)
+    # (O job do CI roda com ESTUDIO_EXIGIR_AUDIO_SUITE=1 no env — este caso
+    # simula a maquina de quem desenvolve, sem promessa no ar.)
     _filme(declara=True, com_trilha="boa")
     original = _sem_audio_suite()
+    os.environ.pop("ESTUDIO_EXIGIR_AUDIO_SUITE", None)
     try:
         v = pipeline.portao_sonorizacao(FANTASMA)
         rel = json.loads((FILMES / FANTASMA / "relatorio.json").read_text(encoding="utf-8"))
         chk(v.estado == "indeciso" and not v.achados,
-            f"audio-suite ausente: INDECISO sem achado de reprovacao ({v.estado})")
+            f"audio-suite ausente sem promessa: INDECISO sem achado de reprovacao ({v.estado})")
         chk(rel.get("sonorizacao", {}).get("estado") == "indeciso",
             "o INDECISO e publicado no relatorio.json, nomeado como tal")
     finally:
+        pipeline._tem_audio_suite = original
+
+    # --- CP-007: com a promessa, ausencia e VERMELHO, publicado -----------
+    _sem_audio_suite()
+    os.environ["ESTUDIO_EXIGIR_AUDIO_SUITE"] = "1"
+    try:
+        v = pipeline.portao_sonorizacao(FANTASMA)
+        rel = json.loads((FILMES / FANTASMA / "relatorio.json").read_text(encoding="utf-8"))
+        chk(v.estado == "vermelho" and "ESTUDIO_EXIGIR_AUDIO_SUITE" in v.achados[0],
+            f"audio-suite exigida e ausente: VERMELHO nomeando a promessa ({v.estado}, {v.achados})")
+        chk(rel.get("sonorizacao", {}).get("estado") == "vermelho",
+            "o VERMELHO da promessa quebrada e publicado no relatorio.json")
+    finally:
+        os.environ.pop("ESTUDIO_EXIGIR_AUDIO_SUITE", None)
         pipeline._tem_audio_suite = original
 
     # --- com a ferramenta: verde na ancora, vermelho no estouro ----------
@@ -132,7 +153,19 @@ def main():
             chk(rel.get("sonorizacao", {}).get("estado") == "verde",
                 f"{fid}: estado VERDE publicado no relatorio.json")
 
-    # --- o passo de CI: indeciso documentado nao quebra o build -----------
+    # --- o passo de CI com a promessa: ausencia da ferramenta derruba ----
+    # o build (CP-007). PATH sem o binario + ESTUDIO_EXIGIR_AUDIO_SUITE=1:
+    # e o job do CI visto de costas, sem a instalacao da audio-suite.
+    env_vermelho = {**os.environ, "PATH": "/usr/bin:/bin",
+                    "ESTUDIO_EXIGIR_AUDIO_SUITE": "1"}
+    r = subprocess.run([sys.executable, "ci/portao_sonorizacao.py"],
+                       capture_output=True, text=True, cwd=RAIZ, env=env_vermelho)
+    chk(r.returncode == 1,
+        f"com a promessa e sem a ferramenta, o passo de CI sai 1 — exit {r.returncode}")
+    chk("VERMELHO" in r.stdout,
+        "e o passo NOMEIA o vermelho da promessa quebrada por filme")
+
+    # --- o passo de CI como o job o roda: verde ou indeciso documentado ----
     r = subprocess.run([sys.executable, "ci/portao_sonorizacao.py"],
                        capture_output=True, text=True, cwd=RAIZ)
     chk(r.returncode == 0,
@@ -148,7 +181,8 @@ def main():
             print(f"  ERRO: {m}", file=sys.stderr)
         print(f"\n  {len(bad)} falha(s).", file=sys.stderr)
         return 1
-    print("  ausencia da ferramenta e INDECISO nomeado, nao verde nem vermelho.")
+    print("  ausencia da ferramenta sem promessa e INDECISO nomeado; com a "
+          "promessa (CP-007), VERMELHO que derruba o build.")
     return 0
 
 

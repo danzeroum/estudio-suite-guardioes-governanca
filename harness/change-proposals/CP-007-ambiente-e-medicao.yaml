@@ -1,0 +1,194 @@
+# Mudanca proposta a partir de EVIDENCIA, nao de gosto.
+# Declarada antes de executada; fica como registro mesmo depois.
+#
+# A CP-007 fecha a lacuna que as CP-004/005/006 deixaram aberta: o voz.lock
+# ancora os PESOS do modelo, mas o byte final de um .opus nasce do modelo E
+# do ambiente que o rodeia -- piper, onnxruntime, numpy/scipy do motor de
+# timbre, o fonemizador que o wheel embute, o ffmpeg/libopus do mix. Dublar
+# em ambiente diferente produz audio diferente do commitado, e ninguem
+# acusa nada. O lock de ambiente fecha essa porta; o CI, com a audio-suite
+# pinada por SHA, passa a medir a trilha de verdade.
+schema: estudio-suite/change-proposal@1
+
+proposta:
+  id: CP-007
+  titulo: "Ambiente de sintese ancorado e medicao real no CI"
+  autor: agente/curador
+  criada_em: "2026-09-23T01:22:52Z"
+  estado: concluida             # executada no PR do Sprint 11; merge e decisao humana
+
+  resultado: >
+    Executada e provada. Redublagem dos dois filmes no ambiente travado:
+    2 execucoes byte-identicas ENTRE SI e identicas ao audio commitado (o
+    lock descreve exatamente o ambiente que sintetizou os filmes); todas
+    as duracoes estaveis (delta 0,0 s em todos os clipes), menor folga da
+    jornada preservada em 0,069 s; baselines de voz regravadas
+    byte-identicas; portao publicando LUFS/TP reais por filme (jornada
+    -16,61 LUFS / TP -1,315; legitimo -16,87 / -1,55); carteira verde,
+    todas as vozes em linha. CI com a audio-suite isolada (pipx) pinada
+    em 296226e e ESTUDIO_EXIGIR_AUDIO_SUITE=1; validar_tudo --sem-lei
+    fiscaliza a redublagem; SKILL.md e CLAUDE.md alinhados ao estado real.
+
+  sinal:
+    tipo: evidencia-medida
+    chave: "ambiente-nao-ancorado-ci-cego"
+    evidencia: >
+      Medido em 2026-09-23, SHA 7ace572. (1) Na mesma maquina, dublar 2x da
+      saida byte-identica; em outra maquina (piper-tts 1.3.0, onnxruntime
+      1.24.4, numpy 2.1.3, scipy 1.14.1), os 6 .opus de legitimo-interesse
+      DIFEREM e as duracoes mudam ate +0,08 s (p03: 2,473 -> 2,554 s) -- e
+      a menor folga da jornada e 0,07 s: um ambiente diferente nao so muda
+      o som, muda o filme caber na propria legenda. (2) O voz.lock trava
+      so os pesos (.onnx / .onnx.json). (3) No CI, sem audio-suite, a
+      sonorizacao e a carteira de voz ficam SEMPRE indeciso -- medido
+      localmente com a audio-suite: verde, -16,61 LUFS, TP -1,32 dBTP
+      (ffmpeg ebur128 confirma -16,6); o CI nunca viu esses numeros.
+      (4) pip install da audio-suite rebaixou numpy 2.4.4 -> 2.1.3 e scipy
+      1.17.1 -> 1.14.1 no mesmo ambiente: ela exige numpy<2.2 e scipy<1.15
+      e nao pode morar no ambiente da suite. (5) SKILL.md, linha 49, ainda
+      diz "Nao ha audio"; validar_tudo nao roda fiscal_redublagem; so o
+      test_dublar do CI roda.
+
+  doutrina:                    # herdada; nada aqui e negociavel
+    - >
+      Verificacao e validacao sao perguntas diferentes, com ferramentas
+      diferentes. "Os bytes sao os mesmos?" responde o lock de ambiente
+      (antes de sintetizar). "A trilha esta dentro das ancoras?" responde
+      a audio-suite (depois de mixar). Nenhuma das duas cobre a outra.
+    - >
+      Os tres hash-locks (lei.lock, voz.lock, amostras.lock) sao sagrados:
+      avancar qualquer ancora e change-proposal, nunca silencio. O bloco
+      ambiente entra no voz.lock pelo mesmo caminho -- e travar o
+      ambiente e travar o que o ambiente produz.
+    - >
+      Sem flag de contorno. dublar em ambiente divergente levanta
+      ErroDeDados nomeando pacote, versao esperada, versao instalada e o
+      comando que corrige -- ANTES de escrever qualquer arquivo. Quem
+      precisa burlar o lock esta recriando o problema que ele fecha.
+    - >
+      "Nao consegui medir" continua nao sendo "esta errado" -- na maquina
+      local sem audio-suite, o portao e a carteira seguem INDECISO
+      nomeado. A promessa e explicita e local: SO quando o ambiente
+      declara ESTUDIO_EXIGIR_AUDIO_SUITE=1 (o job do CI), a ausencia da
+      ferramenta vira VERMELHO -- promessa quebrada e divida de
+      infraestrutura, nao julgamento de descritor.
+    - >
+      Nao afrouxar fiscal para passar. Nao editar derivado a mao. Nao
+      commite workspace/. Audio regenerado so entra pelo dublar, no
+      ambiente travado, com byte-identidade provada em 2 execucoes.
+    - >
+      Rollback (André Borges, DevOps): cada estagio validado com caminho
+      de volta. O pin por SHA da audio-suite (296226eb803adbe380f1
+      473c25c5a22ebb857029) e esta CP sao o caminho de volta.
+
+  tecnica:
+    bloco_ambiente: >
+      voz.lock ganha o bloco `ambiente:` em formato RASO (chave: valor, um
+      nivel), lido pelo mesmo parser regex de voz.py -- sem YAML: o lock e
+      contrato, nao configuracao. Chaves: python (major.minor -- patch nao
+      muda bytes de extensao C), piper-tts, onnxruntime, numpy, scipy,
+      espeak-ng (o wheel do piper EMBUTE o fonemizador: espeak-ng-data +
+      espeakbridge.so -- a ancora e o sha256 dos dados, 373 arquivos,
+      medido, nao o numero de versao que a biblioteca nao expoe), ffmpeg
+      (token completo da build, ex. 7.1.5-0+deb13u1) e libopus (a string
+      do proprio libopus, via opus_get_version_string).
+    conferencia: >
+      estudio_suite/voz.py ganha ambiente_instalado() (as versoes EFETIVAS,
+      medidas por importlib.metadata / subprocess / ctypes -- nunca
+      assumidas) e conferir_ambiente() (levanta ErroDeDados listando TODAS
+      as divergencias: pacote, esperado x instalado, comando que corrige).
+      O dublar confere ANTES de materializar o modelo: ambiente errado nao
+      toca nem o workspace. A conferencia e bidirecional: ambiente medido
+      sem ancora no lock tambem e divergencia.
+    manifesto: >
+      audio.json passa a gravar `ambiente` (as versoes efetivas, == lock
+      por construcao). O fiscal_redublagem acusa manifesto sem ambiente ou
+      com ambiente != voz.lock -- dublagem de ambiente desconhecido e
+      divida, como texto editado sem redublar.
+    ci_isolado: >
+      O job fiscais instala a audio-suite ISOLADA (pipx, venv proprio),
+      pinada em git+https://github.com/danzeroum/audio-suite@296226eb803
+      adbe380f1473c25c5a22ebb857029, com o binario no PATH -- nunca no
+      ambiente da suite: numpy<2.2 e scipy<1.15 rebaixariam o que o motor
+      de timbre usa (medido: 2.4.4 -> 2.1.3, 1.17.1 -> 1.14.1). Com
+      ESTUDIO_EXIGIR_AUDIO_SUITE=1 no env do job, audio-suite ausente vira
+      VERMELHO no portao de sonorizacao, na carteira de vozes e nos
+      testes; o portao passa a publicar medidas REAIS por filme (LUFS e
+      TP). As dependencias da suite (ffmpeg, numpy, scipy) passam a
+      instalar ANTES do gate unico, que agora importa numpy via prosodia.
+    docs_gate: >
+      ci/validar_tudo.py inclui fiscal_redublagem de todos os filmes no
+      conjunto que NAO depende da lei (--sem-lei). SKILL.md perde o "Nao
+      ha audio" (a legenda continua o filme; o audio e camada derivada,
+      opcional, Som desligado por padrao; editar legenda exige redublar;
+      vozes e poses se perguntam ao orientar/inventario, nao se listam).
+      CLAUDE.md corrige o "exatamente o que o CI roda" e ganha "editar
+      legenda sem redublar" nas coisas que se erra.
+
+  escopo:
+    sprint_11: >
+      Esta CP; voz.lock com o bloco ambiente (medido na maquina que
+      sintetizou os filmes publicados); voz.py com parser estendido,
+      ambiente_instalado e conferir_ambiente; dublar conferindo ambiente
+      antes de sintetizar e gravando ambiente no audio.json;
+      fiscal_redublagem cobrando o campo; portao de sonorizacao e carteira
+      de vozes honrando ESTUDIO_EXIGIR_AUDIO_SUITE; workflow com a
+      audio-suite isolada pinada e o env do job; validar_tudo com a
+      redublagem no conjunto sem-lei; SKILL.md e CLAUDE.md alinhados ao
+      estado real; redublagem dos dois filmes no ambiente travado com
+      byte-identidade provada em 2 execucoes, baselines regravadas e diff
+      de duracoes no PR.
+
+  impacto:
+    - "estudio_suite/voz.py :: parser do bloco ambiente, medição, conferência"
+    - "estudio_suite/dublar.py :: conferência antes de sintetizar; ambiente no audio.json"
+    - "estudio_suite/pipeline.py :: fiscal do ambiente; portão exige a audio-suite quando prometida"
+    - "estudio_suite/vozes.py :: carteira reprova audio-suite exigida e ausente"
+    - "ci/{validar_tudo,portao_sonorizacao}.py e .github/workflows/suite.yml :: gate e CI"
+    - "tests/test_{dublar,vozes,sonorizacao}.py :: os casos novos"
+    - "filmes/*/audio/ + baseline/vozes/ :: redublagem no ambiente travado"
+    - ".claude/skills/fazer-filme/SKILL.md e CLAUDE.md :: docs alinhadas"
+
+  caminhos_afetados:
+    - esta-suite :: voz.lock, estudio_suite/{voz,dublar,pipeline,vozes}.py
+    - esta-suite :: ci/validar_tudo.py, ci/portao_sonorizacao.py, .github/workflows/suite.yml
+    - esta-suite :: tests/test_dublar.py, tests/test_vozes.py, tests/test_sonorizacao.py
+    - esta-suite :: filmes/*/audio/{audio.json,<id>.opus,<id>-pNN.opus}, filmes/*/baseline/vozes/, filmes/*/relatorio.json
+    - esta-suite :: .claude/skills/fazer-filme/SKILL.md, CLAUDE.md
+
+  risco:
+    nivel: medio
+    porque: >
+      O lock de ambiente endurece o dublar de proposito: maquina que antes
+      "funcionava" (produzia bytes diferentes em silencio) passa a FALHAR
+      com nome e correcao. E esse e o ponto -- o custo de descobrir a
+      divergencia no diff de uma redublagem e maior que o de instalar a
+      versao do lock. Contencao: (1) a divergencia nomeia o pacote e o
+      comando; (2) o lock avanca por CP, como qualquer ancora; (3) se
+      mesmo travado o ambiente nao reproduzir byte a byte, a regra e PARE
+      e registrar AMBIENTE_NAO_REPRODUZIVEL -- tolerancia via
+      audio-suite compare e proposta humana, nunca improviso do agente.
+
+  aval_humano_necessario: true   # merge do PR e decisao humana
+
+  como_se_prova:
+    - dublar em ambiente divergente (onnxruntime != lock, monkeypatch em importlib.metadata.version) levanta ErroDeDados nomeando pacote, esperado, instalado e o comando que corrige -- sem escrever arquivo (materializar nem e chamado).
+    - ambiente igual ao lock: dublar 2x -> sha256 identicos em TODOS os .opus dos dois filmes; audio.json com ambiente == voz.lock.
+    - test_dublar reprova manifesto sem ambiente e aponta o comando; os audio.json dos dois filmes trazem ambiente == lock.
+    - ESTUDIO_EXIGIR_AUDIO_SUITE=1 com a audio-suite fora do PATH: portao de sonorizacao sai 1; sem a variavel: INDECISO nomeado e sai 0. Idem carteira de vozes (exit 1 x 2).
+    - validar_tudo --sem-lei roda a redublagem fiscal de todos os filmes; SKILL.md nao diz mais que nao ha audio; o CI publica LUFS e TP reais por filme e fica vermelho sem a audio-suite.
+
+  backlog:                      # PROIBIDO nesta CP
+    - >
+      Tolerancia de reproducao via audio-suite compare (ambientes que nao
+      reproduzem byte a byte): so se o AMBIENTE_NAO_REPRODUZIVEL de fato
+      ocorrer, e como proposta humana com medicao -- o lock nao afrouxa
+      por antecipacao.
+    - >
+      Instalar a audio-suite local no MESMO ambiente da suite: proibido em
+      qualquer lugar (local incluso) -- o caminho certo e o mesmo do CI:
+      venv isolado/pipx. A maquina local atual e o caso conhecido e fica
+      documentado no PR.
+    - resposta_padrao: >
+        Se um revisor perguntar por esses itens: "backlog da CP-007" --
+        nao e esquecimento.

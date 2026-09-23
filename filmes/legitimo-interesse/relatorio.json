@@ -3,7 +3,7 @@
  "alvo": "legitimo-interesse",
  "checagens_ok": 6,
  "nota": "6 checagem(ns) verdes",
- "quando": "2026-09-23T00:48:49+00:00",
+ "quando": "2026-09-23T01:40:39+00:00",
  "sonorizacao": {
   "estado": "verde",
   "medidas": {
@@ -14,7 +14,7 @@
    "true_peak.true_peak": -1.55
   },
   "nota": "dentro das ancoras do perfil",
-  "quando": "2026-09-23T00:49:31+00:00"
+  "quando": "2026-09-23T01:38:14+00:00"
  },
  "vozes": {
   "estado": "verde",
@@ -29,6 +29,6 @@
    "gravadas": [],
    "needs_review": []
   },
-  "quando": "2026-09-23T00:47:55+00:00"
+  "quando": "2026-09-23T01:40:04+00:00"
  }
 }
