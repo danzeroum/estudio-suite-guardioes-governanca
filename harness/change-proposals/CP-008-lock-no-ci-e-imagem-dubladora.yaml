@@ -53,22 +53,32 @@ proposta:
     pins 10, navegador 240 -- todos verdes.
 
   imagem_nao_reproduz:          # o registro que a regra desta CP exige
-    quando: "2026-09-23, run 35810120017 (job dublador, PR do Sprint 12)"
+    quando: >
+      2026-09-23, job dublador do PR do Sprint 12. DOIS runs, mesmo codigo
+      (o segundo so acrescentou ESTE registro): run 35810120017 (commit
+      3e29d3b) REPROVOU -- 19/19 .opus divergentes do commitado; run
+      35811182097 (commit ee13666, mesmos bytes de codigo de sintese)
+      PASSOU -- 19/19 .opus BYTE-IDENTICOS ao commitado. A mesma prova,
+      runners diferentes, verdades diferentes: o gate de byte-identidade
+      esta hoje na loteria da frota do GitHub, e e isso que este registro
+      existe para nomear.
     o_que_variou: >
-      O NUMERO DE THREADS do onnxruntime -- nao versao, nao build, nao
-      pacote. O job dublou 2x na imagem: rodadas byte-identicas ENTRE SI
-      (a imagem e deterministicamente ESTAVEL) e diferentes do commitado
-      em TODOS os 19 .opus, com duracao IDENTICA em todos (artefato
-      diff-de-duracoes: commitado == regenerado em cada linha). Prova
-      local, mesma maquina, mesmo modelo, mesmo texto, so mudando
+      O NUMERO DE THREADS do onnxruntime (e, entre runners, a classe de
+      CPU) -- nao versao, nao build, nao pacote. Prova local, mesma
+      maquina, mesmo modelo, mesmo texto, so mudando
       intra_op_num_threads: 2 threads -> PCM A; 4 threads -> PCM B; A !=
       B, 120 bytes divergentes de 139.776 (0,09%), primeira diferenca
       delta 1 LSB (amostra 34047: -3248 x -3247). A maquina que
       sintetizou os filmes publicados tem 2 CPUs (onnxruntime default =
-      2 threads); o runner do GitHub tem 4 vCPUs (default = 4). O GEMM
-      do onnxruntime e particionado pelo numero de threads, e a ordem
-      das somas parciais em float muda com a particao: ancora de versao
-      NENHUMA cobre isso -- e exatamente a variavel que faltava.
+      2 threads); o runner do GitHub anuncia 4 vCPUs (default = 4). O
+      GEMM do onnxruntime e particionado pelo numero de threads, e a
+      ordem das somas parciais em float muda com a particao: ancora de
+      versao NENHUMA cobre isso. O run que PASSOU reproduziu os bytes
+      commitados exatamente -- o que so fecha se aquele runner tinha o
+      mesmo ambiente EFETIVO da maquina que sintetizou (2 threads e/ou
+      classe de CPU que despacha os mesmos kernels): a frota e
+      heterogeneica ABAIXO do nivel de versao, e o gate verde de um run
+      nao prova o proximo.
     o_que_nao_variou: >
       Medido, nao assumido. (1) Os quatro pacotes da cadeia sao
       byte-identicos aos wheels do PyPI que a imagem instala: piper-tts
@@ -83,25 +93,28 @@ proposta:
       identicas em 19/19 -- a divergencia e de ultimo bit, nao de
       cronometragem.
     hipotese_residual: >
-      Threads e a variavel CONFIRMADA; pode nao ser a unica. O runner
-      pode ter microarquitetura diferente da maquina que sintetizou
-      (Xeon com AVX-512 + AMX, classe Sapphire Rapids): kernels SIMD do
-      onnxruntime e do OpenBLAS sao escolhidos por CPUID em tempo de
-      carga, e um runner sem AVX-512 (ex. EPYC) ainda poderia divergir
-      MESMO com threads fixadas. So o job dublador, com threads pinadas,
-      pode fechar essa porta -- e e decisao de CP, nao improviso.
+      Threads e a variavel CONFIRMADA localmente; a heterogeneidade da
+      frota e a variavel CONFIRMADA entre runs (um reprovou, outro passou,
+      mesmo codigo). O runner que passou tinha o ambiente EFETIVO da
+      maquina que sintetizou -- 2 threads e/ou classe de CPU igual (a
+      maquina que sintetizou e um Xeon com AVX-512 + AMX, classe
+      Sapphire Rapids). Enquanto threads e CPU nao forem ANCORAS, o job
+      dublador e uma loteria: verde num run nao prova o proximo. Fechar
+      essa porta e o conteudo da CP-009 proposta abaixo.
     caminhos_para_o_humano:    # a regra desta CP: o agente PARE, o humano decide
       - >
         CP-009 "threads no lock": acrescentar threads: 2 (o que a maquina
         que sintetizou usava) ao bloco ambiente, o dublar criar a sessao
         do onnxruntime com intra_op_num_threads do lock (hoje: default =
         nucleos da maquina), e OMP_NUM_THREADS=2 na imagem. Redublagem
-        NAO necessaria se a hipotese for a unica: os bytes commitados
-        nasceram com 2 threads. O job dublador e a prova -- se ainda
-        divergir, sobra a hipotese SIMD (runner sem AVX-512), e ai a
-        decisao e entre trocar a classe do runner, redublar dentro da
-        imagem (CP que muda TODO o audio commitado), ou tolerancia via
-        audio-suite compare (backlog da CP-007).
+        NAO necessaria se threads for a unica variavel: os bytes
+        commitados nasceram com 2 threads, e o run que passou sugere que
+        e essa a lacuna. Se o job ainda oscilar com threads pinadas,
+        sobra a classe de CPU (kernels SIMD por CPUID) -- e ai as saidas
+        sao: fixar o job num runner de classe conhecida (self-hosted ou
+        larger-runner com CPU declarado), redublar dentro da imagem (CP
+        que muda TODO o audio commitado), ou tolerancia via audio-suite
+        compare (backlog da CP-007).
       - >
         Redublar tudo dentro da imagem: re-ancora o audio no ambiente
         100% materializado (threads fixadas ou nao) -- muda TODOS os
@@ -117,11 +130,15 @@ proposta:
       publicados mesmo com tudo fixado (inclusive arquitetura e snapshot
       do apt), PARE e registre IMAGEM_NAO_REPRODUZ, com o que variou e a
       hipotese. Nao redublar para fazer bater." Tudo foi fixado (digest,
-      apt, pins, arquitetura), a imagem nao reproduziu, a causa foi
-      medida e nomeada -- e o caminho a seguir muda o que o repositorio
-      ancora (threads no lock) ou o proprio audio commitado (redub na
-      imagem). Os dois sao decisao humana. O job dublador fica VERMELHO
-      no PR como a prova viva de que o gate nao mente.
+      apt, pins, arquitetura), e a reproducao OSCILOU entre runs da
+      mesma prova -- um reprovou, outro passou, com codigo identico. Um
+      gate que alterna vermelho e verde com a maquina que o roda nao e
+      gate, e loteria; estabiliza-lo exige ancorar threads (e talvez
+      classe de CPU), o que muda o que o lock exige de cada maquina, ou
+      re-ancorar o audio dentro da imagem, o que muda TODO o audio
+      commitado. Os dois sao decisao humana, registrada aqui com as
+      medicoes. O job dublador fica no PR como esta -- verde no ultimo
+      run POR SORTE DA FROTA, e o registro acima diz o que isso vale.
 
   sinal:
     tipo: evidencia-medida
