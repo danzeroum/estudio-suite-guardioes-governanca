@@ -89,6 +89,7 @@ Estudio.Rig.registrar({
      proibido. Sem cliente no motor — quem lê é o estudo_suite. */
   voz: {
     registro: 'grave, ressonante, de quem lembra de tudo',
-    pitch: 'mais-grave', ritmo: -0.15
+    pitch: 'mais-grave', ritmo: -0.15,
+    timbre: { portadora: 'elefante-trompa', mistura: 0.35, bandas: 16 }
   }
 });
