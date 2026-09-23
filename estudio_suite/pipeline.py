@@ -137,17 +137,20 @@ def portao_roteiro(fid):
 
 # ---- storyboard ------------------------------------------------------------
 def fiscal_redublagem(fid):
-    """O audio deriva da legenda; legenda que mudou sem redublar e divida.
+    """O audio deriva da legenda E da camada de timbre; divida sem redublar.
 
     Mesmo espirito do "editar o filme sem regravar a referencia": audio.json
-    carrega o sha256 do texto NORMALIZADO de cada legenda, e quem edita o
-    texto (ou o tempo) sem rodar `dublar` deixa a divida aqui. Nao ha falso
-    positivo: filme sem audio/ simplesmente nao e fiscalizado -- a camada e
-    aditiva, e o filme mudo continua valido por completo.
+    carrega o sha256 do texto NORMALIZADO de cada legenda, os PARAMETROS de
+    timbre aplicados (CP-005: portadora, mistura, bandas, sha da portadora)
+    e a agenda de earcons do Dado. Quem edita o texto, o tempo, o timbre do
+    rig ou os momentos do Dado sem rodar `dublar` deixa a divida aqui. Nao
+    ha falso positivo: filme sem audio/ simplesmente nao e fiscalizado --
+    a camada e aditiva, e o filme mudo continua valido por completo.
     """
     import hashlib
     import json
     from . import fala
+    from .dublar import _earcons_do_filme, quem_fala
 
     manifesto = FILMES / fid / "audio" / "audio.json"
     if not manifesto.exists():
@@ -155,6 +158,23 @@ def fiscal_redublagem(fid):
     d = dados_do_filme(fid)
     gravado = json.loads(manifesto.read_text(encoding="utf-8"))
     por_chave = {(c["plano"], round(c["em"], 3)): c for c in gravado.get("clipes", [])}
+
+    from . import amostras as _am
+    try:
+        shas_de_lock = {k: v["sha256"] for k, v in _am.ancora().items()}
+    except Exception:
+        shas_de_lock = {}
+
+    def _timbre_esperado(P, L):
+        _t, _r, _rot, tim = quem_fala(P, L, d.get("elenco", {}))
+        if not tim:
+            return None
+        return {
+            "portadora": tim["portadora"],
+            "mistura": float(tim["mistura"]),
+            "bandas": int(tim.get("bandas", 16) or 16),
+            "portadora_sha256": shas_de_lock.get(tim["portadora"], None),
+        }
 
     achados = []
     cursor = 0.0
@@ -181,6 +201,29 @@ def fiscal_redublagem(fid):
                 achados.append(
                     f"{P['id']}: legenda {em:.1f}s mudou de texto desde a dublagem "
                     f"(sha256 diverge). Rode: python3 -m estudio_suite dublar {fid}")
+            esperado = _timbre_esperado(P, L)
+            gravado_tim = c.get("timbre")
+            if esperado is None and gravado_tim:
+                achados.append(
+                    f"{P['id']}: legenda {em:.1f}s foi dublada COM timbre, mas o rig "
+                    f"hoje nao declara (ou mistura 0) — o audio timbrado nao e mais "
+                    f"o derivado. Rode: python3 -m estudio_suite dublar {fid}")
+            elif esperado is not None and not gravado_tim:
+                achados.append(
+                    f"{P['id']}: legenda {em:.1f}s ganhou timbre no rig desde a "
+                    f"dublagem (portadora '{esperado['portadora']}'). Rode: "
+                    f"python3 -m estudio_suite dublar {fid}")
+            elif esperado is not None and gravado_tim != esperado:
+                detalhe = []
+                for k in ("portadora", "mistura", "bandas"):
+                    if gravado_tim.get(k) != esperado[k]:
+                        detalhe.append(f"{k}: {gravado_tim.get(k)} -> {esperado[k]}")
+                if gravado_tim.get("portadora_sha256") != esperado["portadora_sha256"]:
+                    detalhe.append("portadora_sha256: o lock avancou")
+                achados.append(
+                    f"{P['id']}: legenda {em:.1f}s tem timbre divergente entre o rig "
+                    f"e a dublagem ({'; '.join(detalhe)}). Rode: "
+                    f"python3 -m estudio_suite dublar {fid}")
         cursor += P["dur"]
 
     gravados = len(gravado.get("clipes", []))
@@ -188,6 +231,25 @@ def fiscal_redublagem(fid):
         achados.append(
             f"a dublagem tem {gravados} clipe(s) para {atuais} legenda(s) — "
             f"legenda apagada sem redublar. Rode: python3 -m estudio_suite dublar {fid}")
+
+    # A agenda de earcons deriva dos momentos do Dado no filme: mudou o
+    # momento, mudou o carimbo -- sem redublar, o audio mente sobre o filme.
+    esperados = {(p, em, t) for p, em, t in _earcons_do_filme(d)}
+    gravados_ear = {(e["plano"], round(e["em"], 3), e["tipo"])
+                    for e in gravado.get("earcons", [])}
+    if esperados != gravados_ear:
+        so_esperados = esperados - gravados_ear
+        so_gravados = gravados_ear - esperados
+        partes = []
+        if so_esperados:
+            partes.append("novo(s): " + ", ".join(
+                f"{p}@{em:.1f}s/{t}" for p, em, t in sorted(so_esperados)))
+        if so_gravados:
+            partes.append("sobrando: " + ", ".join(
+                f"{p}@{em:.1f}s/{t}" for p, em, t in sorted(so_gravados)))
+        achados.append(
+            f"os momentos do Dado mudaram sem redublar ({'; '.join(partes)}). "
+            f"Rode: python3 -m estudio_suite dublar {fid}")
     return achados
 
 
