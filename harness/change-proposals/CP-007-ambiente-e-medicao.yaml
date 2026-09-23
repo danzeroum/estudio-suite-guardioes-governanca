@@ -15,7 +15,19 @@ proposta:
   titulo: "Ambiente de sintese ancorado e medicao real no CI"
   autor: agente/curador
   criada_em: "2026-09-23T01:22:52Z"
-  estado: em-execucao          # um PR por sprint; merge e decisao humana
+  estado: concluida             # executada no PR do Sprint 11; merge e decisao humana
+
+  resultado: >
+    Executada e provada. Redublagem dos dois filmes no ambiente travado:
+    2 execucoes byte-identicas ENTRE SI e identicas ao audio commitado (o
+    lock descreve exatamente o ambiente que sintetizou os filmes); todas
+    as duracoes estaveis (delta 0,0 s em todos os clipes), menor folga da
+    jornada preservada em 0,069 s; baselines de voz regravadas
+    byte-identicas; portao publicando LUFS/TP reais por filme (jornada
+    -16,61 LUFS / TP -1,315; legitimo -16,87 / -1,55); carteira verde,
+    todas as vozes em linha. CI com a audio-suite isolada (pipx) pinada
+    em 296226e e ESTUDIO_EXIGIR_AUDIO_SUITE=1; validar_tudo --sem-lei
+    fiscaliza a redublagem; SKILL.md e CLAUDE.md alinhados ao estado real.
 
   sinal:
     tipo: evidencia-medida
