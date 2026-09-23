@@ -8,7 +8,10 @@ OUVE. Aqui a divida aparece em texto, no portao storyboard.
 
 Os casos usam um filme fantasma com dublagem fantasma (audio.json calculado,
 sem audio de verdade): o fiscal compara TEXTO e TEMPO, nao bytes de audio --
-por isso o teste roda em CI, onde piper nao existe.
+por isso o teste roda em CI, onde piper nao existe. Desde a CP-007 o fiscal
+cobra TAMBEM o campo ambiente do manifesto (== voz.lock), e o dublar confere
+o ambiente instalado ANTES de sintetizar -- o caso divergente e provado com
+onnxruntime mentindo via importlib.metadata, sem tocar arquivo nenhum.
 """
 import hashlib
 import json
@@ -20,7 +23,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 
 from estudio_suite import fala                          # noqa: E402
-from estudio_suite.comum import FILMES, filmes_existentes  # noqa: E402
+from estudio_suite.comum import ErroDeDados, FILMES, filmes_existentes  # noqa: E402
 from estudio_suite.pipeline import fiscal_redublagem    # noqa: E402
 
 ok, bad = [], []
@@ -80,11 +83,21 @@ def _criar_filme(legendas):
     return d
 
 
-def _criar_dublagem(clipes):
-    """audio.json fantasma: [{plano, em, ate, dur, voz, texto_sha256}]."""
+def _criar_dublagem(clipes, ambiente="do-lock"):
+    """audio.json fantasma: [{plano, em, ate, dur, voz, texto_sha256}].
+
+    ambiente="do-lock" grava o bloco ambiente do voz.lock (o que o dublar
+    gravaria); ambiente=None grava manifesto SEM o campo (a divida que a
+    CP-007 cobra); qualquer dict e gravado como esta (divergencia proposital).
+    """
+    from estudio_suite import voz as _voz
     d = FILMES / FANTASMA / "audio"
     d.mkdir(parents=True, exist_ok=True)
     manifesto = {"filme": FANTASMA, "clipes": clipes}
+    if ambiente == "do-lock":
+        manifesto["ambiente"] = _voz.ancora()["ambiente"]
+    elif ambiente is not None:
+        manifesto["ambiente"] = ambiente
     (d / "audio.json").write_text(
         json.dumps(manifesto, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
@@ -152,6 +165,66 @@ def main():
     a = fiscal_redublagem(FANTASMA)
     chk(any("clipe(s) para" in x for x in a),
         f"clipe orfao de legenda apagada e apontado ({a})")
+
+    # --- audio.json sem ambiente: dublagem de mundo desconhecido (CP-007) --
+    _criar_filme([L1, L2])
+    _criar_dublagem([
+        {"plano": "p01", "em": 0.3, "ate": 5.5, "dur": 4.2, "voz": "coruja",
+         "texto_sha256": _hash(L1[2]), "timbre": dict(T)},
+        {"plano": "p01", "em": 6.0, "ate": 11.0, "dur": 3.1, "voz": "coruja",
+         "texto_sha256": _hash(L2[2]), "timbre": dict(T)},
+    ], ambiente=None)
+    a = fiscal_redublagem(FANTASMA)
+    chk(len(a) == 1 and "sem o campo ambiente" in a[0] and "dublar" in a[0],
+        f"manifesto sem ambiente e apontado com o comando que resolve ({a})")
+
+    # --- ambiente divergente do lock: nomeado, campo a campo (CP-007) ----
+    from estudio_suite import voz as _voz
+    amb_errado = dict(_voz.ancora()["ambiente"], numpy="9.9.9")
+    _criar_dublagem([
+        {"plano": "p01", "em": 0.3, "ate": 5.5, "dur": 4.2, "voz": "coruja",
+         "texto_sha256": _hash(L1[2]), "timbre": dict(T)},
+        {"plano": "p01", "em": 6.0, "ate": 11.0, "dur": 3.1, "voz": "coruja",
+         "texto_sha256": _hash(L2[2]), "timbre": dict(T)},
+    ], ambiente=amb_errado)
+    a = fiscal_redublagem(FANTASMA)
+    chk(len(a) == 1 and "diverge do voz.lock" in a[0] and "numpy" in a[0]
+        and "9.9.9" in a[0],
+        f"ambiente divergente e apontado nomeando o pacote e a versao ({a})")
+
+    # --- dublar em ambiente divergente: ErroDeDados, nenhum arquivo (CP-007)
+    # O onnxruntime MENTE via importlib.metadata -- o caminho exato que a
+    # conferencia usa. E o materializar e espiado: conferencia que passa do
+    # ponto de escrita e conferencia que nao conferiu nada.
+    import importlib.metadata as _md
+    from estudio_suite import dublar as _dub
+    _versao_real = _md.version
+    _materializar_real = _voz.materializar
+    tocou = []
+
+    def _espiar(*a_, **k_):
+        tocou.append(1)
+        return _materializar_real(*a_, **k_)
+
+    _voz.materializar = _espiar
+    _md.version = lambda nome: ("9.9.9" if nome == "onnxruntime"
+                                else _versao_real(nome))
+    try:
+        try:
+            _dub.dublar("jornada-dado")
+            chk(False, "dublar em ambiente divergente tinha de levantar ErroDeDados")
+        except ErroDeDados as e:
+            msg = str(e)
+            chk("onnxruntime" in msg and "1.30.0" in msg and "9.9.9" in msg,
+                f"a divergencia nomeia pacote, esperado e instalado ({msg[:150]!r})")
+            chk("pip install onnxruntime==1.30.0" in msg,
+                "e diz o comando que corrige, sem flag de contorno")
+        chk(not tocou,
+            "a conferencia vem ANTES de materializar: ambiente errado nao "
+            "escreve nem o workspace, quanto menos audio")
+    finally:
+        _md.version = _versao_real
+        _voz.materializar = _materializar_real
 
     # --- sem audio/: filme mudo e valido, fiscal cala ------------------
     _criar_filme([L1, L2])
