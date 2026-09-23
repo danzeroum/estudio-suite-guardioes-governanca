@@ -122,9 +122,52 @@ def main():
             f"audio-suite exigida e ausente: VERMELHO nomeando a promessa ({v.estado}, {v.achados})")
         chk(rel.get("sonorizacao", {}).get("estado") == "vermelho",
             "o VERMELHO da promessa quebrada e publicado no relatorio.json")
+        # CP-008: a causa e estruturada -- o campo, nao a frase
+        chk(v.causa == "promessa-quebrada",
+            f"e a CAUSA do vermelho e 'promessa-quebrada' ({v.causa!r})")
+        chk(rel.get("sonorizacao", {}).get("causa") == "promessa-quebrada",
+            "a causa tambem e publicada no relatorio.json")
     finally:
         os.environ.pop("ESTUDIO_EXIGIR_AUDIO_SUITE", None)
         pipeline._tem_audio_suite = original
+
+    # --- CP-008: FINDING simulado -> causa trilha-reprovada ---------------
+    # Nada aqui toca a audio-suite de verdade: o subprocess e trocado por
+    # um que devolve saida 1 com um FINDING -- o contrato exato do mapea-
+    # mento. A causa tem de distinguir "reprovei a trilha" de "nao medi".
+    import subprocess as _sp
+    _run_real = _sp.run
+    _tem_real = pipeline._tem_audio_suite
+    pipeline._tem_audio_suite = lambda: True
+
+    def _run_falso(cmd, **kw):
+        if cmd[0] == "ffmpeg":            # o decode roda antes da medida
+            return _sp.CompletedProcess(cmd, 0, "", "")
+        finding = {"findings": [{
+            "analyzer": "loudness", "metric": "integrated_loudness",
+            "value": -10.0, "severity": "fail", "message": "acima da ancora"}]}
+        return _sp.CompletedProcess(cmd, 1, json.dumps(finding), "")
+
+    _sp.run = _run_falso
+    try:
+        _filme(declara=True, com_trilha="boa")
+        v = pipeline.portao_sonorizacao(FANTASMA)
+        chk(v.estado == "vermelho" and v.causa == "trilha-reprovada",
+            f"FINDING da audio-suite: VERMELHO com causa 'trilha-reprovada' "
+            f"({v.estado}, {v.causa!r})")
+        chk(any("loudness" in a for a in v.achados),
+            f"e o achado nomeia o analyzer que reprovou ({v.achados})")
+        chk(v.causa != "promessa-quebrada",
+            "trilha medida e reprovada NAO e promessa quebrada -- causas distintas")
+    finally:
+        _sp.run = _run_real
+        pipeline._tem_audio_suite = _tem_real
+
+    # --- CP-008: declaracao divergente tem causa propria -------------------
+    _filme(declara=True, com_trilha=None)
+    v = pipeline.portao_sonorizacao(FANTASMA)
+    chk(v.estado == "vermelho" and v.causa == "declaracao-divergente",
+        f"declara sem trilha: causa 'declaracao-divergente' ({v.causa!r})")
 
     # --- com a ferramenta: verde na ancora, vermelho no estouro ----------
     if TEM_SUITE:
@@ -164,6 +207,12 @@ def main():
         f"com a promessa e sem a ferramenta, o passo de CI sai 1 — exit {r.returncode}")
     chk("VERMELHO" in r.stdout,
         "e o passo NOMEIA o vermelho da promessa quebrada por filme")
+    # CP-008: a frase final e a da causa -- promessa quebrada NAO diz
+    # "trilha reprovada", porque nada foi medido.
+    chk("PROMESSA QUEBRADA" in r.stderr and "nada foi medido" in r.stderr,
+        f"a frase final e 'PROMESSA QUEBRADA ... nada foi medido' ({r.stderr.strip()[:80]!r})")
+    chk("trilha reprovada" not in r.stderr,
+        "e ela NAO diz 'trilha reprovada' — essa frase so existe com FINDING")
 
     # --- o passo de CI como o job o roda: verde ou indeciso documentado ----
     r = subprocess.run([sys.executable, "ci/portao_sonorizacao.py"],
