@@ -1432,6 +1432,82 @@ def a_camada_de_som(nav):
     pg2.close()
 
 
+def o_quadrinhos_sonoro(nav):
+    """CP-006, Sprint 10: no modo quadrinhos, "ouvir este plano" toca SO o
+    plano -- clipe por plano derivado da mesma trilha (o media fragment
+    nao segura o fim no Chromium file://; medido em sonda, documentado no
+    PR). O MESMO botao do Som vira a acao de plano: um modulo, nenhum
+    segundo motor. Sem fala no plano, sem botao -- a regra do Som.
+    """
+    pg = nav.new_page()
+    pg.goto(B + "paginas/player.html?filme=jornada-dado")
+    pg.wait_for_timeout(400)
+    try:
+        pg.wait_for_selector("#btSom:not([hidden])", timeout=8000)
+    except Exception:
+        chk(False, "quadrinhos sonoro: a trilha carrega por file://")
+        pg.close()
+        return
+
+    # no modo quadrinhos o botao vira a acao de plano, com o titulo no aria-label
+    pg.click("#btModo")
+    pg.wait_for_timeout(200)
+    rotulo = pg.eval_on_selector("#btSom", "b => b.textContent")
+    aria = pg.eval_on_selector("#btSom", "b => b.getAttribute('aria-label')")
+    chk(rotulo == "▶ Ouvir este plano",
+        f"em quadrinhos o botao vira 'Ouvir este plano' ({rotulo!r})")
+    chk(aria and "plano" in aria.lower(),
+        f"o aria-label nomeia o plano ({aria!r})")
+    chk(pg.eval_on_selector("#btSom", "b => b.hasAttribute('aria-pressed')") is False,
+        "acao de plano nao e toggle: aria-pressed sai do botao em quadrinhos")
+
+    # o plano 1 tem 6s no dado: o clipe tem de ser SO o plano -- arquivo
+    # proprio (-p01.opus) e fim proprio (o que o media fragment nao fazia:
+    # medido, a duracao devolvia a trilha inteira e nada parava no fim)
+    pg.click("#btSom")
+    pg.wait_for_timeout(600)
+    tocando = pg.evaluate(
+        "const p = ESTUDIO_PLAYER._som._planoEl(); p && !p.paused"
+        " && p.src.indexOf('-p01.opus') >= 0")
+    chk(tocando, "clicar ouve o plano: toca o CLIPE do plano, arquivo proprio")
+    terminou = pg.evaluate("""() => new Promise(ok => {
+      const p = ESTUDIO_PLAYER._som._planoEl();
+      p.addEventListener('ended', () => ok(true), { once: true });
+      setTimeout(() => ok(false), 9000);
+    })""")
+    chk(terminou, "o clipe do plano acaba sozinho no fim do plano (6 s, nao a trilha)")
+    rotulo = pg.eval_on_selector("#btSom", "b => b.textContent")
+    chk(rotulo == "▶ Ouvir este plano", f"acabado o plano, o botao volta a oferecer ouvir ({rotulo!r})")
+
+    # ouvir de novo e PARAR no meio: segundo clique para o plano
+    pg.click("#btSom")
+    pg.wait_for_timeout(400)
+    chk(pg.evaluate("const p = ESTUDIO_PLAYER._som._planoEl(); p && !p.paused"),
+        "ouvir de novo toca o plano de novo")
+    pg.click("#btSom")
+    pg.wait_for_timeout(150)
+    chk(pg.evaluate("const p = ESTUDIO_PLAYER._som._planoEl(); p.paused"),
+        "clicar de novo para o plano")
+
+    # trocar de plano atualiza o aria-label com o titulo do novo plano
+    pg.evaluate("ESTUDIO_PLAYER.irPlano(9)")
+    pg.wait_for_timeout(150)
+    aria2 = pg.eval_on_selector("#btSom", "b => b.getAttribute('aria-label')")
+    chk(aria2 and "Ouvir o plano:" in aria2 and aria2 != aria,
+        f"o aria-label segue o plano corrente ({aria!r} -> {aria2!r})")
+
+    # voltar ao movimento: o botao volta a ser o Som da CP-004, toggle e tudo
+    pg.click("#btModo")
+    pg.wait_for_timeout(200)
+    chk(pg.eval_on_selector("#btSom", "b => b.textContent") == "🔊 Som",
+        "voltar ao movimento restaura o botao Som")
+    chk(pg.eval_on_selector("#btSom", "b => b.getAttribute('aria-pressed')") == "false",
+        "e o aria-pressed do toggle volta (desligado por padrao)")
+    chk(pg.evaluate("ESTUDIO_PLAYER._som._el.paused"),
+        "a trilha inteira nao vaza: em movimento, o escravo segue filme.t")
+    pg.close()
+
+
 def escrever_relatorios():
     """Uma execucao deixa evidencia por filme, nao so um numero global.
 
@@ -1457,8 +1533,9 @@ def escrever_relatorios():
         if antigo.exists():
             try:
                 prev = json.loads(antigo.read_text(encoding="utf-8"))
-                if prev.get("sonorizacao"):
-                    rel["sonorizacao"] = prev["sonorizacao"]
+                for chave in ("sonorizacao", "vozes"):
+                    if prev.get(chave):
+                        rel[chave] = prev[chave]
             except Exception:
                 pass
         (pasta / "relatorio.json").write_text(
@@ -1487,6 +1564,7 @@ def main():
         pgf = filme_e_transporte(nav)
         segundo_filme(nav, pgf)
         a_camada_de_som(nav)
+        o_quadrinhos_sonoro(nav)
         injecao_de_falha(nav)
         o_jogo(nav)
         jogo_caminhos_esquecidos(nav)

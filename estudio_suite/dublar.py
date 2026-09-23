@@ -280,6 +280,45 @@ def _earcons_do_filme(d: dict) -> list:
     return agenda
 
 
+def _clipes_por_plano(opus: Path, d: dict, dir_audio: Path, fid: str) -> list:
+    """Clipes por plano para o modo quadrinhos (CP-006, Sprint 10).
+
+    O media fragment (#t=inicio,fim) NAO segura o fim no Chromium por
+    file:// -- medido em sonda com o próprio runner: a duração devolve a
+    trilha inteira e o plano tocaria até o filme acabar. Cada plano COM
+    FALA ganha então arquivo próprio, recortado da MESMA trilha final por
+    re-codificação determinística (os parâmetros do mix). Sem fala no
+    plano, sem clipe: o botão "ouvir este plano" não nasce — a mesma
+    regra do Som. A decisão e o teste que a motivou estão no PR do
+    Sprint 10.
+    """
+    gerados = []
+    cursor = 0.0
+    for P in d["planos"]:
+        inicio, fim = cursor, cursor + P["dur"]
+        if P.get("legendas"):
+            destino = dir_audio / f"{fid}-{P['id']}.opus"
+            r = subprocess.run(
+                ["ffmpeg", "-y", "-nostdin", "-v", "error", "-fflags", "+bitexact",
+                 "-ss", f"{inicio:.3f}", "-i", str(opus),
+                 "-t", f"{fim - inicio:.3f}",
+                 "-ac", str(CANAIS), "-ar", str(TAXA),
+                 "-c:a", "libopus", "-b:a", BITRATE,
+                 "-fflags", "+bitexact", str(destino)],
+                capture_output=True, text=True)
+            if r.returncode != 0:
+                raise SystemExit(f"  ERRO: ffmpeg não recortou o plano {P['id']}:\n{r.stderr[-400:]}")
+            gerados.append({"plano": P["id"], "arquivo": destino.name,
+                            "inicio": round(inicio, 3), "fim": round(fim, 3)})
+        cursor += P["dur"]
+    # clipes órfãos de planos que perderam a fala não ficam no disco
+    validos = {g["arquivo"] for g in gerados}
+    for velho in dir_audio.glob(f"{fid}-p*.opus"):
+        if velho.name not in validos:
+            velho.unlink()
+    return gerados
+
+
 def dublar(fid: str) -> int:
     d = dados_do_filme(fid)
     base = _voz.materializar()
@@ -387,6 +426,7 @@ def dublar(fid: str) -> int:
     earcons_mix = [(arquivos_earcon[t], em) for _, em, t in earcons_agenda
                    if t in arquivos_earcon]
     mixar(clipes, d["duracao"], opus, earcons=earcons_mix)
+    quadrinhos = _clipes_por_plano(opus, d, dir_audio, fid)
 
     manifesto = {
         "filme": fid,
@@ -400,6 +440,7 @@ def dublar(fid: str) -> int:
         "earcons": [{"plano": p, "em": em, "tipo": t,
                      "arquivo": f"dado-{t}.wav", "ganho_db": GANHO_EARCON_DB}
                     for p, em, t in earcons_agenda],
+        "quadrinhos": quadrinhos,
         "clipes": manifestos,
     }
     (dir_audio / "audio.json").write_text(
@@ -424,6 +465,8 @@ def dublar(fid: str) -> int:
         print(f"  prosodia: {detalhe} (pitch declarado, nao aplicado sem pyworld)")
     if earcons_agenda:
         print(f"  earcons do Dado: {len(earcons_agenda)} momento(s) a {GANHO_EARCON_DB} dB")
+    if quadrinhos:
+        print(f"  quadrinhos: {len(quadrinhos)} clipe(s) por plano com fala (modo \"ouvir este plano\")")
     print(f"  loudness ancorado em {LOUDNESS_LUFS} LUFS / true peak "
           f"{TRUE_PEAK_DBTP} dBTP; manifesto em audio/audio.json")
     return 0
