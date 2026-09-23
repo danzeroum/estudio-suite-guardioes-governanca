@@ -197,6 +197,7 @@ def main():
     # conferencia usa. E o materializar e espiado: conferencia que passa do
     # ponto de escrita e conferencia que nao conferiu nada.
     import importlib.metadata as _md
+    import types as _types
     from estudio_suite import dublar as _dub
     _versao_real = _md.version
     _materializar_real = _voz.materializar
@@ -219,12 +220,70 @@ def main():
                 f"a divergencia nomeia pacote, esperado e instalado ({msg[:150]!r})")
             chk("pip install onnxruntime==1.30.0" in msg,
                 "e diz o comando que corrige, sem flag de contorno")
+            # CP-008: a saida portatil vem ANTES das correcoes pacote a pacote
+            chk("ferramentas/dublador/dublar.sh" in msg
+                and msg.index("ferramentas/dublador/dublar.sh")
+                < msg.index("pip install onnxruntime==1.30.0"),
+                "a imagem dubladora e oferecida primeiro, as correcoes vem depois")
         chk(not tocou,
             "a conferencia vem ANTES de materializar: ambiente errado nao "
             "escreve nem o workspace, quanto menos audio")
     finally:
         _md.version = _versao_real
         _voz.materializar = _materializar_real
+
+    # --- arquitetura divergente (CP-008): platform.machine() mentindo -----
+    # A CPU faz parte do ambiente: o onnxruntime despacha kernels pela
+    # arquitetura, e uma conferencia que passa em arm64 nao prova bytes que
+    # nasceram em x86_64. O dublar recusa citando a arquitetura, sem tocar
+    # arquivo -- o espiao do materializar continua vigiando.
+    _platform_real = _voz.platform
+    _stub = _types.ModuleType("platform")
+    _stub.machine = lambda: "aarch64"
+    _voz.platform = _stub
+    _voz.materializar = _espiar
+    tocou.clear()
+    try:
+        try:
+            _dub.dublar("jornada-dado")
+            chk(False, "dublar em arquitetura divergente tinha de levantar ErroDeDados")
+        except ErroDeDados as e:
+            msg = str(e)
+            chk("arquitetura" in msg and "aarch64" in msg and "x86_64" in msg,
+                f"a divergencia de arquitetura nomeia esperado e instalado ({msg[:150]!r})")
+        chk(not tocou,
+            "arquitetura errada tambem nao escreve arquivo nenhum")
+    finally:
+        _voz.platform = _platform_real
+        _voz.materializar = _materializar_real
+
+    # --- voz.lock sem arquitetura: lock INCOMPLETO, nunca x86_64 por osmose
+    # (CP-008). Assumir a arquitetura da maquina que roda seria ancorar por
+    # coincidencia: o lock recusado e o lock que falta dado, nao o ambiente
+    # que "por acaso" bate.
+    _lock_real = _voz.LOCK
+    import tempfile as _tf
+    with _tf.TemporaryDirectory() as _tmp:
+        sem_arquitetura = Path(_tmp) / "voz.lock"
+        sem_arquitetura.write_text(
+            _lock_real.read_text(encoding="utf-8").replace("  arquitetura: x86_64\n", ""),
+            encoding="utf-8")
+        _voz.LOCK = sem_arquitetura
+        _voz.materializar = _espiar
+        tocou.clear()
+        try:
+            _dub.dublar("jornada-dado")
+            chk(False, "dublar com lock sem arquitetura tinha de recusar")
+        except ErroDeDados as e:
+            msg = str(e)
+            chk("arquitetura" in msg and "incompleto" in msg.lower(),
+                f"lock sem arquitetura e recusado como lock incompleto ({msg[:150]!r})")
+            chk("x86_64" not in msg.split("lock INCOMPLETO")[1].split("\n")[0]
+                or "assumir" in msg,
+                "e nao assume x86_64 por padrao -- a saida e medir e ancorar")
+        chk(not tocou, "lock incompleto tambem nao toca arquivo nenhum")
+    _voz.LOCK = _lock_real
+    _voz.materializar = _materializar_real
 
     # --- sem audio/: filme mudo e valido, fiscal cala ------------------
     _criar_filme([L1, L2])

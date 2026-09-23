@@ -17,10 +17,18 @@ embutido no wheel e o ffmpeg+libopus do mix -- medido em outra maquina,
 as duracoes deslocam ate +0,08 s com o MESMO modelo. O bloco `ambiente:`
 do lock ancora essas versoes; conferir_ambiente() as mede e recusa dublar
 na divergencia, antes de escrever qualquer arquivo.
+
+CP-008: a ARQUITETURA entra na mesma ancora (platform.machine()). O
+onnxruntime escolhe kernels pela arquitetura da CPU: bytes gerados em
+x86_64 nao sao provados por uma conferencia que passou em arm64. Lock
+sem arquitetura e lock INCOMPLETO -- o dublar recusa em vez de assumir
+x86_64 por padrao, e o caminho portavel e a imagem que materializa o
+lock (ferramentas/dublador/dublar.sh, sempre linux/amd64).
 """
 import ctypes
 import hashlib
 import importlib.metadata
+import platform
 import re
 import shutil
 import subprocess
@@ -160,6 +168,10 @@ def ambiente_instalado() -> dict:
         "espeak-ng": _sha_espeak(),
         "ffmpeg": _versao_ffmpeg(),
         "libopus": _versao_libopus(),
+        # CP-008: a CPU e parte do ambiente -- o onnxruntime despacha kernels
+        # pela arquitetura, e a conferencia que passa em arm64 nao prova bytes
+        # que nasceram em x86_64.
+        "arquitetura": platform.machine(),
     }
 
 
@@ -167,6 +179,11 @@ def _correcao(pacote: str, esperado: dict) -> str:
     """O comando que alinha o ambiente com a ancora — o erro nao cala."""
     if pacote == "python":
         return f"rode com Python {esperado['python']} (a serie do runtime e ancora)"
+    if pacote == "arquitetura":
+        return ("a ancora e " + esperado["arquitetura"] +
+                " — rode pela imagem ferramentas/dublador/dublar.sh <id> "
+                "(build sempre linux/amd64), ou avance o lock por CP com "
+                "medicao e redublagem completa, porque os bytes mudam")
     if pacote == "espeak-ng":
         return ("reinstale o wheel que embute o fonemizador: "
                 f"pip install --force-reinstall piper-tts=={esperado.get('piper-tts', '?')}")
@@ -188,6 +205,9 @@ def conferir_ambiente(esperado: dict) -> dict:
     divergencia silenciosa e exatamente o que o lock existe para impedir.
     Bidirecional: componente medido sem ancora e lock atrasado; ancora
     sem medida e codigo atrasado. Os dois sao divida, nao preferencia.
+    Excecao proposital (CP-008): lock SEM arquitetura e lock INCOMPLETO,
+    nao "medida a mais" — assumir x86_64 por padrao seria ancorar por
+    coincidencia, e a saida e recusar ate alguem medir e ancorar por CP.
     """
     instalado = ambiente_instalado()
     divergencias = []
@@ -196,9 +216,18 @@ def conferir_ambiente(esperado: dict) -> dict:
         if esp == inst:
             continue
         if esp is None:
-            divergencias.append(
-                f"{pacote}: o ambiente mede {inst}, mas o voz.lock nao ancora — "
-                f"componente sem ancora e lock atrasado, nao medida a mais")
+            if pacote == "arquitetura":
+                divergencias.append(
+                    f"arquitetura: o ambiente mede {inst}, mas o voz.lock nao "
+                    f"ancorea arquitetura nenhuma — lock INCOMPLETO (CP-008): "
+                    f"onnxruntime escolhe kernels pela arquitetura da CPU, e "
+                    f"assumir {inst} por padrao seria ancorar por coincidencia. "
+                    f"Meça platform.machine() na maquina que dublou e ancöre "
+                    f"por change-proposal.")
+            else:
+                divergencias.append(
+                    f"{pacote}: o ambiente mede {inst}, mas o voz.lock nao ancora — "
+                    f"componente sem ancora e lock atrasado, nao medida a mais")
         elif inst is None:
             divergencias.append(
                 f"{pacote}: o lock ancora, mas o ambiente_instalado() nao mede — "
@@ -210,8 +239,11 @@ def conferir_ambiente(esperado: dict) -> dict:
     if divergencias:
         raise ErroDeDados(
             "o ambiente de sintese NAO e o ancorado em voz.lock (bloco "
-            "ambiente, CP-007) — dublar aqui produziria audio divergente do "
-            "commitado sem ninguem ter editado nada:\n  "
+            "ambiente, CP-007/CP-008) — dublar aqui produziria audio divergente "
+            "do commitado sem ninguem ter editado nada.\n"
+            "  O caminho portatil e a imagem que materializa o lock:\n"
+            "      ferramentas/dublador/dublar.sh <id-do-filme>\n"
+            "  Ou corrija o ambiente desta maquina, pacote a pacote:\n  "
             + "\n  ".join(divergencias) +
             "\n  O lock avanca por change-proposal; a saida nunca e dublar "
             "por cima da divergencia.")
