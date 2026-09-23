@@ -14,13 +14,14 @@
    "true_peak.true_peak": -1.315
   },
   "nota": "dentro das ancoras do perfil",
-  "quando": "2026-09-23T00:49:27+00:00"
+  "quando": "2026-09-23T01:32:42+00:00"
  },
  "vozes": {
   "estado": "verde",
-  "nota": "todas as vozes em linha com as baselines",
+  "nota": "baselines gravadas — primeira medicao da carteira",
   "por_falante": {
-   "em_linha": [
+   "em_linha": [],
+   "gravadas": [
     "aguia",
     "coruja",
     "elefante",
@@ -28,9 +29,8 @@
     "raposa",
     "tartaruga"
    ],
-   "gravadas": [],
    "needs_review": []
   },
-  "quando": "2026-09-23T00:47:29+00:00"
+  "quando": "2026-09-23T01:32:05+00:00"
  }
 }

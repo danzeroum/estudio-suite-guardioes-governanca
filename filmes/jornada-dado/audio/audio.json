@@ -6,6 +6,16 @@
   "sha256_onnx": "858555e3a064209c57088fe6bd70c4c3dc54d03eaa00c45d5ecaf43a33f95aa7",
   "sha256_json": "7e694de195ae3fc36dd732c445eb04fb49b649854893cb5506b978f0d50a1d6f"
  },
+ "ambiente": {
+  "python": "3.12",
+  "piper-tts": "1.8.0",
+  "onnxruntime": "1.30.0",
+  "numpy": "2.1.3",
+  "scipy": "1.14.1",
+  "espeak-ng": "sha256:bc00fca4d93879ed50ff44e280d7d9ad30e00b1d2ee38b3dcefd40ed7a946b7a",
+  "ffmpeg": "7.1.5-0+deb13u1",
+  "libopus": "1.5.2"
+ },
  "mix": {
   "arquivo": "jornada-dado.opus",
   "taxa_hz": 48000,
