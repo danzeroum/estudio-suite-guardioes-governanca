@@ -3,17 +3,17 @@
  "alvo": "legitimo-interesse",
  "checagens_ok": 6,
  "nota": "6 checagem(ns) verdes",
- "quando": "2026-09-22T22:55:45+00:00",
+ "quando": "2026-09-23T00:00:32+00:00",
  "sonorizacao": {
   "estado": "verde",
   "medidas": {
    "clipping.clipped_sample_pct": 0.0,
-   "glitch.glitch_event_count": 10829.0,
+   "glitch.glitch_event_count": 10608.0,
    "inspect.metadata": null,
-   "loudness.integrated_loudness": -16.36,
-   "true_peak.true_peak": -1.644
+   "loudness.integrated_loudness": -16.87,
+   "true_peak.true_peak": -1.55
   },
   "nota": "dentro das ancoras do perfil",
-  "quando": "2026-09-22T22:55:18+00:00"
+  "quando": "2026-09-22T23:59:50+00:00"
  }
 }
