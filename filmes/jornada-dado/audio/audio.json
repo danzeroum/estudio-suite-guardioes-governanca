@@ -43,6 +43,80 @@
    "ganho_db": -10.0
   }
  ],
+ "quadrinhos": [
+  {
+   "plano": "p01",
+   "arquivo": "jornada-dado-p01.opus",
+   "inicio": 0.0,
+   "fim": 6.0
+  },
+  {
+   "plano": "p02",
+   "arquivo": "jornada-dado-p02.opus",
+   "inicio": 6.0,
+   "fim": 15.0
+  },
+  {
+   "plano": "p03",
+   "arquivo": "jornada-dado-p03.opus",
+   "inicio": 15.0,
+   "fim": 24.0
+  },
+  {
+   "plano": "p04",
+   "arquivo": "jornada-dado-p04.opus",
+   "inicio": 24.0,
+   "fim": 35.0
+  },
+  {
+   "plano": "p05",
+   "arquivo": "jornada-dado-p05.opus",
+   "inicio": 35.0,
+   "fim": 46.0
+  },
+  {
+   "plano": "p06",
+   "arquivo": "jornada-dado-p06.opus",
+   "inicio": 46.0,
+   "fim": 59.0
+  },
+  {
+   "plano": "p07",
+   "arquivo": "jornada-dado-p07.opus",
+   "inicio": 59.0,
+   "fim": 69.0
+  },
+  {
+   "plano": "p08",
+   "arquivo": "jornada-dado-p08.opus",
+   "inicio": 69.0,
+   "fim": 80.0
+  },
+  {
+   "plano": "p09",
+   "arquivo": "jornada-dado-p09.opus",
+   "inicio": 80.0,
+   "fim": 91.0
+  },
+  {
+   "plano": "p10",
+   "arquivo": "jornada-dado-p10.opus",
+   "inicio": 91.0,
+   "fim": 103.0
+  },
+  {
+   "plano": "p11",
+   "arquivo": "jornada-dado-p11.opus",
+   "inicio": 103.0,
+   "fim": 113.0
+  },
+  {
+   "plano": "p12",
+   "arquivo": "jornada-dado-p12.opus",
+   "inicio": 113.0,
+   "fim": 124.0
+  }
+ ],
  "clipes": [
   {
    "plano": "p01",
