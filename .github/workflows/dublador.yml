@@ -1,0 +1,144 @@
+name: Dublador
+
+# CP-008: a PROVA DE PORTABILIDADE. Workflow proprio (nao um job do
+# suite.yml) porque o disparo e por caminhos -- se o filtro morasse no
+# suite.yml, os fiscais calariam em PR que nao toca audio, e o gate roda
+# em TODO PR. Aqui so acorda quem mexe no que assina os bytes do audio:
+# o lock (modelo e ambiente), as amostras (portadoras do timbre), a
+# cadeia de sintese, a propria imagem, ou a legenda de algum filme.
+#
+# O que ele prova: que a imagem que materializa o voz.lock reproduce
+# BYTE A BYTE o audio commitado -- no runner Ubuntu, que nao e Debian 13,
+# nao tem piper e seria recusado pelo dublar se tentasse dublar direto.
+# Verificacao por sha256, 2 rodadas (determinismo interno + identidade
+# com o commitado). Um byte que difere reprova o job e publica o diff de
+# duracoes como artefato -- ONDE divergiu, nao so que divergiu.
+#
+# workflow_dispatch: reprovacao manual a qualquer hora, sem PR.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'voz.lock'
+      - 'amostras.lock'
+      - 'estudio_suite/dublar.py'
+      - 'estudio_suite/voz.py'
+      - 'estudio_suite/fala.py'
+      - 'estudio_suite/prosodia.py'
+      - 'estudio_suite/timbre.py'
+      - 'estudio_suite/comum.py'
+      - 'ferramentas/dublador/**'
+      - '.github/workflows/dublador.yml'
+      - 'filmes/*/*.filme.js'
+
+jobs:
+  dublador:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # O cache e chaveado pelo sha256 do lock QUE O DECLARA: voz.lock e a
+      # identidade do modelo (hash novo, modelo novo); amostras.lock e a
+      # identidade das portadoras. Cache sem chave de lock serviria modelo
+      # errado rapido -- o oposto do que o lock existe para garantir.
+      - name: As chaves de cache sao os sha256 dos locks
+        run: |
+          echo "VOZ_LOCK_SHA=$(sha256sum voz.lock | cut -d' ' -f1)" >> "$GITHUB_ENV"
+          echo "AMOSTRAS_LOCK_SHA=$(sha256sum amostras.lock | cut -d' ' -f1)" >> "$GITHUB_ENV"
+
+      - name: O cache do modelo de voz (workspace/voz)
+        uses: actions/cache@v4
+        with:
+          path: workspace/voz
+          key: voz-modelo-${{ env.VOZ_LOCK_SHA }}
+
+      - name: O cache das portadoras e earcons (workspace/amostras)
+        uses: actions/cache@v4
+        with:
+          path: workspace/amostras
+          key: amostras-${{ env.AMOSTRAS_LOCK_SHA }}
+
+      # buildx com cache de camadas do GitHub Actions: a base por digest e
+      # os pins do lock mudam raramente; o build efetivo costuma ser so
+      # resolver metadata. O rollback e o proprio digest + os pins do lock.
+      - name: O builder com cache de camadas
+        run: docker buildx create --name dublador --driver docker-container --use
+
+      - name: A imagem que materializa o lock
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            --load \
+            -t estudio-dublador:voz-lock \
+            -f ferramentas/dublador/Dockerfile .
+
+      # O compromisso: os .opus commitados. As dublagens regeneram POR
+      # CIMA (o dublar escreve no repositorio montado) -- por isso a copia
+      # e os sha256 ANTES da primeira rodada. Os hashes lidos aqui sao a
+      # prova contra a qual tudo vai ser comparado.
+      - name: Os sha256 do que esta commitado
+        run: |
+          mkdir -p /tmp/commitado
+          find filmes -path '*/audio/*.opus' | sort | while read -r f; do
+            mkdir -p "/tmp/commitado/$(dirname "$f")"
+            cp "$f" "/tmp/commitado/$f"
+            sha256sum "$f"
+          done | tee /tmp/commitado.sha256
+
+      # Duas rodadas: a 1 prova determinismo da imagem (2 filmes), a 2
+      # prova que a determinacao e estavel; e as duas contra o commitado
+      # provam PORTABILIDADE. O ESTUDIO_VOZ_CACHE aponta o modelo para o
+      # cache restaurado -- sem ele, cada rodada baixaria 60+ MB de novo.
+      - name: Dublar os dois filmes (rodada 1)
+        env:
+          ESTUDIO_VOZ_CACHE: ${{ github.workspace }}/workspace/voz
+        run: |
+          ferramentas/dublador/dublar.sh jornada-dado
+          ferramentas/dublador/dublar.sh legitimo-interesse
+          find filmes -path '*/audio/*.opus' | sort | xargs sha256sum > /tmp/rodada1.sha256
+
+      - name: Dublar os dois filmes (rodada 2)
+        env:
+          ESTUDIO_VOZ_CACHE: ${{ github.workspace }}/workspace/voz
+        run: |
+          ferramentas/dublador/dublar.sh jornada-dado
+          ferramentas/dublador/dublar.sh legitimo-interesse
+          find filmes -path '*/audio/*.opus' | sort | xargs sha256sum > /tmp/rodada2.sha256
+
+      # A prova em si. diff sai 1 na primeira diferenca e o job reprova --
+      # nao ha tolerancia por antecipacao (CP-008): se a imagem nao
+      # reproduz, e IMAGEM_NAO_REPRODUZ registrado na CP, nao diff verde.
+      - name: A comparacao byte a byte
+        run: |
+          echo "== rodada 1 == rodada 2 (o determinismo da imagem)"
+          diff -u /tmp/rodada1.sha256 /tmp/rodada2.sha256
+          echo "== rodada 2 == commitado (a portabilidade da ancora)"
+          diff -u /tmp/commitado.sha256 /tmp/rodada2.sha256
+          echo "== os sha256 comparados:"
+          cat /tmp/rodada2.sha256
+
+      # Onde divergiu, quando diverge: duracoes do commitado contra as
+      # regeneradas, medidas pelo ffprobe DA PROPRIA IMAGEM (a ancora e
+      # ele tambem) -- e publicadas como artefato para o diagnostico.
+      - name: O diff de duracoes (diagnostico da falha)
+        if: failure()
+        run: |
+          docker run --rm --platform linux/amd64 \
+            -v "$PWD":/app -v /tmp/commitado:/commitado -w /app \
+            estudio-dublador:voz-lock sh -c '
+              for f in $(find filmes -path "*/audio/*.opus" | sort); do
+                a=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "/commitado/$f" 2>/dev/null || echo "?")
+                b=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f" 2>/dev/null || echo "?")
+                printf "%s  commitado=%s  regenerado=%s\n" "$f" "$a" "$b"
+              done' | tee /tmp/duracoes.diff
+
+      - name: Publicar o diff de duracoes
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diff-de-duracoes
+          path: /tmp/duracoes.diff
