@@ -1,6 +1,7 @@
 """O comando dublar: da legenda ao arquivo de audio. Offline, travado, derivado.
 
-A ordem das coisas neste comando e a doutrina da CP-004 em ordem de execucao:
+A ordem das coisas neste comando e a doutrina em ordem de execucao -- a
+CP-004 ate o mix, a CP-005 acrescentando o estagio de timbre:
 
 1. A legenda e a UNICA fonte. Nao ha roteiro de audio: o texto e
    fala.normalizar(txt), e quem fala vem de `quem`/`plano.guardiao`/Narrador.
@@ -9,15 +10,24 @@ A ordem das coisas neste comando e a doutrina da CP-004 em ordem de execucao:
    Nao estica, nao reamostra para caber: encurta-se a legenda. (Converter a
    taxa 22050->48000 e mudanca de FORMATO, com duracao identica -- isso o
    alvo de 48 kHz da CP pede; o que a doutrina proibe e mexer na duracao.)
-4. Um clipe por legenda, posicionado no seu `em` absoluto, mixado com
-   loudness ancorado (-16 LUFS, true peak -1.5 dBTP) em <id>.opus 48 kHz mono.
+4. TIMBRE (CP-005): se o rig do quem-fala declara voz.timbre com portadora
+   ancorada em amostras.lock, o clipe passa pelo vocoder de canais DEPOIS
+   do piper e ANTES de posicionar -- fala -> piper -> timbre -> posicionar
+   -> mixar. mistura 0 devolve o clipe intocado, byte a byte.
+5. EARCONS do Dado (CP-005): os momentos do Dado que JA existem como dado
+   no filme (pose aceso/retraido, evento citar, aceso visual via para.op=1)
+   ganham carimbo sintetizado de sons/, a ~-10 dB sob a voz (ganho fixo),
+   posicionados pelo `em` da acao. O Dado continua mudo: earcon nao e voz.
+6. Um clipe por legenda, posicionado no seu `em` absoluto, mixado com
+   loudness ancorado (-16 LUFS, true peak -2.0 dBTP) em <id>.opus 48 kHz mono.
 
 Determinismo: piper 1.3 amostra ruido do prior (noise_scale / noise_w_scale).
 Com os dois em zero, a saida e byte-identica entre execucoes -- medido
 empiricamente (duas execucoes, bytes iguais), nao assumido. Foi isso, e nao
 gosto, que fixou os parametros: com os defaults do piper, cada redublagem
 mudaria TODOS os clips no diff, mesmo os de texto intocado, e o audio deixaria
-de ser revisavel. A prosodia menos variada e o preco, e o Sprint 5 ouve.
+de ser revisavel. A prosodia menos variada e o preco, e o timbre da CP-005
+e o que devolve personagem sem reabrir o lock de ruido.
 """
 import hashlib
 import json
@@ -41,6 +51,10 @@ from . import voz as _voz
 # trilha passava no portao por 0.02 dB, que nao e margem, e coincidencia.
 LOUDNESS_LUFS, TRUE_PEAK_DBTP = -16.0, -2.0
 TAXA, CANAIS, BITRATE = 48000, 1, "40k"
+
+# Earcons do Dado a ~-10 dB sob a voz (CP-005): ganho FIXO, sem parametro
+# por filme -- o som do Dado e da suíte, e quem muda o nivel muda o lock.
+GANHO_EARCON_DB = -10.0
 
 # A tolerancia do orcamento de tempo e a quantizacao da amostra, nao margem
 # de manobra: 10 ms em 22050 Hz e ~220 amostras, arredondamento de fim de
@@ -145,16 +159,26 @@ def parametros_de(ator_meta: dict) -> tuple:
 
 
 def quem_fala(P: dict, L: dict, elenco: dict) -> tuple:
-    """(texto, ritmo, rotulo) de uma legenda: quem, como e o que se fala."""
+    """(texto, ritmo, rotulo, timbre) de uma legenda: quem, como e o que se fala.
+
+    O timbre (CP-005) e do RIG -- o animal e do personagem, nao do papel: os
+    dois registros da Raposa latem igual. mistura 0 ou sem portadora = None:
+    a camada so existe quando declarada E medida.
+    """
     texto = fala.normalizar(L["txt"])
     if L.get("quem"):
         ator = elenco[L["quem"]]
         ritmo, rotulo = parametros_de(ator)
+        rig = ator.get("rig", "")
     elif P.get("guardiao"):
         ritmo, rotulo = parametros_de({"rig": P["guardiao"]})
+        rig = P["guardiao"]
     else:
-        ritmo, rotulo = fala.NARRADOR["ritmo"], "narrador"
-    return texto, ritmo, rotulo
+        return texto, fala.NARRADOR["ritmo"], "narrador", None
+    tim = (voz_do_rig(rig) or {}).get("timbre") or None
+    if tim and (not tim.get("portadora") or float(tim.get("mistura", 0) or 0) <= 0):
+        tim = None
+    return texto, ritmo, rotulo, tim
 
 
 def _length_scale(ritmo: float) -> float:
@@ -178,13 +202,16 @@ def _gravar_wav(caminho: Path, pcm: bytes) -> None:
         w.writeframes(pcm)
 
 
-def mixar(clipes: list, duracao_filme: float, saida: Path) -> None:
-    """Clipes [(pcm, em_abs, dur)] -> um .opus 48 kHz mono, loudness ancorado.
+def mixar(clipes: list, duracao_filme: float, saida: Path, earcons=None) -> None:
+    """Clipes [(pcm, em_abs, dur)] (+ earcons [(wav, em_abs)]) -> um .opus.
 
     O ffmpeg faz a mixagem porque ja e dependencia declarada do ambiente; um
     mixador em Python seria uma segunda implementacao de DSP para conferir
-    ninguem. aresample muda o formato (22050->48000), nunca a duracao.
+    ninguem. aresample muda o formato (22050->48000), nunca a duracao. Os
+    earcons entram como entradas a mais com ganho FIXO de -10 dB -- sem
+    earcons, o grafo e byte a byte o da CP-004 (a camada e aditiva).
     """
+    earcons = earcons or []
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         entradas, filtros, rotulos = [], [], []
@@ -196,9 +223,17 @@ def mixar(clipes: list, duracao_filme: float, saida: Path) -> None:
             filtros.append(
                 f"[{i}:a]aresample={TAXA},adelay={ms}:all=1[a{i}]")
             rotulos.append(f"[a{i}]")
+        ganho = 10.0 ** (GANHO_EARCON_DB / 20.0)
+        for j, (arquivo, em) in enumerate(earcons):
+            entradas += ["-i", str(arquivo)]
+            ms = int(round(em * 1000))
+            filtros.append(
+                f"[{len(clipes) + j}:a]aresample={TAXA},"
+                f"volume={ganho:.6f},adelay={ms}:all=1[ae{j}]")
+            rotulos.append(f"[ae{j}]")
         filtros.append(
             "".join(rotulos) +
-            f"amix=inputs={len(clipes)}:normalize=0,apad,atrim=0:{duracao_filme:.3f},"
+            f"amix=inputs={len(rotulos)}:normalize=0,apad,atrim=0:{duracao_filme:.3f},"
             f"loudnorm=I={LOUDNESS_LUFS}:TP={TRUE_PEAK_DBTP}:LRA=7[aout]")
         cmd = (["ffmpeg", "-y", "-nostdin", "-fflags", "+bitexact"] + entradas +
                ["-filter_complex", ";".join(filtros), "-map", "[aout]",
@@ -215,6 +250,28 @@ def mixar(clipes: list, duracao_filme: float, saida: Path) -> None:
 
 
 # ---- o comando ------------------------------------------------------------
+def _earcons_do_filme(d: dict) -> list:
+    """[(plano, em_abs, tipo)] — os momentos do Dado que JA existem como dado.
+
+    Nada aqui inventa evento: pose 'aceso'/'retraido' e evento 'citar' vem
+    das acoes do filme; o aceso VISUAL (para.op indo a 1, o dado acendendo)
+    tambem e dado. O Dado continua mudo — earcon e carimbo, nao voz.
+    """
+    agenda, cursor = [], 0.0
+    for P in d["planos"]:
+        for a in P.get("acoes") or []:
+            if a.get("alvo") != "dado":
+                continue
+            if a.get("pose") in ("aceso", "retraido"):
+                agenda.append((P["id"], round(cursor + a["em"], 3), a["pose"]))
+            elif a.get("evento") == "citar":
+                agenda.append((P["id"], round(cursor + a["em"], 3), "citar"))
+            elif (a.get("para") or {}).get("op") == 1:
+                agenda.append((P["id"], round(cursor + a["em"], 3), "aceso"))
+        cursor += P["dur"]
+    return agenda
+
+
 def dublar(fid: str) -> int:
     d = dados_do_filme(fid)
     base = _voz.materializar()
@@ -232,12 +289,46 @@ def dublar(fid: str) -> int:
     voice = PiperVoice.load(onnx)
 
     elenco = d.get("elenco", {})
+    # O timbre materializa as portadoras SO se algum rig do filme declara
+    # timbre -- filme sem timbre nao toca na rede nem no lock de amostras.
+    portadoras_necessarias = set()
+    for P in d["planos"]:
+        for L in P.get("legendas") or []:
+            _t, _r, _rot, tim = quem_fala(P, L, elenco)
+            if tim:
+                portadoras_necessarias.add(tim["portadora"])
+    earcons_agenda = _earcons_do_filme(d)
+    necessarias = set(portadoras_necessarias)
+    if earcons_agenda:
+        necessarias |= {f"dado-{t}" for _, _, t in earcons_agenda}
+    wavs_amostras = {}
+    if necessarias:
+        from . import amostras as _am
+        wavs_amostras = _am.materializar(ids=necessarias)
+
+    arquivos_earcon = {}
+    if earcons_agenda:
+        tipos = {tipo for _, _, tipo in earcons_agenda}
+        arquivos_earcon = {t: wavs_amostras[f"dado-{t}"] for t in tipos
+                           if f"dado-{t}" in wavs_amostras}
+        faltam = tipos - set(arquivos_earcon)
+        if faltam:
+            raise ErroDeDados(
+                f"o filme tem momentos do Dado ({', '.join(sorted(faltam))}) sem "
+                f"earcon ancorado em amostras.lock -- o som do Dado e da suíte, "
+                f"e mora no lock.")
+
     clipes, manifestos, excessos = [], [], []
     cursor = 0.0
     for P in d["planos"]:
         for L in P.get("legendas") or []:
-            texto, ritmo, rotulo = quem_fala(P, L, elenco)
+            texto, ritmo, rotulo, tim = quem_fala(P, L, elenco)
             pcm, dur = sintetizar(voice, texto, ritmo)
+            if tim:
+                from . import timbre as _tim
+                pcm = _tim.aplicar(pcm, wavs_amostras[tim["portadora"]],
+                                   mistura=float(tim["mistura"]),
+                                   bandas=int(tim.get("bandas", 16) or 16))
             em, ate = cursor + L["em"], cursor + L["ate"]
             orcamento = (L["ate"] - L["em"]) + TOLERANCIA_S
             if dur > orcamento:
@@ -248,11 +339,20 @@ def dublar(fid: str) -> int:
                     f"legenda (teto de 15 caracteres/segundo): {L['txt']!r}")
                 continue
             clipes.append((pcm, em, dur))
-            manifestos.append({
+            mani = {
                 "plano": P["id"], "em": round(em, 3), "ate": round(ate, 3),
                 "dur": round(dur, 3), "voz": rotulo,
                 "texto_sha256": hashlib.sha256(texto.encode("utf-8")).hexdigest(),
-            })
+            }
+            if tim:
+                from . import amostras as _am
+                mani["timbre"] = {
+                    "portadora": tim["portadora"],
+                    "mistura": float(tim["mistura"]),
+                    "bandas": int(tim.get("bandas", 16) or 16),
+                    "portadora_sha256": _am.ancora()[tim["portadora"]]["sha256"],
+                }
+            manifestos.append(mani)
         cursor += P["dur"]
 
     if excessos:
@@ -268,7 +368,9 @@ def dublar(fid: str) -> int:
     dir_audio = FILMES / fid / "audio"
     dir_audio.mkdir(parents=True, exist_ok=True)
     opus = dir_audio / f"{fid}.opus"
-    mixar(clipes, d["duracao"], opus)
+    earcons_mix = [(arquivos_earcon[t], em) for _, em, t in earcons_agenda
+                   if t in arquivos_earcon]
+    mixar(clipes, d["duracao"], opus, earcons=earcons_mix)
 
     manifesto = {
         "filme": fid,
@@ -279,6 +381,9 @@ def dublar(fid: str) -> int:
         "mix": {"arquivo": opus.name, "taxa_hz": TAXA, "canais": CANAIS,
                 "loudness_alvo_lufs": LOUDNESS_LUFS,
                 "true_peak_alvo_dbtp": TRUE_PEAK_DBTP},
+        "earcons": [{"plano": p, "em": em, "tipo": t,
+                     "arquivo": f"dado-{t}.wav", "ganho_db": GANHO_EARCON_DB}
+                    for p, em, t in earcons_agenda],
         "clipes": manifestos,
     }
     (dir_audio / "audio.json").write_text(
@@ -290,6 +395,11 @@ def dublar(fid: str) -> int:
     for c in manifestos:
         por_voz[c["voz"]] = por_voz.get(c["voz"], 0) + 1
     print("  vozes: " + ", ".join(f"{v} ({n})" for v, n in sorted(por_voz.items())))
+    timbrados = sum(1 for c in manifestos if c.get("timbre"))
+    if timbrados:
+        print(f"  timbre: {timbrados} clipe(s) com portadora animal (vocoder de canais)")
+    if earcons_agenda:
+        print(f"  earcons do Dado: {len(earcons_agenda)} momento(s) a {GANHO_EARCON_DB} dB")
     print(f"  loudness ancorado em {LOUDNESS_LUFS} LUFS / true peak "
           f"{TRUE_PEAK_DBTP} dBTP; manifesto em audio/audio.json")
     return 0

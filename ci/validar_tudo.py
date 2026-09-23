@@ -51,6 +51,7 @@ def _fiscais(com_lei=True):
 
     from estudio_suite import orcamento as _orc
     _aud = importlib.import_module("ci.auditar_melhorias")
+    from estudio_suite import amostras as _am
 
     # Os dois primeiros PRECISAM da lei; os tres ultimos, nao. Rodar so os
     # tres e uma medicao MENOR, e ela e anunciada como tal -- o que nao se
@@ -58,6 +59,7 @@ def _fiscais(com_lei=True):
     com = [("lei ancorada", lei), ("roteiros e jogos", _rot.main)]
     sem = [("orcamento de tamanho", _orc.main),
            ("modulo de automelhorias", _aud.main),
+           ("sons ancorados", _am.checar),
            ("artefatos derivados", lambda: _sinc.main())]
     return (com + sem) if com_lei else sem
 

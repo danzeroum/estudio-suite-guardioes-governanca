@@ -35,6 +35,30 @@ def _hash(txt):
     return hashlib.sha256(fala.normalizar(txt).encode("utf-8")).hexdigest()
 
 
+def _timbre_coruja():
+    """O timbre esperado do rig coruja REAL (CP-005): o fiscal compara o
+    gravado contra o que o rig declara HOJE -- o fantasma em sincronia
+    carrega o mesmo dicionario que o dublar gravaria."""
+    from estudio_suite import amostras
+    from estudio_suite.dublar import voz_do_rig
+    t = voz_do_rig("coruja")["timbre"]
+    return {"portadora": t["portadora"], "mistura": float(t["mistura"]),
+            "bandas": int(t["bandas"]),
+            "portadora_sha256": amostras.ancora()[t["portadora"]]["sha256"]}
+
+
+def _timbre_coruja():
+    """O timbre esperado do rig coruja REAL (CP-005): o fiscal compara o
+    gravado contra o que o rig declara HOJE -- o fantasma em sincronia
+    carrega o mesmo dicionario que o dublar gravaria."""
+    from estudio_suite import amostras
+    from estudio_suite.dublar import voz_do_rig
+    t = voz_do_rig("coruja")["timbre"]
+    return {"portadora": t["portadora"], "mistura": float(t["mistura"]),
+            "bandas": int(t["bandas"]),
+            "portadora_sha256": amostras.ancora()[t["portadora"]]["sha256"]}
+
+
 def _criar_filme(legendas):
     """Filme minimo com as legendas dadas [(em, ate, txt)] no plano p01."""
     d = FILMES / FANTASMA
@@ -71,14 +95,15 @@ def _cenario(legendas, clipes):
 
 
 def main():
+    T = _timbre_coruja()
     # --- em sincronia: o fiscal cala -----------------------------------
     L1 = (0.3, 5.5, "Uma legenda que fala.")
     L2 = (6.0, 11.0, "Outra legenda, outro tempo.")
     _cenario([L1, L2], [
         {"plano": "p01", "em": 0.3, "ate": 5.5, "dur": 4.2, "voz": "coruja",
-         "texto_sha256": _hash(L1[2])},
+         "texto_sha256": _hash(L1[2]), "timbre": dict(T)},
         {"plano": "p01", "em": 6.0, "ate": 11.0, "dur": 3.1, "voz": "coruja",
-         "texto_sha256": _hash(L2[2])},
+         "texto_sha256": _hash(L2[2]), "timbre": dict(T)},
     ])
     achados_sync = fiscal_redublagem(FANTASMA)
     chk(achados_sync == [],
@@ -87,9 +112,9 @@ def main():
     # --- texto editado sem redublar: divida apontada -------------------
     _cenario([(0.3, 5.5, "Uma legenda EDITADA."), L2], [
         {"plano": "p01", "em": 0.3, "ate": 5.5, "dur": 4.2, "voz": "coruja",
-         "texto_sha256": _hash(L1[2])},
+         "texto_sha256": _hash(L1[2]), "timbre": dict(T)},
         {"plano": "p01", "em": 6.0, "ate": 11.0, "dur": 3.1, "voz": "coruja",
-         "texto_sha256": _hash(L2[2])},
+         "texto_sha256": _hash(L2[2]), "timbre": dict(T)},
     ])
     a = fiscal_redublagem(FANTASMA)
     chk(len(a) == 1 and "mudou de texto" in a[0] and "dublar" in a[0],
@@ -98,9 +123,9 @@ def main():
     # --- tempo editado sem redublar: divida apontada -------------------
     _cenario([(0.3, 5.0, L1[2]), L2], [
         {"plano": "p01", "em": 0.3, "ate": 5.5, "dur": 4.2, "voz": "coruja",
-         "texto_sha256": _hash(L1[2])},
+         "texto_sha256": _hash(L1[2]), "timbre": dict(T)},
         {"plano": "p01", "em": 6.0, "ate": 11.0, "dur": 3.1, "voz": "coruja",
-         "texto_sha256": _hash(L2[2])},
+         "texto_sha256": _hash(L2[2]), "timbre": dict(T)},
     ])
     a = fiscal_redublagem(FANTASMA)
     chk(len(a) == 1 and "termina em" in a[0],
@@ -109,9 +134,9 @@ def main():
     # --- legenda nova, sem clipe: divida apontada ----------------------
     _cenario([L1, L2, (11.2, 11.9, "Nova no fim.")], [
         {"plano": "p01", "em": 0.3, "ate": 5.5, "dur": 4.2, "voz": "coruja",
-         "texto_sha256": _hash(L1[2])},
+         "texto_sha256": _hash(L1[2]), "timbre": dict(T)},
         {"plano": "p01", "em": 6.0, "ate": 11.0, "dur": 3.1, "voz": "coruja",
-         "texto_sha256": _hash(L2[2])},
+         "texto_sha256": _hash(L2[2]), "timbre": dict(T)},
     ])
     a = fiscal_redublagem(FANTASMA)
     chk(any("nao existe na dublagem" in x for x in a),
@@ -120,9 +145,9 @@ def main():
     # --- legenda apagada, clipe sobrando: divida apontada --------------
     _cenario([L1], [
         {"plano": "p01", "em": 0.3, "ate": 5.5, "dur": 4.2, "voz": "coruja",
-         "texto_sha256": _hash(L1[2])},
+         "texto_sha256": _hash(L1[2]), "timbre": dict(T)},
         {"plano": "p01", "em": 6.0, "ate": 11.0, "dur": 3.1, "voz": "coruja",
-         "texto_sha256": _hash(L2[2])},
+         "texto_sha256": _hash(L2[2]), "timbre": dict(T)},
     ])
     a = fiscal_redublagem(FANTASMA)
     chk(any("clipe(s) para" in x for x in a),

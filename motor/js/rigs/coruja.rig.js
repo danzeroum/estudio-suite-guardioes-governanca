@@ -78,6 +78,7 @@ Estudio.Rig.registrar({
      proibido. Sem cliente no motor — quem lê é o estudo_suite. */
   voz: {
     registro: 'calma, professora',
-    pitch: 'medio', ritmo: -0.10, pausas: 'marcadas'
+    pitch: 'medio', ritmo: -0.10, pausas: 'marcadas',
+    timbre: { portadora: 'coruja-pio', mistura: 0.35, bandas: 16 }
   }
 });

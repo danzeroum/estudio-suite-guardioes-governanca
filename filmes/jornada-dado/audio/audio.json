@@ -13,6 +13,36 @@
   "loudness_alvo_lufs": -16.0,
   "true_peak_alvo_dbtp": -2.0
  },
+ "earcons": [
+  {
+   "plano": "p01",
+   "em": 1.2,
+   "tipo": "aceso",
+   "arquivo": "dado-aceso.wav",
+   "ganho_db": -10.0
+  },
+  {
+   "plano": "p02",
+   "em": 8.0,
+   "tipo": "aceso",
+   "arquivo": "dado-aceso.wav",
+   "ganho_db": -10.0
+  },
+  {
+   "plano": "p02",
+   "em": 12.2,
+   "tipo": "citar",
+   "arquivo": "dado-citar.wav",
+   "ganho_db": -10.0
+  },
+  {
+   "plano": "p10",
+   "em": 92.6,
+   "tipo": "retraido",
+   "arquivo": "dado-retraido.wav",
+   "ganho_db": -10.0
+  }
+ ],
  "clipes": [
   {
    "plano": "p01",
@@ -26,57 +56,99 @@
    "plano": "p02",
    "em": 6.3,
    "ate": 10.0,
-   "dur": 1.997,
+   "dur": 2.02,
    "voz": "coruja",
-   "texto_sha256": "abcd471f2eee3467f15c66a3eb9a541a1e64af3c1346005c211ca6141af50a40"
+   "texto_sha256": "abcd471f2eee3467f15c66a3eb9a541a1e64af3c1346005c211ca6141af50a40",
+   "timbre": {
+    "portadora": "coruja-pio",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "b0964fd40d099ac3d4e000a6dd3ee76c75bca44edd329382fda04dfa3673d242"
+   }
   },
   {
    "plano": "p02",
    "em": 10.3,
    "ate": 14.7,
-   "dur": 2.705,
+   "dur": 2.821,
    "voz": "coruja",
-   "texto_sha256": "65f74d0b668d248dd55f828f610828476f0e449ffb694a6c67eb58b3cd96ec21"
+   "texto_sha256": "65f74d0b668d248dd55f828f610828476f0e449ffb694a6c67eb58b3cd96ec21",
+   "timbre": {
+    "portadora": "coruja-pio",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "b0964fd40d099ac3d4e000a6dd3ee76c75bca44edd329382fda04dfa3673d242"
+   }
   },
   {
    "plano": "p03",
    "em": 15.3,
    "ate": 19.3,
-   "dur": 1.788,
+   "dur": 1.811,
    "voz": "coruja",
-   "texto_sha256": "7a64bd8a6a4575270a2d912c117f2013608316b80a58fc43fe1a8d867b26bba1"
+   "texto_sha256": "7a64bd8a6a4575270a2d912c117f2013608316b80a58fc43fe1a8d867b26bba1",
+   "timbre": {
+    "portadora": "coruja-pio",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "b0964fd40d099ac3d4e000a6dd3ee76c75bca44edd329382fda04dfa3673d242"
+   }
   },
   {
    "plano": "p03",
    "em": 19.5,
    "ate": 23.7,
-   "dur": 2.566,
+   "dur": 2.67,
    "voz": "coruja",
-   "texto_sha256": "cd28be7fb793e73a723e3e901f02c55899be4aeba35e2b3e645610ad90bdcea1"
+   "texto_sha256": "cd28be7fb793e73a723e3e901f02c55899be4aeba35e2b3e645610ad90bdcea1",
+   "timbre": {
+    "portadora": "coruja-pio",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "b0964fd40d099ac3d4e000a6dd3ee76c75bca44edd329382fda04dfa3673d242"
+   }
   },
   {
    "plano": "p04",
    "em": 24.3,
    "ate": 28.5,
-   "dur": 2.032,
+   "dur": 2.009,
    "voz": "raposa",
-   "texto_sha256": "39fd93c44029c7a10971ac0003680b8239d1ac883354b51151682f88b98aa46a"
+   "texto_sha256": "39fd93c44029c7a10971ac0003680b8239d1ac883354b51151682f88b98aa46a",
+   "timbre": {
+    "portadora": "raposa-latido",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "0369b103ca84aca6605052b9825db53c33e3e8ad35806f39039be53089d08657"
+   }
   },
   {
    "plano": "p04",
    "em": 28.7,
    "ate": 32.0,
-   "dur": 1.649,
+   "dur": 1.614,
    "voz": "raposa",
-   "texto_sha256": "8b0c027d003834fe02e3ca5000bb923a724c84c42241ccb4826e3ecf9d95be61"
+   "texto_sha256": "8b0c027d003834fe02e3ca5000bb923a724c84c42241ccb4826e3ecf9d95be61",
+   "timbre": {
+    "portadora": "raposa-latido",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "0369b103ca84aca6605052b9825db53c33e3e8ad35806f39039be53089d08657"
+   }
   },
   {
    "plano": "p04",
    "em": 32.2,
    "ate": 34.8,
-   "dur": 2.009,
+   "dur": 1.974,
    "voz": "raposa",
-   "texto_sha256": "8ea7940fff498c37ed8137c16012b31fa3918f0c0e325307395ae61d73027f95"
+   "texto_sha256": "8ea7940fff498c37ed8137c16012b31fa3918f0c0e325307395ae61d73027f95",
+   "timbre": {
+    "portadora": "raposa-latido",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "0369b103ca84aca6605052b9825db53c33e3e8ad35806f39039be53089d08657"
+   }
   },
   {
    "plano": "p05",
@@ -84,7 +156,13 @@
    "ate": 39.0,
    "dur": 2.159,
    "voz": "aguia",
-   "texto_sha256": "1e775aeccff31704f64c2e35532b14652da4ed1021649c1f1230bcca6ffa1d71"
+   "texto_sha256": "1e775aeccff31704f64c2e35532b14652da4ed1021649c1f1230bcca6ffa1d71",
+   "timbre": {
+    "portadora": "aguia-guincho",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "eb221b21fe673c90fee3df38ea6e1be8b9f151c3d899a8e37ca3b8246fe8b082"
+   }
   },
   {
    "plano": "p05",
@@ -92,7 +170,13 @@
    "ate": 42.8,
    "dur": 1.846,
    "voz": "aguia",
-   "texto_sha256": "d0560d52b3bbe07e4fc65396feed7994d6f093808d16b403a5f09cda0bea08ce"
+   "texto_sha256": "d0560d52b3bbe07e4fc65396feed7994d6f093808d16b403a5f09cda0bea08ce",
+   "timbre": {
+    "portadora": "aguia-guincho",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "eb221b21fe673c90fee3df38ea6e1be8b9f151c3d899a8e37ca3b8246fe8b082"
+   }
   },
   {
    "plano": "p05",
@@ -100,13 +184,19 @@
    "ate": 45.8,
    "dur": 2.159,
    "voz": "aguia",
-   "texto_sha256": "ad1aadb835db3cc2445ba2858e87e63195be428a3da0864c422814080e9a9530"
+   "texto_sha256": "ad1aadb835db3cc2445ba2858e87e63195be428a3da0864c422814080e9a9530",
+   "timbre": {
+    "portadora": "aguia-guincho",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "eb221b21fe673c90fee3df38ea6e1be8b9f151c3d899a8e37ca3b8246fe8b082"
+   }
   },
   {
    "plano": "p06",
    "em": 46.3,
    "ate": 50.2,
-   "dur": 1.498,
+   "dur": 1.765,
    "voz": "tartaruga",
    "texto_sha256": "fe5c4a51e9abc6f4dc5821af8320dda17baa25ce21d518339f7f09e8f9d14c1c"
   },
@@ -114,7 +204,7 @@
    "plano": "p06",
    "em": 50.4,
    "ate": 54.6,
-   "dur": 2.055,
+   "dur": 2.299,
    "voz": "tartaruga",
    "texto_sha256": "a92b3002dbe854b7914d786d49545c936230f6ee092ba769e67781cd8c3bea3b"
   },
@@ -122,7 +212,7 @@
    "plano": "p06",
    "em": 54.8,
    "ate": 58.8,
-   "dur": 2.752,
+   "dur": 3.053,
    "voz": "tartaruga",
    "texto_sha256": "3bcd56cd04ff327d239d1c7985cd71997cb215efe7385cc4ae9d6fedf14b1242"
   },
@@ -130,41 +220,71 @@
    "plano": "p07",
    "em": 59.3,
    "ate": 63.5,
-   "dur": 2.02,
+   "dur": 1.974,
    "voz": "raposa",
-   "texto_sha256": "75f200279679963a42ee5c86bd56b1b3d13ddd8351655f951778931da6a25d46"
+   "texto_sha256": "75f200279679963a42ee5c86bd56b1b3d13ddd8351655f951778931da6a25d46",
+   "timbre": {
+    "portadora": "raposa-latido",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "0369b103ca84aca6605052b9825db53c33e3e8ad35806f39039be53089d08657"
+   }
   },
   {
    "plano": "p07",
    "em": 63.7,
    "ate": 68.8,
-   "dur": 3.471,
+   "dur": 3.437,
    "voz": "raposa",
-   "texto_sha256": "252bb554421cd2d32f3c155eb16d948ab948a2dc9befdbead858dd18902d05ac"
+   "texto_sha256": "252bb554421cd2d32f3c155eb16d948ab948a2dc9befdbead858dd18902d05ac",
+   "timbre": {
+    "portadora": "raposa-latido",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "0369b103ca84aca6605052b9825db53c33e3e8ad35806f39039be53089d08657"
+   }
   },
   {
    "plano": "p08",
    "em": 69.3,
    "ate": 73.4,
-   "dur": 1.939,
+   "dur": 2.101,
    "voz": "elefante",
-   "texto_sha256": "b44a0d10e56b19313f18c47e0eec4b2fc3e3db8c05112cb8082f8abc80debfbf"
+   "texto_sha256": "b44a0d10e56b19313f18c47e0eec4b2fc3e3db8c05112cb8082f8abc80debfbf",
+   "timbre": {
+    "portadora": "elefante-trompa",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "07112f7433e00e4193483382f11d77bec23257ee615385e12aa0becae4d4cbbd"
+   }
   },
   {
    "plano": "p08",
    "em": 73.6,
    "ate": 77.4,
-   "dur": 2.02,
+   "dur": 2.136,
    "voz": "elefante",
-   "texto_sha256": "099b668b13e332422d4bd71a46674d544e0dba32494e6b73a8f9bc06bdd4b3ba"
+   "texto_sha256": "099b668b13e332422d4bd71a46674d544e0dba32494e6b73a8f9bc06bdd4b3ba",
+   "timbre": {
+    "portadora": "elefante-trompa",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "07112f7433e00e4193483382f11d77bec23257ee615385e12aa0becae4d4cbbd"
+   }
   },
   {
    "plano": "p08",
    "em": 77.6,
    "ate": 79.8,
-   "dur": 1.869,
+   "dur": 1.916,
    "voz": "elefante",
-   "texto_sha256": "e192f3928b199856cc8766daf00bf9f86a0ec5f59cc342538dee1870d65748b5"
+   "texto_sha256": "e192f3928b199856cc8766daf00bf9f86a0ec5f59cc342538dee1870d65748b5",
+   "timbre": {
+    "portadora": "elefante-trompa",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "07112f7433e00e4193483382f11d77bec23257ee615385e12aa0becae4d4cbbd"
+   }
   },
   {
    "plano": "p09",
@@ -172,7 +292,13 @@
    "ate": 84.4,
    "dur": 1.614,
    "voz": "aguia",
-   "texto_sha256": "fe3c35a8aa08f13046742a72e16ee13b94ff6f10783439de17b73c62ab03c2a0"
+   "texto_sha256": "fe3c35a8aa08f13046742a72e16ee13b94ff6f10783439de17b73c62ab03c2a0",
+   "timbre": {
+    "portadora": "aguia-guincho",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "eb221b21fe673c90fee3df38ea6e1be8b9f151c3d899a8e37ca3b8246fe8b082"
+   }
   },
   {
    "plano": "p09",
@@ -180,7 +306,13 @@
    "ate": 88.2,
    "dur": 1.614,
    "voz": "aguia",
-   "texto_sha256": "ca3f369dee6bf9c4950da104c732367779e03e5aa0f9784c96a404fb64b5583b"
+   "texto_sha256": "ca3f369dee6bf9c4950da104c732367779e03e5aa0f9784c96a404fb64b5583b",
+   "timbre": {
+    "portadora": "aguia-guincho",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "eb221b21fe673c90fee3df38ea6e1be8b9f151c3d899a8e37ca3b8246fe8b082"
+   }
   },
   {
    "plano": "p09",
@@ -188,31 +320,55 @@
    "ate": 91.0,
    "dur": 2.531,
    "voz": "aguia",
-   "texto_sha256": "983eca1410a6c4b5864af3eb8f488c098310461983002905e94b8061b236aa71"
+   "texto_sha256": "983eca1410a6c4b5864af3eb8f488c098310461983002905e94b8061b236aa71",
+   "timbre": {
+    "portadora": "aguia-guincho",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "eb221b21fe673c90fee3df38ea6e1be8b9f151c3d899a8e37ca3b8246fe8b082"
+   }
   },
   {
    "plano": "p10",
    "em": 91.3,
    "ate": 94.6,
-   "dur": 1.509,
+   "dur": 1.602,
    "voz": "elefante",
-   "texto_sha256": "21e32989191bf4b425b8f4736c63fd630fec930a8cfca92b2a264860a8168dd9"
+   "texto_sha256": "21e32989191bf4b425b8f4736c63fd630fec930a8cfca92b2a264860a8168dd9",
+   "timbre": {
+    "portadora": "elefante-trompa",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "07112f7433e00e4193483382f11d77bec23257ee615385e12aa0becae4d4cbbd"
+   }
   },
   {
    "plano": "p10",
    "em": 94.8,
    "ate": 98.6,
-   "dur": 1.649,
+   "dur": 1.765,
    "voz": "elefante",
-   "texto_sha256": "52af247fb8c153e44314ed27f221fe59ffeb9670bef114c4cc2bed51ceacd847"
+   "texto_sha256": "52af247fb8c153e44314ed27f221fe59ffeb9670bef114c4cc2bed51ceacd847",
+   "timbre": {
+    "portadora": "elefante-trompa",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "07112f7433e00e4193483382f11d77bec23257ee615385e12aa0becae4d4cbbd"
+   }
   },
   {
    "plano": "p10",
    "em": 98.8,
    "ate": 102.8,
-   "dur": 2.752,
+   "dur": 2.914,
    "voz": "elefante",
-   "texto_sha256": "63cc409c2c880df6a3ee61d63a1308c7fe39236ee64224d8c6542230864320e4"
+   "texto_sha256": "63cc409c2c880df6a3ee61d63a1308c7fe39236ee64224d8c6542230864320e4",
+   "timbre": {
+    "portadora": "elefante-trompa",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "07112f7433e00e4193483382f11d77bec23257ee615385e12aa0becae4d4cbbd"
+   }
   },
   {
    "plano": "p11",
@@ -220,7 +376,13 @@
    "ate": 107.2,
    "dur": 1.811,
    "voz": "aguia",
-   "texto_sha256": "47c74c25aaf363f76b471a6ba5f4261f78ee223ae1c7ed4f44d768670bfbda92"
+   "texto_sha256": "47c74c25aaf363f76b471a6ba5f4261f78ee223ae1c7ed4f44d768670bfbda92",
+   "timbre": {
+    "portadora": "aguia-guincho",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "eb221b21fe673c90fee3df38ea6e1be8b9f151c3d899a8e37ca3b8246fe8b082"
+   }
   },
   {
    "plano": "p11",
@@ -228,7 +390,13 @@
    "ate": 112.8,
    "dur": 4.005,
    "voz": "aguia",
-   "texto_sha256": "ceac190e51ee89019bca8926eba80d8de26223f3fef96bbb4784acdc955b5bff"
+   "texto_sha256": "ceac190e51ee89019bca8926eba80d8de26223f3fef96bbb4784acdc955b5bff",
+   "timbre": {
+    "portadora": "aguia-guincho",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "eb221b21fe673c90fee3df38ea6e1be8b9f151c3d899a8e37ca3b8246fe8b082"
+   }
   },
   {
    "plano": "p12",
@@ -236,7 +404,13 @@
    "ate": 117.2,
    "dur": 1.556,
    "voz": "aguia",
-   "texto_sha256": "44618daaecc06fbcb4cbeea65806dce2b648b396ccca65e06efd9d626d29f430"
+   "texto_sha256": "44618daaecc06fbcb4cbeea65806dce2b648b396ccca65e06efd9d626d29f430",
+   "timbre": {
+    "portadora": "aguia-guincho",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "eb221b21fe673c90fee3df38ea6e1be8b9f151c3d899a8e37ca3b8246fe8b082"
+   }
   },
   {
    "plano": "p12",
@@ -244,7 +418,13 @@
    "ate": 121.0,
    "dur": 2.101,
    "voz": "aguia",
-   "texto_sha256": "ec11bfb75d8d4fc958c2de3e4746c070f1562f231cac3fe736f29e1aa2cb36fe"
+   "texto_sha256": "ec11bfb75d8d4fc958c2de3e4746c070f1562f231cac3fe736f29e1aa2cb36fe",
+   "timbre": {
+    "portadora": "aguia-guincho",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "eb221b21fe673c90fee3df38ea6e1be8b9f151c3d899a8e37ca3b8246fe8b082"
+   }
   },
   {
    "plano": "p12",
@@ -252,7 +432,13 @@
    "ate": 123.8,
    "dur": 2.171,
    "voz": "aguia",
-   "texto_sha256": "0c6ad7de86b95d06f913bcba2980ee6efd28802598b185f8c881c0b197043076"
+   "texto_sha256": "0c6ad7de86b95d06f913bcba2980ee6efd28802598b185f8c881c0b197043076",
+   "timbre": {
+    "portadora": "aguia-guincho",
+    "mistura": 0.35,
+    "bandas": 16,
+    "portadora_sha256": "eb221b21fe673c90fee3df38ea6e1be8b9f151c3d899a8e37ca3b8246fe8b082"
+   }
   }
  ]
 }

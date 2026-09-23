@@ -62,16 +62,22 @@ def ancora() -> dict:
             raise ErroDeDados(
                 f"amostras.lock: '{aid}' nao declara {', '.join(faltam)} -- "
                 f"entrada pela metade e pior que entrada nenhuma.")
-        if pares["licenca"] not in LICENCAS_LIVRES:
+        sintetizada = pares["origem"] == "sintetizado"
+        if not sintetizada and pares["licenca"] not in LICENCAS_LIVRES:
             raise ErroDeDados(
                 f"amostras.lock: '{aid}' declara licenca '{pares['licenca']}', "
-                f"fora da politica da CP-005 (somente {' ou '.join(sorted(LICENCAS_LIVRES))}). "
-                f"Som NC/ND/RemArc entra na suite por change-proposal que "
-                f"revogue a politica -- nunca por edicao silenciosa do lock.")
+                f"fora da politica da CP-005 (somente {' ou '.join(sorted(LICENCAS_LIVRES))} "
+                f"para obra de terceiros). Som NC/ND/RemArc entra na suite por "
+                f"change-proposal que revogue a politica -- nunca por edicao "
+                f"silenciosa do lock.")
         if not re.fullmatch(r"[0-9a-f]{64}", pares["sha256"]):
             raise ErroDeDados(
                 f"amostras.lock: '{aid}' tem sha256 malformado -- ancora sem "
                 f"hash nao ancora nada.")
+        if sintetizada and not pares["url"].startswith("sons/"):
+            raise ErroDeDados(
+                f"amostras.lock: '{aid}' e sintetizada, mas a url nao aponta "
+                f"para sons/ -- o que a suite sintetiza mora versionado no repo.")
         amostras[aid] = pares
     if not amostras:
         raise ErroDeDados("amostras.lock nao lista nenhuma amostra.")
@@ -111,19 +117,42 @@ def _normalizar(mp3: Path, wav: Path) -> None:
             f"{r.stderr[-400:]}")
 
 
-def materializar(forcar: bool = False) -> dict:
-    """Garante workspace/amostras/ com as portadoras ancoradas e conferidas.
+def materializar(forcar: bool = False, ids=None) -> dict:
+    """Garante as amostras ancoradas materializadas e conferidas.
 
-    Devolve {id: caminho_do_wav}. O fonte (.mp3 do lock) fica ao lado do
-    derivado (.wav): conferir o fonte por sha e barato, e re-derivar o wav e
-    local. Divergencia de hash falha com mensagem clara -- dublar com
-    portadora divergente produziria um timbre que ninguem declarou.
+    Devolve {id: caminho_do_wav}. `ids` limita ao subconjunto pedido (o
+    dublar so materializa as portadoras que o filme usa). Entradas REMOTAS
+    moram em workspace/amostras/ (fonte .mp3 conferida por sha + .wav
+    derivado a 48 kHz mono); entradas SINTETIZADAS (sons/, earcons) sao
+    arquivo do propio repositorio: o lock confere o sha do commitado e
+    pronto. Divergencia falha com mensagem clara: dublar com portadora ou
+    earcon divergente produziria um som que ninguem declarou.
     """
     ancoradas = ancora()
+    if ids is not None:
+        faltam_no_lock = set(ids) - set(ancoradas)
+        if faltam_no_lock:
+            raise ErroDeDados(
+                "portadora(s) sem entrada no amostras.lock: "
+                + ", ".join(sorted(faltam_no_lock)) +
+                " -- o fiscal de amostras aponta isso como VERMELHO antes do "
+                "dublar. Ancore (lock + change-proposal) ou remova o timbre.")
+        ancoradas = {k: v for k, v in ancoradas.items() if k in set(ids)}
     DESTINO.mkdir(parents=True, exist_ok=True)
-    wavs = {}
-    divergem = []
+    wavs, divergem = {}, []
     for aid, a in ancoradas.items():
+        if a["origem"] == "sintetizado":
+            f = RAIZ / a["url"]
+            if not f.exists():
+                divergem.append(f"{aid}: {a['url']} nao existe -- regenere: "
+                                 f"python3 -m estudio_suite timbre")
+            elif _sha256(f) != a["sha256"]:
+                divergem.append(
+                    f"{aid}: {a['url']} commitado com sha {_sha256(f)[:12]}, mas o "
+                    f"lock declara {a['sha256'][:12]} -- regenere e avance o "
+                    f"lock por PR, nunca duble por cima da divergencia")
+            wavs[aid] = f
+            continue
         mp3, wav = DESTINO / f"{aid}.mp3", DESTINO / f"{aid}.wav"
         if forcar or not mp3.exists() or not wav.exists():
             if not mp3.exists() or _sha256(mp3) != a["sha256"]:
@@ -138,12 +167,47 @@ def materializar(forcar: bool = False) -> dict:
         wavs[aid] = wav
     if divergem:
         raise ErroDeDados(
-            "a amostra baixada NAO e a ancorada em amostras.lock:\n  "
+            "a amostra NAO e a ancorada em amostras.lock:\n  "
             + "\n  ".join(divergem) +
             "\n  Ou a fonte mudou (avance o lock por change-proposal, com a "
             "licenca re-verificada), ou a URL nao serve mais. Nunca duble por "
             "cima da divergencia.")
     return wavs
+
+
+def checar() -> int:
+    """Fiscal de integridade dos sons versionados (para o gate unico).
+
+    Tudo que mora em sons/ tem de estar ancorado no amostras.lock, e tudo
+    que o lock aponta para sons/ tem de bater o sha. E o mesmo espirito do
+    fiscal de derivados: arquivo commitado que deriva em silencio e divida.
+    """
+    ancoradas = ancora()
+    locais = {a["url"]: (aid, a["sha256"]) for aid, a in ancoradas.items()
+              if a["origem"] == "sintetizado"}
+    achados = []
+    for url, (aid, sha) in sorted(locais.items()):
+        f = RAIZ / url
+        if not f.exists():
+            achados.append(f"{url}: o lock ancora, mas o arquivo nao existe -- "
+                           f"regenere: python3 -m estudio_suite timbre")
+        elif _sha256(f) != sha:
+            achados.append(f"{url}: sha commitado diverge do lock (de {aid}) -- "
+                           f"regenere e avance o lock por PR")
+    pasta = RAIZ / "sons"
+    if pasta.exists():
+        ancorados = set(locais)
+        for f in sorted(pasta.glob("*.wav")):
+            if f.relative_to(RAIZ).as_posix() not in ancorados:
+                achados.append(f"{f.relative_to(RAIZ).as_posix()}: som versionado sem "
+                               f"entrada no amostras.lock -- som sem ancora e "
+                               f"pirataria em potencial")
+    for a in achados:
+        print(f"  {a}")
+    if achados:
+        return 1
+    print(f"  {len(locais)} som(s) versionado(s) conferido(s) contra o amostras.lock.")
+    return 0
 
 
 def main(argv=None) -> int:

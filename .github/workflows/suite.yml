@@ -56,6 +56,12 @@ jobs:
       - name: Instalar ffmpeg
         run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
 
+      # O motor de timbre da CP-005 e scipy/numpy puro (vocoder de canais,
+      # deterministico). Dependencia declarada da suite desde a CP-005 -- e
+      # o teste do motor prova no PCM, no runner, o que a maquina local prova.
+      - name: Instalar numpy e scipy (CP-005)
+        run: pip install --quiet numpy scipy
+
       - name: O módulo de automelhorias, nos dois sentidos
         run: python3 tests/test_melhorias.py
 
@@ -77,6 +83,12 @@ jobs:
       # local, registrada no PR; o CI nao precisa de rede para fiscalizar.
       - name: A ancora e o fiscal de amostras (CP-005)
         run: python3 tests/test_amostras.py
+
+      # CP-005: o motor de timbre e aditivo DE VERDADE -- mistura 0 devolve
+      # o clipe byte a byte, e o teste prova no PCM, sem piper. Os earcons
+      # sao codigo puro: duracao, taxa e ancora conferidas.
+      - name: O motor de timbre e os earcons (CP-005)
+        run: python3 tests/test_timbre.py
 
       # CP-004: o sexto portao. A audio-suite NAO esta instalada no runner:
       # o portao devolve INDECISO, publicado por filme, e o build SEGUE --

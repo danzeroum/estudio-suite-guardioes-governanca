@@ -102,6 +102,7 @@ Estudio.Rig.registrar({
     registros: {
       titular:     { pitch: 'mais-agudo', ritmo: 0.05 },
       encarregado: { pitch: 'medio', ritmo: 0, variacao: 'pouca' }
-    }
+    },
+    timbre: { portadora: 'raposa-latido', mistura: 0.35, bandas: 16 }
   }
 });

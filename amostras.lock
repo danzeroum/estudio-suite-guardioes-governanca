@@ -54,6 +54,35 @@ amostras:
     atribuicao: "gadzooks — Fox Barking"
     papel: "portadora do timbre da Raposa — curto e aspero"
 
+  # Earcons do Dado (Sprint 7): sintetizados por codigo (senoides + envelope,
+  # estudio_suite/timbre.py), commitados em sons/ e ancorados AQUI -- trocar o
+  # som do Dado e regenerar + avancar este lock por PR, nunca edicao silenciosa.
+  # Origem "sintetizado" nao e obra de terceiro: a politica de licenca da CP-005
+  # (CC0/CC-BY) vale para o que vem de FORA; o que a suite sintetiza e dela.
+  dado-aceso:
+    origem: sintetizado
+    url: sons/dado-aceso.wav
+    licenca: "obra própria da suíte (senoides + envelope)"
+    sha256: 4641c5222b2e5fd9d16aa8225d5dac55dcce73046220b5c29eb4ebfad3c88f68
+    atribuicao: "estudio_suite/timbre.py (CP-005)"
+    papel: "earcon do Dado aceso — brilho ascendente ~300 ms"
+
+  dado-retraido:
+    origem: sintetizado
+    url: sons/dado-retraido.wav
+    licenca: "obra própria da suíte (senoides + envelope)"
+    sha256: b370ae245edf5acdc91fd3e8858d4b7e1284a9a7c98373738b8c9a10df03392a
+    atribuicao: "estudio_suite/timbre.py (CP-005)"
+    papel: "earcon do Dado retraído — tom descendente ~400 ms"
+
+  dado-citar:
+    origem: sintetizado
+    url: sons/dado-citar.wav
+    licenca: "obra própria da suíte (senoides + envelope)"
+    sha256: 8f0c74a0a3f6dca6badde9ee747e2cd6414b705769331643d0584c47fa492530
+    atribuicao: "estudio_suite/timbre.py (CP-005)"
+    papel: "earcon do Dado citado — carimbo percussivo ~150 ms"
+
   # Tartaruga: DECISAO (b) da CP-005 — sem timbre animal, so ritmo.
   # Tartaruga quase nao vocaliza; a busca CC0 nao devolveu gravacao utilizavel
   # (volta tartaruga-pomba e sons sem relacao); portadora de sopro/ambiente
