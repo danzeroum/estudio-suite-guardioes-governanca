@@ -20,7 +20,11 @@ python3 tests/test_navegador.py     # o motor, quando você tocou em motor/ ou p
 
 O `validar_tudo` é o gate, não a íntegra do CI: os testes de cada camada e o
 portão de sonorização são passos próprios do workflow — e o portão, no CI,
-mede de verdade (a audio-suite é instalada isolada e pinada por SHA).
+mede de verdade (a audio-suite é instalada isolada e pinada por SHA). O job
+`dublador` (workflow próprio, disparado quando o que assina os bytes do áudio
+muda) prova que a imagem `ferramentas/dublador/` reproduz **byte a byte** cada
+`.opus` commitado — e o CI inteiro lê versões do `voz.lock`
+(`ci/pins_do_lock.py`), nunca digitadas à mão.
 
 Códigos: `0` conforme · `1` divergência entre o declarado e o real · `2` algum fiscal
 **não conseguiu** fiscalizar. Os dois últimos são estados diferentes de propósito.
@@ -54,13 +58,14 @@ Códigos: `0` conforme · `1` divergência entre o declarado e o real · `2` alg
 ## Caminhos protegidos
 
 `motor/`, `lei.lock`, `voz.lock`, `amostras.lock`, `ci/`, `tests/`,
-`harness/policies/`, `.github/`, `CLAUDE.md`.
+`harness/policies/`, `.github/`, `ferramentas/dublador/`, `CLAUDE.md`.
 
 Mudança neles começa por uma **change-proposal** em `harness/change-proposals/`, declarada
 antes de executada. Os três locks (`lei.lock`, `voz.lock`, `amostras.lock`) são âncoras
-por hash — avançar qualquer delas muda o que o repositório reproduz, e é CP sempre. O que
-uma história precisa e não existe nasce em `filmes/<id>/local/`, e sobe ao elenco
-compartilhado só com prova de segundo uso.
+por hash — avançar qualquer delas muda o que o repositório reproduz, e é CP sempre. A
+imagem dubladora (`ferramentas/dublador/`) materializa o `voz.lock` em container: mudar
+nela é mudar o que dubla, o mesmo critério. O que uma história precisa e não existe
+nasce em `filmes/<id>/local/`, e sobe ao elenco compartilhado só com prova de segundo uso.
 
 ## As cinco coisas que se erra aqui
 
@@ -77,7 +82,8 @@ caput — e a guarda existe porque o erro passou.
 **Editar legenda sem redublar.** O áudio é derivado da legenda (texto, tempo, campo
 `quem`, timbre do rig, ambiente do `voz.lock`): a dublagem gravada continua sendo a do
 texto anterior, e o fiscal acusa no portão storyboard. A dívida só aparece quando alguém
-OUVE — rodar `dublar <id>` custa minutos, refilmagem custa o filme.
+OUVE — rodar `ferramentas/dublador/dublar.sh <id>` custa minutos (a imagem que
+materializa o lock), refilmagem custa o filme.
 
 **Editar o filme sem regravar a referência.** As referências de palco em
 `filmes/<id>/baseline/` pegam regressão de enquadramento. Regravar é comando separado

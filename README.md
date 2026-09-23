@@ -182,11 +182,19 @@ camada **aditiva e derivada** — a única fonte do texto narrado é o `txt` da
 legenda, normalizado por `estudio_suite/fala.py` ("(Art. 10)" vira "artigo
 dez"). Não existe roteiro de áudio separado. Desde a CP-005, o **timbre animal** (vocoder de canais sobre portadoras CC0 ancoradas em `amostras.lock`) e os earcons do Dado moram na mesma camada — ver `harness/change-proposals/CP-005-timbre-guardioes.yaml`. No modo quadrinhos (CP-006), cada plano com fala tem **"Ouvir este plano"**.
 
-- **`python3 -m estudio_suite dublar <id>`** sintetiza um clipe por legenda
-  (Piper local, modelo ancorado por sha256 em `voz.lock`, o `lei.lock` das
-  vozes) e mixa em `filmes/<id>/audio/<id>.opus` — 48 kHz, mono, loudness
+- **`ferramentas/dublador/dublar.sh <id>`** é o caminho portátil: constrói a imagem
+  que **materializa o `voz.lock`** (base pinada por digest, ffmpeg/libopus na versão
+  exata, pins pip do lock, sempre `linux/amd64`) e dubla dentro dela — em qualquer
+  host com Docker, Debian ou não. Dublar direto (`python3 -m estudio_suite dublar
+  <id>`) só funciona se o ambiente da máquina **bater com o lock** (python, piper,
+  onnxruntime, numpy/scipy, ffmpeg, libopus, arquitetura — o dublar mede tudo e
+  recusa na divergência, nomeando pacote, versão e correção). O dublar sintetiza um clipe
+  por legenda (Piper local, modelo ancorado por sha256 em `voz.lock`, o `lei.lock`
+  das vozes) e mixa em `filmes/<id>/audio/<id>.opus` — 48 kHz, mono, loudness
   −16 LUFS. Clipe que estoura o tempo da legenda **reprova**: nunca
-  time-stretch, nunca reamostrar — encurta-se a legenda.
+  time-stretch, nunca reamostrar — encurta-se a legenda. No CI, o job `dublador`
+  prova que a imagem reproduz **byte a byte** cada `.opus` commitado (sha256,
+  duas rodadas, diff de durações como artefato quando diverge).
 - No player, o botão **Som nasce desligado**; sem trilha, ele nem aparece.
   `renderizar(t)` segue pura: o áudio é escravo do tempo, nunca dono dele.
 - O **fiscal de redublagem** reprova quem edita legenda sem redublar — mesmo
@@ -195,7 +203,10 @@ dez"). Não existe roteiro de áudio separado. Desde a CP-005, o **timbre animal
   [audio-suite](https://github.com/danzeroum/audio-suite) (CLI externa,
   perfil `harness/perfis/guardioes-narracao.yaml`): 0 → VERDE, 1 → VERMELHO,
   ausência ou códigos 2/3 → **INDECISO** — porque "não consegui medir" não é
-  "está errado", e descritor nunca reprova.
+  "está errado", e descritor nunca reprova. O vermelho carrega a **causa**:
+  `promessa-quebrada` (audio-suite prometida pelo CI e ausente — nada foi
+  medido) diz outra frase que `trilha-reprovada` (FINDING da ferramenta),
+  e as duas saem 1 cada uma pelo motivo certo.
 
 > **Privacidade de voz:** proibida a clonagem de voz humana real sem
 > contrato de cessão expressa. Todas as vozes são sintéticas (Piper,

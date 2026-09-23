@@ -49,8 +49,10 @@ incisos do caput.
 **A legenda é o filme; o áudio é camada derivada.** Toda a informação mora na legenda — o
 modo quadrinhos entrega o filme inteiro em texto. Existe uma camada de áudio **opcional**
 (dublagem sintética, ancorada em `voz.lock`, botão **Som** desligado por padrão): quem
-edita legenda — texto, tempo ou o campo `quem` — deixa dívida até rodar
-`python3 -m estudio_suite dublar <id>`. As vozes e poses não se listam aqui:
+edita legenda — texto, tempo ou o campo `quem` — deixa dívida até redublar. O caminho
+portátil é `ferramentas/dublador/dublar.sh <id>` (imagem Docker que materializa o `voz.lock`:
+funciona em qualquer host); dublar direto só funciona se o ambiente da máquina bater com o
+lock — e o próprio dublar confere e recusa na divergência. As vozes e poses não se listam aqui:
 `orientar` e `inventario` respondem.
 
 ## 4. Quando a história pede algo que não existe
@@ -75,8 +77,9 @@ Mexeu no filme? As referências de palco precisam ser regravadas — `--gravar` 
 vai no PR**. Referência que se atualiza sozinha não é referência, é o registro do último
 acidente.
 
-Mexeu em **legenda** de filme dublado? `python3 -m estudio_suite dublar <id>` regenera a
-dublagem no ambiente travado do `voz.lock`, e `vozes compare <id> --gravar` regrava a
+Mexeu em **legenda** de filme dublado? `ferramentas/dublador/dublar.sh <id>` regenera a
+dublagem na imagem que materializa o `voz.lock` (ou `python3 -m estudio_suite dublar <id>`
+se o ambiente da máquina já bater com o lock), e `vozes compare <id> --gravar` regrava a
 carteira de voz quando a voz mudou — os diffs vão no PR. Editar legenda sem redublar é a
 mesma dívida de editar o filme sem regravar a referência, e o fiscal acusa as duas.
 
