@@ -133,15 +133,7 @@ def compare(fid: str, gravar: bool = False) -> int:
     base_dir = FILMES / fid / "baseline" / "vozes"
     if gravar:
         base_dir.mkdir(parents=True, exist_ok=True)
-
-    if not _tem_audio_suite():
-        _publicar(fid, "indeciso", {},
-                  "audio-suite ausente — carteira NAO medida (INDECISO)")
-        print("  INDECISO: audio-suite ausente — a carteira nao mede o que")
-        print("  nao consegue medir. Instale: pip install -e danzeroum/audio-suite")
-        for voz in sorted(por_voz):
-            print(f"    {voz}: {len(por_voz[voz])} clipe(s) — sem medida")
-        return 2
+    tem_suite = _tem_audio_suite()
 
     gravadas, verdes, revisionar = [], [], []
     with tempfile.TemporaryDirectory() as tmp:
@@ -152,14 +144,25 @@ def compare(fid: str, gravar: bool = False) -> int:
             _extrair(opus, clipes, candidato)
             baseline = base_dir / _voz_arquivo(voz)
             if gravar or not baseline.exists():
+                # A referencia se grava MESMO sem audio-suite: extrair e
+                # posicionar e trabalho do ffmpeg, e a baseline sem medida
+                # continua sendo a ancora da proxima comparacao.
                 base_dir.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(candidato, baseline)
-                medido = _medir(baseline)
                 gravadas.append(voz)
-                print(f"  gravada   {voz}: baseline com {len(clipes)} clipe(s)"
-                      + (" · " + ", ".join(f"{k.split('.')[-1]}={v}"
-                                           for k, v in sorted(medido.items()))
-                         if medido else ""))
+                if tem_suite:
+                    medido = _medir(baseline)
+                    print(f"  gravada   {voz}: baseline com {len(clipes)} clipe(s)"
+                          + (" · " + ", ".join(f"{k.split('.')[-1]}={v}"
+                                                for k, v in sorted(medido.items()))
+                             if medido else ""))
+                else:
+                    print(f"  gravada   {voz}: baseline com {len(clipes)} clipe(s) — "
+                          f"SEM medida (audio-suite ausente)")
+                continue
+            if not tem_suite:
+                print(f"  INDECISO  {voz}: audio-suite ausente — "
+                      f"{len(clipes)} clipe(s) sem medida")
                 continue
             base, atual = _medir(baseline), _medir(candidato)
             deltas = {k: round(float(atual.get(k, 0)) - float(base.get(k, 0)), 6)
@@ -175,7 +178,14 @@ def compare(fid: str, gravar: bool = False) -> int:
                 print(f"  em linha  {voz}: " + ", ".join(
                     f"{k.split('.')[-1]}={atual.get(k)}" for k in sorted(deltas)))
 
-    if gravadas and not (verdes or revisionar):
+    if not tem_suite:
+        # Gravou referencias, talvez -- mas carteira sem medida e carteira
+        # NAO medida: INDECISO nomeado, nunca verde por omisso.
+        estado = "indeciso"
+        nota = ("audio-suite ausente — carteira NAO medida"
+                + (f"; {len(gravadas)} baseline(s) gravada(s) como referencia"
+                   if gravadas else ""))
+    elif gravadas and not (verdes or revisionar):
         estado, nota = "verde", "baselines gravadas — primeira medicao da carteira"
     elif revisionar:
         estado = "indeciso"

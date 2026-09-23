@@ -69,12 +69,16 @@ def main():
     d = _filme_fantasma(_clipes_reais(4))
     base_vozes = d / "baseline" / "vozes"
 
-    # --- primeira medicao: baseline gravada, verde de gravacao ---------
+    # --- primeira medicao: baseline gravada; verde de gravacao SO com a
+    # ferramenta (sem audio-suite, grava a referencia e fica INDECISO) ----
     r = vozes.compare(FANTASMA, gravar=True)
-    chk(r == 0, f"primeira medicao grava baseline e fecha 0 (exit {r})")
     gravadas = sorted(p.name for p in base_vozes.glob("*.wav"))
     chk(gravadas == ["coruja.wav", "narrador.wav"],
         f"baseline por falante versionada em baseline/vozes/ ({gravadas})")
+    if TEM_SUITE:
+        chk(r == 0, f"primeira medicao grava baseline MEDIDA e fecha 0 (exit {r})")
+    else:
+        chk(r == 2, f"sem audio-suite, grava a referencia e fica INDECISO (exit {r})")
 
     # --- sem audio-suite: INDECISO nomeado, nada reprovado -------------
     original = vozes._tem_audio_suite
