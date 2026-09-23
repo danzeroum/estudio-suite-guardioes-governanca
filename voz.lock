@@ -22,3 +22,23 @@ arquivos:
   pt_BR-faber-medium.onnx.json:
     sha256: 7e694de195ae3fc36dd732c445eb04fb49b649854893cb5506b978f0d50a1d6f
     papel: "configuracao: fonemizacao, taxa de amostragem (22050 Hz)"
+
+# O ambiente de sintese (CP-007), no mesmo espirito dos pesos acima. O
+# bloco arquivos responde "que modelo"; este responde "com o que ele
+# rodou": piper, onnxruntime, numpy/scipy (o motor de timbre roda neles),
+# o fonemizador que o wheel do piper EMBUTE (ancora por sha256 dos dados
+# de fonemizacao -- a biblioteca nao expoe numero de versao), e o
+# ffmpeg+libopus do mix. Medido na maquina que sintetizou os filmes
+# publicados. Sem esta conferencia, redublagem em outra maquina mudaria
+# bytes de clipe que ninguem editou: medido com piper/onnxruntime
+# diferentes, as duracoes deslocam ate +0,08 s -- e a menor folga da
+# jornada e 0,07 s. Para avancar: change-proposal, como qualquer ancora.
+ambiente:
+  python: 3.12
+  piper-tts: 1.8.0
+  onnxruntime: 1.30.0
+  numpy: 2.1.3
+  scipy: 1.14.1
+  espeak-ng: sha256:bc00fca4d93879ed50ff44e280d7d9ad30e00b1d2ee38b3dcefd40ed7a946b7a
+  ffmpeg: 7.1.5-0+deb13u1
+  libopus: 1.5.2
