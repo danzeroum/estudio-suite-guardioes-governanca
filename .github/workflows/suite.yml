@@ -78,6 +78,12 @@ jobs:
       - name: A ancora e o fiscal de amostras (CP-005)
         run: python3 tests/test_amostras.py
 
+      # CP-005: o motor de timbre e aditivo DE VERDADE -- mistura 0 devolve
+      # o clipe byte a byte, e o teste prova no PCM, sem piper. Os earcons
+      # sao codigo puro: duracao, taxa e ancora conferidas.
+      - name: O motor de timbre e os earcons (CP-005)
+        run: python3 tests/test_timbre.py
+
       # CP-004: o sexto portao. A audio-suite NAO esta instalada no runner:
       # o portao devolve INDECISO, publicado por filme, e o build SEGUE --
       # so FINDING (saida 1) reprova. "Nao consegui medir" nao e "esta errado",

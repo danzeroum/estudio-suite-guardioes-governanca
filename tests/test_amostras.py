@@ -72,11 +72,16 @@ def _filme_fantasma():
 def main():
     # --- o lock real le, e a licenca de cada portadora consta -----------
     ancoradas = amostras.ancora()
-    chk(len(ancoradas) == 4,
-        f"o amostras.lock real ancora 4 portadoras ({sorted(ancoradas)})")
-    for aid, a in sorted(ancoradas.items()):
+    remotas = {k: v for k, v in ancoradas.items() if v["origem"] != "sintetizado"}
+    sinteticas = {k: v for k, v in ancoradas.items() if v["origem"] == "sintetizado"}
+    chk(len(remotas) == 4,
+        f"o amostras.lock real ancora 4 portadoras remotas ({sorted(remotas)})")
+    chk(len(sinteticas) == 3,
+        f"e 3 earcons do Dado sintetizados ({sorted(sinteticas)})")
+    for aid, a in sorted(remotas.items()):
         chk(a["licenca"] in amostras.LICENCAS_LIVRES,
             f"{aid}: licenca '{a['licenca']}' dentro da politica da CP-005")
+    for aid, a in sorted(ancoradas.items()):
         chk(len(a["sha256"]) == 64 and all(c in "0123456789abcdef" for c in a["sha256"]),
             f"{aid}: sha256 bem formado")
         chk(bool(a["atribuicao"]) and bool(a["origem"]),
@@ -93,9 +98,9 @@ def main():
         and v["registros"]["encarregado"]["ritmo"] == 0.0,
         "raposa: registros por papel lidos (titular 0.05, encarregado 0.0)")
 
-    # --- o sub-bloco timbre e lido como dado (ainda sem aplicacao) ------
-    chk("timbre" not in dublar.voz_do_rig("coruja"),
-        "nenhum rig real declara timbre ainda — Sprint 6 nao aplica som")
+    # --- o sub-bloco timbre e lido dos rigs REAIS (Sprint 7 aplicou) ----
+    chk(dublar.voz_do_rig("coruja").get("timbre", {}).get("portadora") == "coruja-pio",
+        "coruja: declara timbre com portadora ancorada")
 
     # --- ancoras quebradas falham com mensagem clara --------------------
     tmp = Path(tempfile.mkdtemp())
