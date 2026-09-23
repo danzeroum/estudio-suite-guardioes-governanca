@@ -1,6 +1,6 @@
 ---
 name: fazer-filme
-description: Transforma uma história em prosa num filme HTML5 dos Guardiões da Governança, percorrendo as cinco etapas com portões. Use SEMPRE ao receber um pedido de filme, animação ou vídeo sobre LGPD/governança nesta suíte; ao continuar um filme que já começou; e antes de criar qualquer cenário, prop ou pose nova. Use também quando um portão reprovar e você não souber por quê.
+description: Transforma uma história em prosa num filme HTML5 dos Guardiões da Governança, percorrendo as seis etapas com portões (a última, sonorização, é opcional e derivada). Use SEMPRE ao receber um pedido de filme, animação ou vídeo sobre LGPD/governança nesta suíte; ao continuar um filme que já começou; e antes de criar qualquer cenário, prop ou pose nova. Use também quando um portão reprovar e você não souber por quê.
 ---
 
 # Fazer um filme nesta suíte
@@ -22,7 +22,7 @@ as poses, expressões, cenários e props que existem, e o vocabulário do roteir
 Pedir uma pose que não existe não dá erro de sintaxe — dá um filme que não monta, e você
 descobre três etapas depois. O núcleo é mínimo de propósito.
 
-## 2. As cinco etapas
+## 2. As seis etapas
 
 ```bash
 python3 -m estudio_suite novo-filme <id> --de <pedido.md>   # começa
@@ -46,9 +46,12 @@ filme que parecia certo.
 publicado; o artigo tem nove. Toda afirmação contável de uma legenda é conferida contra os
 incisos do caput.
 
-**A legenda é o filme.** Não há áudio. Se a informação não está na legenda, ela não existe
-para quem assiste — e o modo quadrinhos entrega o filme inteiro em texto, para quem pede
-movimento reduzido.
+**A legenda é o filme; o áudio é camada derivada.** Toda a informação mora na legenda — o
+modo quadrinhos entrega o filme inteiro em texto. Existe uma camada de áudio **opcional**
+(dublagem sintética, ancorada em `voz.lock`, botão **Som** desligado por padrão): quem
+edita legenda — texto, tempo ou o campo `quem` — deixa dívida até rodar
+`python3 -m estudio_suite dublar <id>`. As vozes e poses não se listam aqui:
+`orientar` e `inventario` respondem.
 
 ## 4. Quando a história pede algo que não existe
 
@@ -62,13 +65,20 @@ promoção em vez de cópia.
 ## 5. Antes de encerrar
 
 ```bash
-python3 ci/validar_tudo.py            # exatamente o que o CI roda
+python3 ci/validar_tudo.py            # o gate único (fiscais, derivados, redublagem)
+python3 tests/test_*.py               # cada camada tem seu teste; o CI roda todos
+python3 ci/portao_sonorizacao.py      # a trilha, medida pela audio-suite (se dublado)
 python3 tests/test_navegador.py       # se tocou em motor/ ou paginas/
 ```
 
 Mexeu no filme? As referências de palco precisam ser regravadas — `--gravar` — e o **diff
 vai no PR**. Referência que se atualiza sozinha não é referência, é o registro do último
 acidente.
+
+Mexeu em **legenda** de filme dublado? `python3 -m estudio_suite dublar <id>` regenera a
+dublagem no ambiente travado do `voz.lock`, e `vozes compare <id> --gravar` regrava a
+carteira de voz quando a voz mudou — os diffs vão no PR. Editar legenda sem redublar é a
+mesma dívida de editar o filme sem regravar a referência, e o fiscal acusa as duas.
 
 ## Onde ler mais
 
