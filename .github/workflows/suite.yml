@@ -22,16 +22,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # A lei NAO e versionada aqui, e NAO e trazida por actions/checkout: o
-      # GITHUB_TOKEN de um repositorio nao alcanca outro, e o checkout falha
-      # com "Not Found" -- que foi como os tres primeiros runs morreram.
-      # Dar um token para ler dado PUBLICO seria resolver o sintoma; deixar
-      # estudio_suite/lei.py buscar e conferir o hash exercita, no CI, o mesmo
-      # caminho que roda na maquina de quem desenvolve.
+      # CP-008: O LOCK MANDA NO CI. Nenhuma versao de python/numpy/scipy e
+      # digitada aqui -- o workflow pergunta ao voz.lock pelo mesmo parser do
+      # dublar (ci/pins_do_lock.py). O passo roda com o python do runner so
+      # para LER o lock; a serie impressa alimenta o setup-python abaixo.
+      - name: O lock manda no CI (a serie do python)
+        run: echo "PYTHON_DO_LOCK=$(python3 ci/pins_do_lock.py --python)" >> "$GITHUB_ENV"
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: ${{ env.PYTHON_DO_LOCK }}
 
       # A lei mora num repositorio PRIVADO, e o GITHUB_TOKEN desta suite nao
       # alcanca outro repositorio. Com o segredo LEI_TOKEN (leitura em
@@ -60,9 +60,20 @@ jobs:
       # o teste do motor prova no PCM, no runner, o que a maquina local prova.
       # Desde a CP-007 instala ANTES do gate unico: o fiscal de redublagem
       # entrou no gate e importa numpy via prosodia -- dependencia depois do
-      # passo que a usa e dependencia quebrada.
-      - name: Instalar numpy e scipy (CP-005)
-        run: pip install --quiet numpy scipy
+      # passo que a usa e dependencia quebrada. CP-008: os PINS vem do
+      # voz.lock -- test_timbre/test_prosodia passam a provar determinismo
+      # no ambiente ANCORADO, nao num numpy qualquer do PyPI.
+      - name: Instalar numpy e scipy (pins do voz.lock)
+        run: pip install --quiet $(python3 ci/pins_do_lock.py --so numpy,scipy)
+
+      # CP-008: o ambiente MEDIDO, conferido contra a ancora, antes de
+      # qualquer trabalho. Divergencia de python, numpy ou scipy derruba o
+      # job. piper, espeak-ng, ffmpeg, libopus e arquitetura ficam de fora
+      # desta conferencia: ESTE job nao dubla -- quem dubla e a imagem do
+      # job dublador (.github/workflows/dublador.yml), onde a conferencia e
+      # integral (o dublar recusa divergencia antes de sintetizar).
+      - name: O ambiente medido, conferido contra o lock
+        run: python3 ci/pins_do_lock.py --conferir python,numpy,scipy
 
       # CP-007: a audio-suite entra no CI pela porta certa -- ISOLADA (pipx,
       # venv proprio) e pinada por SHA. No ambiente da suite ela NAO pode
@@ -84,6 +95,12 @@ jobs:
             echo "::warning::sem LEI_TOKEN — validação parcial, sem medir citações"
             python3 ci/validar_tudo.py --sem-lei
           fi
+
+      # CP-008: os pins do lock -- o contrato de que este workflow nao
+      # digita versao nenhuma, provado pelo proprio CI (o teste le o
+      # suite.yml e acusa numero de python/numpy/scipy escrito a mao).
+      - name: Os pins do voz.lock (CP-008)
+        run: python3 tests/test_pins_do_lock.py
 
       - name: O módulo de automelhorias, nos dois sentidos
         run: python3 tests/test_melhorias.py
@@ -138,13 +155,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # CP-008: o mesmo lock, o mesmo caminho -- o navegador roda na serie
+      # do python da ancora, lida do voz.lock (nunca digitada aqui).
+      - name: O lock manda no CI (a serie do python)
+        run: echo "PYTHON_DO_LOCK=$(python3 ci/pins_do_lock.py --python)" >> "$GITHUB_ENV"
+
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: ${{ env.PYTHON_DO_LOCK }}
       - name: Instalar dependências
         run: |
           pip install playwright
           python3 -m playwright install --with-deps chromium
+
+      # CP-008: ambiente medido e conferido. Neste job so o python e da
+      # ancora (numpy/scipy nao sao dependencia do navegador -- conferir o
+      # que nao esta instalado seria medir o ausente e chamar de divergencia).
+      - name: O ambiente medido, conferido contra o lock
+        run: python3 ci/pins_do_lock.py --conferir python
 
       # Inclui a fumaça em file://, que é a única forma de a regra
       # "sem fetch, sem módulo ES" falhar em CI.
