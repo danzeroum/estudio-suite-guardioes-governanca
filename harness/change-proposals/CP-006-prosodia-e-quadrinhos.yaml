@@ -1,0 +1,183 @@
+# Mudanca proposta a partir de EVIDENCIA, nao de gosto.
+# Declarada antes de executada; fica como registro mesmo depois.
+#
+# A CP-006 liga o que a CP-004 deixou declarado como dado inerte: os rigs
+# ja declaram expressoes (feliz/preocupado/surpreso/neutro) e os filmes ja
+# datam cada expressao como acao. A prosodia da CP-005 e plana por
+# construcao (noise_scale=0, decisao tomada na CP-004 e NAO reaberta aqui)
+# -- a expressao e o canal que devolve humanidade a fala sem tocar no lock
+# de ruido. E o mesmo movimento da CP-005: camada sobre a voz ja derivada,
+# nunca substituicao.
+schema: estudio-suite/change-proposal@1
+
+proposta:
+  id: CP-006
+  titulo: "Prosodia expressiva e quadrinhos sonoro"
+  autor: agente/curador
+  criada_em: "2026-09-23T00:00:00Z"
+  estado: em-execucao          # um PR por sprint; merge e decisao humana
+
+  sinal:
+    tipo: dado-inerte-com-cliente
+    chave: "expressoes-viram-prosodia"
+    evidencia: >
+      Desde a CP-004 os rigs declaram expressoes como dado SEM logica de
+      aplicacao (backlog B), e os filmes datam cada batida de expressao
+      (acao {alvo, expressao, em, dur}) para o ROSTO. A voz, porem, e plana
+      por decisao: noise_scale=0 foi o preco do determinismo (PR #5), e o
+      timbre animal da CP-005 devolveu personagem sem reabrir o lock de
+      ruido -- mas a FALA em si continua sem emociao. Quem ouve o Elefante
+      "preocupado" no plano 10 da jornada ouve a mesma linha plana de
+      sempre, e a tela diz uma coisa que o som nao confirma. O dado ja
+      existe; falta liga-lo a voz pelo caminho que o determinismo permite.
+
+  doutrina:                    # herdada e estendida; nada aqui e negociavel
+    - >
+      A legenda segue a UNICA fonte do TEXTO. Prosodia e camada sobre a voz
+      ja derivada; nada nesta CP cria conteudo verbal novo.
+    - >
+      Camada aditiva. O filme mudo continua byte-identico; baselines
+      visuais nao mudam; expressao NEUTRA (ou sem batida) reproduz a voz da
+      CP-005 byte a byte.
+    - >
+      Determinismo total. A cadeia legenda -> fala -> piper -> prosodia ->
+      timbre -> mix e byte-deterministica, como as CP-004/005 provaram.
+      Prosodia nao introduz aleatoriedade.
+    - >
+      A ORDEM DA CADEIA e fixa e datada: a prosodia atua na voz ANTES do
+      timbre (fala -> piper -> prosodia -> timbre -> mix). O vocoder do
+      animal recebe a voz ja expressiva. Fixada em teste de snapshot.
+    - >
+      Time-stretch PROIBIDO -- tambem na prosodia. Modulacao de pitch tem
+      de PRESERVAR duracao (ressintese F0). Pausa extra nao e esticamento:
+      quem alonga tempo e o length_scale do Piper (parametro de sintese,
+      nativo, o mesmo caminho do ritmo desde a CP-004), nunca o audio ja
+      renderizado. Borracha de tempo (rubberband e afins) esta fora.
+    - >
+      noise_scale NAO SE TOCA. A troca determinismo <-> variacao foi
+      decidida na CP-004 com medicao; reabrir exige CP nova com medicao --
+      esta CP resolve a expressao SEM mexer no ruido do prior.
+    - >
+      pyworld e dependencia A SER APROVADA, nao instalada por agente. Com
+      pyworld ausente, a modulacao de PITCH fica DECLARADA e NAO APLICADA:
+      "nao consegui aplicar" NAO e "aplicou errado" -- INDECISO documentado,
+      pausas e ganho entram, pitch espera aprovacao humana da dependencia.
+    - >
+      Privacidade e licencas seguem as CP-004/005: voz 100% sintetica,
+      portadoras ancoradas, descritor nunca reprova (R1), "nao consegui
+      medir" nao e "esta errado".
+    - >
+      Regra de ouro: abstracao so na segunda repeticao. Simples e medido
+      vence elegante. audio.js vive no limite do orcamento.
+
+  tecnica:
+    mapa_como_dados: >
+      O mapa expressao -> modulacao e DADO em estudio_suite/prosodia.py
+      (modulo unico, mais simples que espalhar pelo rig -- o rig ja declara
+      as expressoes VISUAIS; a modulacao SONORA e da suíte, como o
+      normalizador de fala):
+        neutro:      nada (controle: voz da CP-005 byte-identica)
+        feliz:       ritmo +0.04 (levemente acima), ganho +1 dB, pitch +1 semitom
+        preocupado:  ritmo -0.08 (pausas/alongamento via sintese), ganho -2.5 dB
+        surpreso:    rampa de F0 no fim da frase (pitch +2 semitons na ultima silaba)
+    ritmo: >
+      O delta de ritmo entra pelo length_scale do Piper -- parametro de
+      SINTese, o mesmo caminho nativo do ritmo de guardiao desde a CP-004.
+      Nao e time-stretch do audio renderizado: e a voz NASCENDO no ritmo.
+    ganho: >
+      Envelope de ganho deterministico sobre o clipe (int16 -> float ->
+      ganho -> clip -> int16), aplicado ANTES do timbre, na ordem fixa.
+    pitch: >
+      DECLARADO no mapa e NO MANIFESTO (pitch_st), NAO APLICADO enquanto
+      pyworld nao for aprovado: ressintese F0 com duracao preservada exige
+      a ferramenta certa, e instalar dependencia sem discutir e proibicao
+      desta CP. O dia em que pyworld for aprovado, o campo pitch_aplicado
+      do audio.json vira true por PR com medicao -- e o manifesto ja nasce
+      pronto para isso.
+    derivacao: >
+      Nenhum campo novo em legenda: a expressao de cada fala DERIVA do dado
+      que ja existe -- a acao de expressao cujo alvo resolve para o MESMO
+      rig do falante e cuja janela [em, em+dur] sobrepoe a janela da
+      legenda. Multiplas sobrepostas: a primeira na ordem do dado (estavel).
+      O falante sem batida propria fala NEUTRO -- a expressao do OUTRO na
+      cena nao contamina a voz de quem fala.
+
+  escopo:
+    sprint_9: >
+      Prosodia mensuravel e deterministica: esta CP; estudio_suite/prosodia.py
+      (mapa como dados, derivacao da expressao da fala, ganho deterministico,
+      ritmo via length_scale, pitch declarado-nao-aplicado); integracao no
+      dublar na posicao correta da cadeia (prosodia ANTES do timbre);
+      audio.json registra a prosodia aplicada por clipe; o fiscal de
+      redublagem cobra mudanca de expressao (no dado do filme ou no mapa);
+      testes: snapshot da ordem da cadeia, duracao preservada, neutro
+      byte-identico a CP-005; dublar nos dois filmes com artefatos
+      commitados; vozes compare regravado onde a voz mudou (diff no PR).
+    sprint_10: >
+      Quadrinhos sonoro: no renderizador de quadrinhos, botao "ouvir este
+      plano" por plano com audio correspondente (aria-label com o titulo),
+      tocando so o trecho; preferencia por media fragments
+      (audio/<id>.opus#t=inicio,fim) reaproveitando <audio src> sem fetch;
+      fallback para clipes por plano gerados no dublar SE o navegador-alvo
+      falhar nos testes (decisao documentada com o teste que motivou);
+      reuso maximo do reprodutor da CP-004 -- nada de segundo motor; sem
+      plano com audio, sem botao (mesma regra do Som); renderizar(t)
+      intocada; baselines visuais intactas; orcamento do motor respeitado;
+      README meia linha; relatorio de fechamento de AMBAS as CPs.
+
+  impacto:
+    - "estudio_suite/prosodia.py :: o mapa como dados, a derivacao, o ganho"
+    - "estudio_suite/dublar.py :: ritmo total na sintese, ganho antes do timbre, prosodia no manifesto"
+    - "estudio_suite/pipeline.py :: fiscal de redublagem cobra prosodia divergente"
+    - "filmes/*/audio/{audio.json,<id>.opus} :: redublagem com prosodia; baseline/vozes regravada onde mudou"
+    - "motor/js/ :: NENHUMA linha no Sprint 9; Sprint 10 toca so o quadrinhos (player/comics), nunca filme.js"
+    - "tests/test_prosodia.py (+ navegador no Sprint 10) + passos no workflow"
+
+  caminhos_afetados:
+    - esta-suite :: harness/change-proposals/CP-006-prosodia-e-quadrinhos.yaml, estudio_suite/{prosodia,dublar,pipeline}.py
+    - esta-suite :: filmes/*/audio/, filmes/*/baseline/vozes/
+    - esta-suite :: motor/js/ (Sprint 10: modo quadrinhos), paginas/ (Sprint 10, se o botao morar la)
+    - esta-suite :: tests/test_prosodia.py, tests/test_navegador.py (Sprint 10), .github/workflows/suite.yml
+
+  risco:
+    nivel: medio
+    porque: >
+      A prosodia muda a VOZ de falas ja publicadas (e esse o ponto), e a
+      tentacao proxima e o pitch -- que exige ferramenta de ressintese e
+      disciplina de duracao. O risco e contido por: (1) neutro e sem-batida
+      sao byte-identicos a CP-005 (prova de aditividade); (2) o ritmo so
+      entra pelo length_scale nativo, caminho conhecido desde a CP-004; (3)
+      pitch DECLARADO mas NAO APLICADO ate pyworld ser aprovado -- o
+      manifesto ja nasce pronto para o dia; (4) o fiscal cobra redublagem
+      quando a expressao muda, como cobra texto e timbre.
+
+  aval_humano_necessario: true   # merge de cada PR e decisao humana
+
+  como_se_prova:
+    - sprint_9: >
+      duracoes preservadas sob modulacao (ganho nao toca amostras de
+      tempo); snapshot da ordem da cadeia estavel; neutro/sem-batida
+      byte-identico a CP-005 (o filme sem casamentos e a prova viva);
+      determinismo (mesmo sha256 em duas execucoes); vozes compare sem
+      regressao (verde ou needs_review explicado); CI verde.
+    - sprint_10: >
+      quadrinhos com botao funcional em file://; sem audio, o modo
+      quadrinhos e byte-identico ao da CP-005; testes de navegador cobrem
+      os dois estados; CI verde.
+
+  backlog:                      # PROIBIDO nesta CP
+    - >
+      Alterar noise_scale/ruído do Piper -- reabrir a decisao medida da
+      CP-004 exige CP propria com medicao do trade-off.
+    - >
+      pyworld/resintese F0 ENQUANTO dependencia nao aprovada por humano --
+      o campo pitch_st ja declara a intencao; aplicar exige aprovar a
+      dependencia primeiro.
+    - >
+      Trilha de fundo musical (mixlirous) -- CLI inexistente la; fora.
+    - >
+      Voice conversion por IA -- vedado permanentemente enquanto nao houver
+      CP que governe o modelo.
+    - resposta_padrao: >
+        Se um revisor perguntar por esses itens: "backlog da CP-006" --
+        nao e esquecimento.
