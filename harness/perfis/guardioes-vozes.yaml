@@ -1,0 +1,34 @@
+# Perfil da carteira de voz da suite dos Guardioes (CP-005, Sprint 8).
+#
+# O espelho do guardioes-narracao.yaml para a medida POR FALANTE: o narracao
+# mede a TRILHA inteira contra ancoras de entrega (loudness, true peak,
+# clipping); este mede cada VOZ contra a baseline do proprio falante --
+# e so tem DESCRITORES, porque a regra e a R1 da audio-suite: descritor
+# nunca reprova. Divergencia entre a baseline e a dublagem atual e
+# needs_review (INDECISO), nunca VERMELHO.
+#
+#   - pitch_stab: deriva de F0 em cents (estabilidade de altura por falante)
+#   - speech_rate: silabas por segundo (proxy heuristico, taxa por falante)
+#   - spectral_health: centroide espectral (a "cor" da voz)
+#
+# Nota honesta: o subcomando `compare` da audio-suite tem lista FIXA de
+# analisadores que nao inclui pitch_stab nem speech_rate. A carteira entao
+# mede OS DOIS LADOS com `analyze` + este perfil, e deriva os deltas aqui --
+# a audio-suite continua sendo o motor de medida (CLI externa, codigo nunca
+# copiado), e a decisao de "divergiu" fica na suite, onde a R1 manda viver.
+name: guardioes-vozes
+version: "1.0.0"
+data_classification: internal
+
+analyzers:
+  inspect: {}
+  pitch_stab: {}
+  speech_rate: {}
+  spectral_health: {}
+
+# Sem strict_overlay de proposito: nao ha o que promover a fail -- descritor
+# nunca reprova (R1). Se um dia houver ancora objetiva por falante, entra
+# por change-proposal com medicao, nao por edicao silenciosa.
+retention_policy:
+  bundle_ttl_days: 90
+  redact_pii: true
