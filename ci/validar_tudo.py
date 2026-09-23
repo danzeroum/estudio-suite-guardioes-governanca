@@ -52,14 +52,40 @@ def _fiscais(com_lei=True):
     from estudio_suite import orcamento as _orc
     _aud = importlib.import_module("ci.auditar_melhorias")
     from estudio_suite import amostras as _am
+    from estudio_suite.comum import FILMES, filmes_existentes
+    from estudio_suite.pipeline import fiscal_redublagem
 
-    # Os dois primeiros PRECISAM da lei; os tres ultimos, nao. Rodar so os
-    # tres e uma medicao MENOR, e ela e anunciada como tal -- o que nao se
+    def redublagem():
+        """A dublagem de TODOS os filmes, fiscalizada sem lei e sem piper.
+
+        O fiscal compara texto, tempo, timbre, prosodia e ambiente
+        (CP-007) — nada de sintese aqui, so o manifesto contra o dado.
+        Entrou no conjunto que nao depende da lei (CP-007): divida de
+        dublagem aparecia so no test_dublar do CI, nunca no gate unico —
+        e gate que nao roda o fiscal deixa a divida para quem OUVE.
+        """
+        pior = 0
+        for fid in filmes_existentes():
+            if not (FILMES / fid / "audio" / "audio.json").exists():
+                print(f"  {fid}: filme mudo — camada aditiva, nada a fiscalizar")
+                continue
+            achados = fiscal_redublagem(fid)
+            if achados:
+                pior = 1
+                for a in achados:
+                    print(f"  {fid}: {a}")
+            else:
+                print(f"  {fid}: dublagem em dia com legendas, timbre e voz.lock")
+        return pior
+
+    # Os dois primeiros PRECISAM da lei; os ultimos, nao. Rodar so os
+    # ultimos e uma medicao MENOR, e ela e anunciada como tal -- o que nao se
     # pode e chamar de verde uma validacao que nao mediu o que importa.
     com = [("lei ancorada", lei), ("roteiros e jogos", _rot.main)]
     sem = [("orcamento de tamanho", _orc.main),
            ("modulo de automelhorias", _aud.main),
            ("sons ancorados", _am.checar),
+           ("redublagem dos filmes", redublagem),
            ("artefatos derivados", lambda: _sinc.main())]
     return (com + sem) if com_lei else sem
 
