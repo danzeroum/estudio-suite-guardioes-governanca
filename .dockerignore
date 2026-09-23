@@ -1,0 +1,22 @@
+# O contexto do build da imagem dubladora (CP-008) e minimo de proposito:
+# so o lock e o parser que o Dockerfile precisa para perguntar ao voz.lock
+# quais pins instalar. O repositorio INTEIRO entra por montagem em runtime
+# -- no build, contexto menor e build mais rapido; e nada de workspace/
+# (modelos de 60+ MB) nem .git/ viajando pro daemon sem motivo.
+*
+!ci
+ci/*
+!ci/pins_do_lock.py
+!estudio_suite
+estudio_suite/*
+!estudio_suite/__init__.py
+!estudio_suite/comum.py
+!estudio_suite/voz.py
+!motor
+motor/*
+!motor/js
+motor/js/*
+!motor/js/filme.js
+!motor/js/interp.js
+!motor/js/palco.js
+!voz.lock
