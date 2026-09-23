@@ -90,6 +90,12 @@ jobs:
       - name: O motor de timbre e os earcons (CP-005)
         run: python3 tests/test_timbre.py
 
+      # CP-005: a carteira de voz por falante. Sem audio-suite no runner, o
+      # teste prova o caminho INDECISO nomeado -- o mesmo contrato do portao
+      # de sonorizacao. Descritor nunca reprova: divida de voz e review.
+      - name: A carteira de voz (CP-005)
+        run: python3 tests/test_vozes.py
+
       # CP-004: o sexto portao. A audio-suite NAO esta instalada no runner:
       # o portao devolve INDECISO, publicado por filme, e o build SEGUE --
       # so FINDING (saida 1) reprova. "Nao consegui medir" nao e "esta errado",
