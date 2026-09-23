@@ -54,14 +54,18 @@ proposta:
 
   imagem_nao_reproduz:          # o registro que a regra desta CP exige
     quando: >
-      2026-09-23, job dublador do PR do Sprint 12. DOIS runs, mesmo codigo
-      (o segundo so acrescentou ESTE registro): run 35810120017 (commit
-      3e29d3b) REPROVOU -- 19/19 .opus divergentes do commitado; run
-      35811182097 (commit ee13666, mesmos bytes de codigo de sintese)
-      PASSOU -- 19/19 .opus BYTE-IDENTICOS ao commitado. A mesma prova,
-      runners diferentes, verdades diferentes: o gate de byte-identidade
-      esta hoje na loteria da frota do GitHub, e e isso que este registro
-      existe para nomear.
+      2026-09-23, job dublador do PR do Sprint 12. TRES runs, codigo de
+      sintese identico nos tres: run 35810120017 (commit 3e29d3b)
+      REPROVOU -- 19/19 .opus divergentes; run 35811182097 (commit
+      ee13666) PASSOU -- 19/19 byte-identicos ao commitado; run
+      35811738718 (commit a9a4b57, que so editou ESTE registro)
+      REPROVOU de novo -- e regenerou os MESMOS bytes do run 1 (ex.:
+      p01 = 430c107b... nos dois; commitado = b1220778...). O quadro:
+      a maioria da frota converge para uma saida propria e estavel
+      entre si; um runner minoritario tem o ambiente efetivo da maquina
+      que sintetizou e reproduz o commitado. Dois atratores, zero
+      ancora decidindo entre eles -- o gate hoje e loteria da frota, e
+      e isso que este registro existe para nomear.
     o_que_variou: >
       O NUMERO DE THREADS do onnxruntime (e, entre runners, a classe de
       CPU) -- nao versao, nao build, nao pacote. Prova local, mesma
