@@ -18,7 +18,37 @@ proposta:
   titulo: "O lock manda no CI, a imagem dubladora e a causa honesta do portao"
   autor: agente/curador
   criada_em: "2026-09-23T12:05:00Z"
-  estado: em-execucao
+  estado: concluida             # executada no PR do Sprint 12; merge e decisao humana
+
+  resultado: >
+    Executada. (1) voz.lock ancora arquitetura x86_64; o dublar mede
+    platform.machine() e recusa lock sem arquitetura como INCOMPLETO --
+    provado por monkeypatch (aarch64 citado, zero arquivo escrito) e por
+    lock sem a linha (recusa nomeando "lock incompleto"). A recusa do
+    ambiente divergente agora oferece ferramentas/dublador/dublar.sh
+    ANTES das correcoes pacote a pacote. Redublagem dos dois filmes no
+    ambiente travado: audio.json com arquitetura, os 19 .opus
+    BYTE-IDENTICOS ao commitado (sha256 conferido antes e depois). (2)
+    ci/pins_do_lock.py (--so/--python/--conferir) le o lock pelo parser
+    de voz.py; suite.yml nao digita versao nenhuma de python/numpy/scipy
+    (test_pins_do_lock le o workflow e acusa numero escrito a mao); o
+    primeiro passo dos jobs fiscais e navegador imprime o ambiente
+    medido e o confere. (3) ferramentas/dublador/{Dockerfile,dublar.sh}:
+    base python:3.12-slim-trixie por digest, ffmpeg+libav+libopus no
+    apt pinado na versao EXATA do lock, pins pip do lock, build sempre
+    linux/amd64, repositorio montado e workspace/voz em volume/cache.
+    (4) Workflow dublador (proprio, disparo por caminhos + dispatch):
+    dubla os dois filmes 2x na imagem e compara cada .opus com o
+    commitado por sha256 -- a prova de portabilidade roda no PR; se a
+    imagem nao reproduzir, a regra e IMAGEM_NAO_REPRODUZ registrado
+    aqui, nunca redublar para fazer bater. (5) Veredito.causa:
+    promessa-quebrada x trilha-reprovada x declaracao-divergente,
+    publicadas no relatorio.json; ci/portao_sonorizacao.py imprime
+    "PROMESSA QUEBRADA: audio-suite ausente -- nada foi medido" so na
+    primeira e "DIVERGENCIA: trilha reprovada" so na segunda, ambas
+    saida 1. Validacao local: validar_tudo --sem-lei conforme; fala
+    212, melhorias 12, amostras 37, timbre 37, prosodia 22, dublar 20,
+    vozes 15, sonorizacao 24, pins 10, navegador 240 -- todos verdes.
 
   sinal:
     tipo: evidencia-medida
