@@ -33,10 +33,33 @@
 #      fail seria reprovar o silencio de proposito. Quando o detector ganhar
 #      contexto de silencio (Fase 2/3 dele), reavaliar COM medicao.
 #
+# RECALIBRACAO (Sprint 8 da CP-005, 2026-09-23, audio-suite local, trilhas
+# TIMBRADAS com portadora animal + earcons do Dado):
+#
+#   jornada-dado        loudness -16.63 LUFS · TP -1.32 dBTP · clip 0.0% · glitch 31.672 (warning)
+#   legitimo-interesse  loudness -16.87 LUFS · TP -1.55 dBTP · clip 0.0% · glitch 10.608 (warning)
+#
+#   A premissa de partida era que as portadoras injetariam textura nos
+#   trechos calibrados como "silencio digital" e o glitch contaria MAIS
+#   eventos. A medicao disse o CONTRARIO: os contagens BAIXARAM
+#   (32.948 -> 31.672 e 10.829 -> 10.608). Decisoes COM esses numeros:
+#   1. loudness e true_peak REAFIRMADOS: o timbre e misturado a voz com
+#      ganho ancorado no RMS da fala e o loudnorm continua sendo o unico
+#      dono do nivel; -16.63/-16.87 LUFS segue dentro de -17..-15 com
+#      folga, e o TP com margem honesta sob -1.0.
+#   2. glitch PERMANECE warning -- reafirmado com medicao, nao por inercia:
+#      a textura animal nao escalou os falsos eventos sobre silencio
+#      (baixaram), e o problema documentado do detector v1 (contar ~44k
+#      eventos sobre silencio puro) continua sendo do detector, nao da
+#      trilha. Aguardando contexto de silencio no detector deles.
+#   3. Portao em INDECISO enquanto nao mede e comportamento CORRETO -- a
+#      carteira por falante (guardioes-vozes.yaml) cobre a medida de voz
+#      que este perfil nao faz.
+#
 # Lembra ADR-0002: tolerancia e limiar se DERIVAM de medicao, nao se escolhem.
 # Ajustar este arquivo sem medir e o anti-padrao que a ADR existe para pegar.
 name: guardioes-narracao
-version: "1.1.0"
+version: "1.2.0"
 data_classification: internal
 
 analyzers:

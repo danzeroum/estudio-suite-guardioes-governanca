@@ -15,6 +15,7 @@ AJUDA = """estudio — a suite que transforma historia em filme
   dublar <id>   a camada de audio derivada das legendas (CP-004: offline, travada)
   amostras      materializa e confere as portadoras do timbre (CP-005, ancoradas)
   timbre        regenera os earcons do Dado (sons/, ancorados no amostras.lock)
+  vozes compare <id> [--gravar]   a carteira de voz por falante, contra a baseline (CP-005)
   lei           materializa e confere a lei ancorada
   melhorias     os sinais de hoje e as propostas que eles geram
                 (--escrever grava as propostas em harness/change-proposals/)
@@ -106,6 +107,9 @@ def main(argv=None) -> int:
             return m(resto)
         if cmd == "timbre":
             from .timbre import main as m
+            return m(resto)
+        if cmd == "vozes":
+            from .vozes import main as m
             return m(resto)
         if cmd == "melhorias":
             from .melhorias import evidencias, propor

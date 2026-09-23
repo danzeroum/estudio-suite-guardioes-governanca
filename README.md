@@ -174,13 +174,13 @@ leitura barata venceria.
 Sem servidor: as páginas abrem por `file://`. Não há `fetch` nem módulo ES em lugar nenhum,
 e há teste que reprova quem introduzir um dos dois.
 
-## A camada de áudio (CP-004)
+## A camada de áudio (CP-004 e CP-005)
 
 O filme nasce mudo e **continua completo sem som**: a legenda carrega toda a
 informação, e o modo quadrinhos entrega o filme inteiro em texto. O áudio é
 camada **aditiva e derivada** — a única fonte do texto narrado é o `txt` da
 legenda, normalizado por `estudio_suite/fala.py` ("(Art. 10)" vira "artigo
-dez"). Não existe roteiro de áudio separado.
+dez"). Não existe roteiro de áudio separado. Desde a CP-005, o **timbre animal** (vocoder de canais sobre portadoras CC0 ancoradas em `amostras.lock`) e os earcons do Dado moram na mesma camada — ver `harness/change-proposals/CP-005-timbre-guardioes.yaml`.
 
 - **`python3 -m estudio_suite dublar <id>`** sintetiza um clipe por legenda
   (Piper local, modelo ancorado por sha256 em `voz.lock`, o `lei.lock` das
