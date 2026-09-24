@@ -31,7 +31,18 @@ proposta:
   titulo: "A prova certa por etapa: bytes no PCM mixado, codec por tolerancia decodificada, AVX2 por descritores com controle positivo"
   autor: agente/curador
   criada_em: "2026-09-25T00:00:00Z"
-  estado: em-execucao
+  # ENCERRADA COM PARADA ATIVA (TETO_NAO_DISCRIMINA): a medição da frota
+  # provou que NÃO EXISTE teto de F0 mediana que aceite a classe avx2 E
+  # pegue o controle de +20 cents — a divergência avx2 move o F0 mediano
+  # por fala em até ~2,2 Hz (medido, falas estáveis) e o controle desloca
+  # ~2,0-2,9 Hz: o sinal do controle está NO NÍVEL do ruído da própria
+  # frota (e uma fala de timbre misto mede 42,1 Hz de delta porque o
+  # instrumento é instável NELA — p10-p90 de 132,85-478,42 Hz na própria
+  # âncora). A regra da CP manda PARE; a decisão volta ao dono com as
+  # saídas medidas. A prova das classes avx512 (a decisão do dono) está
+  # VERDE e medida na frota: PCM idêntico + codec sob teto + controle
+  # reprovando, Intel e AMD.
+  estado: encerrada-com-parada
 
   sinal:
     tipo: decisao-do-dono-sobre-evidencia-medida
@@ -119,6 +130,22 @@ proposta:
       dispersao observada de 2,2 dB entre os filmes) = teto -74,9 dBFS,
       abaixo do piso de -60. A base e MEDIDA, herda de CP-011 e sera
       reconfirmada nas execucoes desta CP no head novo.
+    medicao_na_frota_2026_09_24: >
+      Runs 36056369068 (PR, 1 copia, 4a134c4 — achou o bug latente do
+      caminho do container), 36056391429 (dispatch, 12 copias, 4a134c4
+      — a prova da imagem rodou e foi VERDE na avx512 antes do tropeço),
+      36056994002 (dispatch, 10 copias, cc84eb2 — achou o ffmpeg ausente
+      no runner e colheu os deltas), 36056989353 (PR, 1, cc84eb2) e
+      36058080095 + 36058085332 (dispatch 10 + PR 1, 4094552 — a coleta
+      completa, controles medidos em runners reais). 35 execuções no
+      total, 3 dispatches cancelados no incio da sessao (artefato de
+      retry duplicado do agente, registrado aqui porque a frota nao e
+      gratis); a prova de bytes no PCM e o controle do codec
+      confirmados em TODAS as que rodaram.
+    tabela_frota:
+      - {copia: "2, 9", cpu: "Intel Xeon Platinum", classe: avx512, pcm: "IGUAL", res_codec_dbfs: "-inf / -inf", controle_codec_dbfs: "-68,9 / -68,9", veredito: "verde na prova da imagem (bytes .opus 19/19 identicos)"}
+      - {copia: "8, 10", cpu: "AMD EPYC 9V74 (avx512f visivel)", classe: avx512, pcm: "IGUAL", res_codec_dbfs: "-80,9 / -83,14", controle_codec_dbfs: "-68,63 / -68,74", veredito: "verde na prova da imagem — o teto base -80,9 da CP-011 RECONFIRMADO no head novo"}
+      - {copia: "1, 3, 4, 5, 6, 7", cpu: "AMD EPYC 7763 / 9V74 (avx512f oculto)", classe: avx2, pcm: "DIVERGE (esperado)", max_delta: "duracao 0,5/2,1 ms · loudness 0,16/0,06 LU · f0 42,10/0,69 Hz · centroide 13,63/14,92 Hz", veredito: "numeros IDENTICOS nas 6 amostras (dois modelos de CPU) — o atrator avx2 e deterministico"}
     validacao_local_fase_1: >
       Redublagem dos dois filmes com o codigo novo: 19/19 .opus
       BYTE-IDENTICOS ao HEAD (git diff --exit-code -- '*.opus'), os
@@ -138,48 +165,110 @@ proposta:
       apertados; TETO_NAO_DISCRIMINA com teto folgado; vermelho real com
       +0,3 dB), dublar 33 (borda do hash no fiscal), navegador 240/240,
       validar_tudo --sem-lei conforme.
-    execucoes: 0
+    o_achado_teto_nao_discrimina: >
+      O CONTROLE POSITIVO de +20 cents mede delta de F0 mediana de
+      +2,02 Hz (jornada, fala 1) e +2,87 Hz (legitimo) nos runners avx2
+      reais. O teto de F0 que ACEITA a frota precisa de >= 42,10 Hz (a
+      fala 22, jornada/p10/elefante: 274,11 -> 232,01 Hz entre as duas
+      sinteses — p10-p90 de 132,85-478,42 Hz na PROPRIA ancora: o YIN e
+      instavel na fala de timbre misto voz+trompa) ou, excluindo essa
+      fala, >= 2,20 Hz (a fala 2, p02/coruja: 158,66 -> 156,46). Em
+      AMBOS os casos o controle de +20 cents (2,02-2,87 Hz) NAO passaria
+      do teto — e o excludente (2,20 + margem) e tao proximo do controle
+      que nenhuma margem honesta separa. TETO_NAO_DISCRIMINA, com um
+      dado a mais: as falas ESTAVEIS medem deltas reais de -2,20/+1,95/
+      +1,72/+1,03 Hz — a divergencia avx2 move o F0 mediano por fala em
+      ~10-25 cents: o "+20 cents" do plano esta NO NIVEL do ruido da
+      propria frota, nao acima dele. Os OUTROS tres descritores
+      discriminam: loudness frota 0,16 x controle 0,52-0,54 LU (teto
+      ~0,2 pega); duracao frota 2,1 ms x controles 50,0 ms e a troca
+      -1009,90/+11,80 ms (teto ~4 ms pega); centroide frota 14,92 Hz x
+      troca -624,14/+184,31 Hz (teto ~20 Hz pega) — a troca de fala e
+      peg por centroide E duracao mesmo sem o F0.
+    execucoes: 35
 
   desfecho:
     entregue: >
-      FASE 1 (maquinaria, este commit): dublar grava pcm_f32_sha256 no
-      audio.json (nenhum .opus tocado — redublagem local byte-identica
-      19/19); fiscal de redublagem cobra o campo; voz.lock ganha o bloco
-      tolerancia com o teto do codec (base CP-011 + margem 6);
-      ci/prova_por_classe.py v2 (bytes no PCM + codec sob teto + controle
-      do codec com numero); ci/equivalencia_descritores.py (descritores
-      por fala + 4 controles positivos + recusa de lock incompleto);
-      perfil guardioes-equivalencia; pins_do_lock --tetos-descritores;
-      dublador.yml com o passo de descritores no runner e pin 90ffac7
-      (pitch_f0/AS-DESC-008); suite.yml com o mesmo pin e o teste novo.
-      FALTA: medicao na frota (deltas AVX2), registro dos tetos de
-      descritores, prova em N rodadas verdes, fechamento e merges.
+      (1) O hash do PCM mixado f32 e CONTRATO: audio.json com
+      mix.pcm_f32_sha256, redublagem byte-identica 19/19, fiscal
+      cobrando o campo — nenhum .opus tocado em nenhuma hipotese. (2) O
+      bloco tolerancia do voz.lock com o teto do codec MEDIDO (base
+      -80,9 + margem 6 = -74,9, abaixo de -60) — e o teto
+      RECONFIRMADO na frota do head novo: AMD-avx512 mediu -80,9/-83,14
+      nas copias 8 e 10. (3) A PROVA DAS CLASSES AVX512 VERDE E MEDIDA
+      (a decisao do dono funcionou): Intel 2/2 e AMD-avx512 2/2 com PCM
+      IGUAL + codec sob teto + controle do codec reprovando com numero
+      (-68,63 a -68,9); o job so fica vermelho porque a recusa do lock
+      incompleto da avx2 e honesta. (4) A maquinaria de descritores
+      inteira medida na frota: 6 amostras avx2 identicas, tabela
+      completa na CP. (5) O passo de descritores no runner, o perfil
+      guardioes-equivalencia, o pin 90ffac7 (pitch_f0/AS-DESC-008), os
+      testes (35+13+33) e as docs. NAO ENTREGUE (parada): os tetos de
+      descritores NAO foram registrados — o de F0 nao existe abaixo do
+      ruido da frota; a prova em rodadas verdes e os merges NAO rodaram.
+    parada_final: >
+      TETO_NAO_DISCRIMINA ATIVA: nao existe teto de F0 mediana por fala
+      que aceite a frota avx2 e pegue o controle de +20 cents (ver
+      resultado_da_medicao.o_achado_teto_nao_discrimina). Os tetos de
+      loudness, duracao e centroide discriminam; o de F0, nao. Pelo
+      plano: PARE — os merges #12/#13/#14 NAO procedem (rito do adendo:
+      CP com parada ativa nao fecha), e a decisao volta ao dono com as
+      saidas abaixo. Nenhum .opus mudou; o main nao foi tocado.
     saidas_para_o_dono:
       - >
-        Execucao integral do plano: merges #12 e #13 conduzidos pelo
-        rito, #14 pronto (mergeado so com a lei conferida, ou parado em
-        AGUARDANDO_LEI). Paradas nomeadas, se dispararem, viram ponto
-        de decisao registrado no PR — nenhuma decisao nova e tomada
-        pelo agente fora deste plano.
+        (a) O F0 mediana sai da suite avx2: loudness + centroide +
+        duracao (todos discriminam, medido) seguem como equivalencia; a
+        troca de fala continua pega (centroide -624,14/+184,31 e
+        duracao -1009,90/+11,80); o controle de pitch sai com ele. A
+        avx2 deixa de fiscalizar altura fina — documento no PR.
+      - >
+        (b) O controle de pitch engorda para um nivel AUDIVEL acima do
+        ruido medido (ex.: +100 cents ~ 9,7 Hz a 166 Hz): pega com teto
+        excluir-a-fala-22 (~2,7 Hz), mas exige tratar a fala 22 (ver
+        saida d) porque 42,10 Hz de delta instrumental a bloqueia.
+      - >
+        (c) F0 por VOZ (mediana concatenada por falante, como a
+        carteira de voz ja faz): a fala 22 dilui na estatistica e o
+        ruido por-voz cai (a medir); o +20 cents vira distinguivel.
+        Muda "por fala" para "por voz" SO no F0 — decisao de desenho.
+      - >
+        (d) Estatistica F0 com instrumento estavel: excluir da
+        estatistica as falas cujo p10-p90 na PROPRIA ancora e largo (a
+        fala 22 declara 132,85-478,42 Hz — o instrumento se declara
+        instavel nela ANTES de qualquer comparacao); regra declarada
+        (ex.: IQR < X semitons), nao tunada por resultado. Com a fala
+        22 fora, o teto ~2,7 ainda nao pega +20 cents (2,02) — esta
+        saida so faz sentido COMBINADA com (b) ou (c).
+      - >
+        Observacao para a decisao: o achado central e que a divergencia
+        avx2 move o F0 mediano por fala em ~10-25 cents REAIS (falas
+        estaveis mediram -2,20/+1,95/+1,72/+1,03 Hz) — "perceptualmente
+        igual" na pratica significa igual dentro de ~25 cents de altura.
+        O controle de +20 cents do plano esta NO NIVEL desse ruido, nao
+        acima dele: a pergunta para o dono e qual nivel de erro de pitch
+        a validacao avx2 tem de enxergar.
+    # (a saida unica e a lista acima — a redacao antiga de plano-cumprido
+    # saiu com a parada)
 
   decisao_de_valor:
     contexto: >
       A CP-011 devolveu ao dono quatro saidas (runner dedicado, redub
       na familia, tolerancia doutrinaria, vermelho honesto). O dono
-      escolheu um caminho QUINTO, que combina pedacos das saidas (c) e
-      (d) sem tocar em (a)/(b): a tolerancia existe, mas por ETAPA e
-      por CLASSE — bytes onde a frota entrega bytes (PCM avx512),
-      teto decodificado onde o codificador diverge por familia (AMD
-      avx512), descritores com controle positivo onde o grafico inteiro
-      diverge (avx2). O merge dos PRs segue autorizado sob o rito do
-      adendo (24/09/2026).
+      escolheu um caminho QUINTO: tolerancia por ETAPA e por CLASSE —
+      bytes onde a frota entrega bytes (PCM avx512), teto decodificado
+      onde o codificador diverge por familia (AMD avx512), descritores
+      com controle positivo onde o grafico inteiro diverge (avx2).
     o_que_acontece: >
       O dono decidiu por escrito (24/09/2026): "prova de bytes no PCM
       mixado; codec por tolerancia decodificada; AVX2 por equivalencia
-      de descritores com controle positivo". O agente executa, mede e
-      registra; tetos so medidos, num lugar so, acompanhados de
-      controle positivo que prove que ainda discriminam.
-    status: "DECIDIDO PELO DONO (24/09/2026) — executado nesta CP sob o rito do adendo"
+      de descritores com controle positivo". A decisao foi EXECUTADA e
+      MEDIDA: as duas primeiras partes verdes na frota (PCM idêntico,
+      codec sob teto reconfirmado, controles reprovando); a terceira
+      chocou no limite fisico do ruido — o controle de +20 cents esta
+      no nivel do proprio ruido de F0 da classe avx2 (medido), e a
+      regra da CP manda PARE (TETO_NAO_DISCRIMINA). A evidencia ganhou
+      do plano, e o PR diz isso.
+    status: "EXECUTADA E MEDIDA; PARADA TETO_NAO_DISCRIMINA devolve ao dono a pergunta que falta: qual nivel de erro de pitch a validacao avx2 tem de enxergar (saidas a-d)"
 
   doutrina:
     - >
@@ -279,7 +368,7 @@ proposta:
 
   paradas_nomeadas:
     TETO_NAO_DISCRIMINA:
-      status: "vigilancia ativa — dispara se algum teto que aceita a frota nao pegar TODOS os controles positivos (+0,5 dB, +20 cents, fala trocada, 50 ms; ruido 6 dB acima do teto do codec)"
+      status: "DISPARADA (2026-09-24, medicao da frota): o teto de F0 mediana que aceita a avx2 (>= 42,10 Hz com a fala 22; >= 2,20 Hz sem ela) nao pega o controle de +20 cents (2,02-2,87 Hz medidos em runners reais) — ver desfecho.saidas_para_o_dono"
       regra: >
         Controle positivo que PASSA (nao reprova) com os tetos
         registrados: o teto aceitou a frota e nao enxerga mudanca real —
@@ -310,7 +399,30 @@ proposta:
         no PR — o agente nao escolhe por conta propria.
 
   licoes:
-    (a preencher no fechamento)
+    controle_no_nivel_do_ruido: >
+      Controle positivo calibrado no mesmo nivel do ruido da frota nao e
+      controle: a frota avx2 move o F0 mediano por fala em ~10-25 cents,
+      e o controle de +20 cents esta exatamente ai. A funcao do controle
+      e provar que o teto ENXERGA acima do ruido — quando o sinal do
+      controle afunda no ruido, a resposta nao e afrouxar o teto, e
+      registrar o nivel real do ruido e perguntar ao dono qual nivel de
+      erro importa.
+    instrumento_declara_instabilidade: >
+      O pitch_f0 manda o p10-p90 junto com a mediana: a fala 22 declara
+      132,85-478,42 Hz NA PROPRIA ANCODA — o instrumento avisava que nao
+      confiava na propria mediana nela. Estatistica sem olhar o intervalo
+      de confianca do instrumento herda a instabilidade dele (42,10 Hz
+      de "delta" que e so o YIN trocando de parcial na voz misturada
+      com trompa).
+    decisao_do_dono_validada_onde_a_frota_entrega: >
+      A parte da decisao que dependia de NUMERO REAL funcionou inteira:
+      bytes no PCM mixado (Intel e AMD-avx512, hash IGUAL nas 4
+      amostras do head novo), codec sob teto (-80,9/-83,14 reconfirmados,
+      -inf no Intel), controle do codec reprovando com numero exato
+      (-68,63 a -68,9). O que a frota nao entrega e a resolucao de 20
+      cents na classe avx2 — e isso e um ACHADO, nao uma falha da
+      maquinaria: a medida que o plano pediu (com controle positivo) foi
+      justamente o que impediu de registrar um teto morto.
 
   risco:
     nivel: medio
