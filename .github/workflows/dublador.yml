@@ -333,16 +333,26 @@ jobs:
       # gate — a copia termina NEUTRA e o agregador nao a conta (nem a
       # favor, nem contra). O passo e tolerante DE PROPOSITO e unico
       # nesta condicao: tudo o que e gate reprova.
+      # O interpretador: o VENV da própria audio-suite pinada (numpy, scipy
+      # e soundfile da ferramenta — um pin só governa o instrumento inteiro).
+      # O caminho sai do SHEBANG do CLI (robusto a qualquer PIPX_HOME — o
+      # runner do GitHub usa /opt/pipx, o local usa ~/.local/pipx); se o
+      # shebang não resolver, o fallback é o python3 do runner e a falha
+      # vira status publicado — nunca reprovação, porque observação não é
+      # gate (medido na 1ª rodada real: o soundfile só existia no venv e o
+      # python3 do runner não o importava — ModuleNotFoundError publicado,
+      # cópia neutra: o desenho funcionou; a correção é o interpretador).
       - name: A observação da âncora (CP-013, classe avx2 — sem build, sem gate)
         if: env.CLASSE_DO_RUNNER == 'avx2'
         shell: bash
         run: |
           set -o pipefail
           if ( pipx install "git+https://github.com/danzeroum/audio-suite@90ffac796d7615e798b5bb7e17e48726be7fa686" \
-               && echo "$HOME/.local/bin" >> "$GITHUB_PATH" \
-               && python3 -m pip install --user --quiet \
-                    $(python3 ci/pins_do_lock.py --so numpy) \
-               && python3 ci/observacao_ancora.py \
+               && export PATH="$(dirname "$(command -v audio-suite || true)"):$PATH" \
+               && PY_AS=$(head -n1 "$(command -v audio-suite)" | sed 's/^#!//') \
+               && [ -n "$PY_AS" ] && [ -x "$PY_AS" ] \
+               && echo "interpretador da observação: $PY_AS (venv da audio-suite pinada)" \
+               && "$PY_AS" ci/observacao_ancora.py \
                     --saida /tmp/identidade ) 2>&1 | tee /tmp/identidade/observacao.log; then
             echo "observacao: medida publicada (sem gate — CP-013, decisao (e))"
           else
