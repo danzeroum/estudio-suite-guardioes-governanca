@@ -1,0 +1,19 @@
+cenario: painel
+rotulo: Todo mundo fala em RIPD
+camera: translate(640 360) scale(1.008) translate(-640 -363.951)
+rig ctrl | t=translate(930 620) scale(-1.012 1.012) translate(-100 -320) | op=1
+    palpebra-l | t=translate(76 74) translate(-76 -64) | op=-
+    palpebra-r | t=translate(124 74) translate(-124 -64) | op=-
+    sobrancelha-l | t=translate(76 60) rotate(18) translate(-76 -58) | op=-
+    sobrancelha-r | t=translate(124 60) rotate(-18) translate(-124 -58) | op=-
+    boca | t=translate(100 104) scale(1 0.7) translate(-100 -104) | op=-
+rig mem | t=translate(640 620) scale(1 1) translate(-100 -320) | op=0
+rig op | t=translate(640 620) scale(0.84 0.84) translate(-100 -320) | op=0
+rig alarme | t=translate(640 620) scale(1 1) translate(-100 -320) | op=0
+    raios | t=- | op=0
+    luz | t=- | op=0.22
+rig form | t=translate(640 620) scale(1 1) translate(-100 -320) | op=0
+    marca | t=- | op=0
+rig selo | t=translate(640 620) scale(1 1) translate(-100 -320) | op=0
+    corpo | t=translate(100 258) scale(1.6 1.6) translate(-100 -258) | op=0
+rig dado | t=translate(520 430) scale(0.9 0.9) translate(-100 -320) | op=1
