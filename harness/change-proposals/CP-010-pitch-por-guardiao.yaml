@@ -173,6 +173,36 @@ proposta:
       dela. AMD real nao foi medida. A guarda definitiva e o hash por etapa
       da CP-011 rodando nos runners reais (item 6 do sprint).
 
+  contexto_da_frota_avx2:            # registro CP-013 (Agente A, 2026-09-25) — NAO muda o estado da CP
+    o_caminho_avx2_varia_a_altura: >
+      O caminho de sintese na classe avx2 move a F0 mediana POR FALA em
+      ~+-2,2 Hz nas falas estaveis (medido na frota da CP-012, 6 amostras
+      avx2 identicas entre si em 2 modelos de CPU: deltas -2,20/+1,95/
+      +1,72/+1,03 Hz) — na faixa de altura dos filmes (~157-174 Hz), isso e
+      ~10-25 cents, ou seja ~+-20 cents por fala. A fala de timbre misto
+      (p10/elefante, voz+trompa) foge dessa regra por razao de INSTRUMENTO:
+      o pitch_f0 declara p10-p90 de 132,85-478,42 Hz na PROPRIA ancora e a
+      mediana "move" 42,10 Hz entre duas sinteses — pergunta aberta na
+      issue danzeroum/audio-suite#46 (fragilidade do rastreador ou mudanca
+      real de vozeamento?).
+    contexto_para_os_passos_de_2_5_st: >
+      O passo proposto entre categorias adjacentes (2,5 st) e ~10-12x MAIOR
+      que essa variacao medida — os passos NAO comem o ruido avx2. O que o
+      ruido come e a RESOLUCAO fina: a CP-012 mediu que um controle de +20
+      cents (2,02-2,87 Hz) fica NO NIVEL do proprio ruido da frota (por isso
+      a decisao do dono 24/09/2026, saida (e), tirou qualquer teto de F0 do
+      gate — os descritores seguem como OBSERVACAO publicada, CP-013).
+      Consequencia pratica para esta CP: alvos por guardiao (2,5 st) seguem
+      distinguiveis na frota; validacao fina de cents por fala, NAO — e a
+      verificacao de bytes da etapa de pitch (hash por etapa, ja na CP-011)
+      que garante a cadeia, nao a medida de F0.
+    fonte: >
+      CP-012 (resultado_da_medicao.o_achado_teto_nao_discrimina e
+      validacao_local_fase_1); CP-013 (observacao da ancora por copia avx2);
+      issue danzeroum/audio-suite#46. Registrado AQUI porque o passo de
+      pitch e o tema desta CP — a CP-010 CONTINUA proposta, nada muda de
+      estado.
+
   alternativas:
     A_world:
       o_que: "pyworld (WORLD: harvest + cheaptrick + d4c; F0 x razao; ressintese)"
