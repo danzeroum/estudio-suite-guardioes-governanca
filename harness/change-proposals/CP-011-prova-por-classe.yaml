@@ -1,0 +1,333 @@
+# Mudanca proposta a partir de EVIDENCIA, nao de gosto.
+# Declarada antes de executada; fica como registro mesmo depois.
+#
+# A CP-009 fechou a variavel threads (ancora = 2, lida de volta em 8/8
+# execucoes) e a frota respondeu com CLASSE_DE_CPU_DIVERGE: 7/8 divergiram
+# em AMD EPYC sem avx512f no lscpu, 1/8 reproduziu byte a byte em Intel
+# Xeon 8370C com AVX-512. A variavel threads esta medida e morta; a ultima
+# variavel viva entre runners e a CLASSE DE SIMD, que decide quais kernels
+# o onnxruntime (MLAS) despacha -- a ordem das somas parciais em float muda
+# com o kernel, e o byte final do .opus assina essa ordem.
+#
+# Esta CP troca a doutrina da prova no job dublador: em vez de exigir
+# byte-identidade "em qualquer runner" (loteria: verde so quando a frota
+# sorteia a classe da maquina que sintetizou), a prova passa a ser POR
+# CLASSE: identidade de bytes onde a classe da ancora roda; tolerancia
+# MEDIORA E REGISTRADA (duracoes por fala + residuo de nulidade sob teto
+# + audio-suite compare) nas demais classes. A tolerancia nao existe sem
+# teto, o teto nao existe sem medicao, e o teto mora num lugar so.
+#
+# ISOLAMENTO (medido, 2026-09-24, independente desta CP):
+#   - o vocoder de timbre (scipy) e o ganho de prosodia (numpy) deram
+#     bytes IDENTICOS com NPY_DISABLE_CPU_FEATURES desligando AVX-512 e
+#     depois tambem AVX2/FMA3/AVX: o DSP do numpy e estavel entre classes;
+#   - o scipy NAO obedece a essa variavel e segue nao provado entre
+#     classes (por isso o hash por ETAPA abaixo: se a divergencia nascer
+#     depois do PCM cru, o isolamento do numpy estava incompleto e a
+#     etapa aponta onde);
+#   - o AMX NAO e a chave: o 8370C nao tem amx_tile no lscpu e reproduz
+#     o commitado byte a byte;
+#   - redublar dentro da imagem NAO e saida: so troca qual classe passa.
+#
+# Tabela das 8 execucoes que motivaram esta CP (head 2b6740b, CP-009):
+#   run 35961992748  gate-1    AMD EPYC 7763          avx512f NAO  DIVERGENTE
+#   run 35962368216  copia-1   AMD EPYC 9V74          avx512f NAO  DIVERGENTE
+#   run 35962368216  copia-2   AMD EPYC 7763          avx512f NAO  DIVERGENTE
+#   run 35962368216  copia-3   Intel Xeon 8370C       avx512f SIM  reproduzido (19/19)
+#   run 35962368216  copia-4   AMD EPYC 7763          avx512f NAO  DIVERGENTE
+#   run 35962368216  copia-5   AMD EPYC 7763          avx512f NAO  DIVERGENTE
+#   run 35962643263  rerun-1   AMD EPYC 7763          avx512f NAO  DIVERGENTE
+#   run 35962861639  rerun-2   AMD EPYC 7763          avx512f NAO  DIVERGENTE
+#   Duracoes identicas em TODAS (so bytes mudam). Threads ancora=efetivas=2
+#   em todas. A unica variavel que separa quem passa de quem falha e a
+#   classe SIMD legivel no lscpu.
+#
+# ADENDO (24/09/2026): o dono autorizou "fazer o merge de cada PR
+# corretamente" sob condiciones de entrada explicitas (CPs concluidas sem
+# parada ativa, checks verdes, PR atualizado com o main, sem --admin, sem
+# force-push, reverter se o main quebrar). O merge do PR #12 ao final desta
+# CP segue esse rito; decisao registrada em aval do dono.
+schema: estudio-suite/change-proposal@1
+
+proposta:
+  id: CP-011
+  titulo: "Prova por classe de SIMD: hash por etapa, classe no lock, tolerancia medida"
+  autor: agente/curador
+  criada_em: "2026-09-24T14:00:00Z"
+  estado: em-execucao
+
+  sinal:
+    tipo: evidencia-medida
+    chave: "classe-de-cpu-diverge-threads-fechadas-frota-bifurcada-por-simd"
+    evidencia: >
+      Oito execucoes do job dublador com o MESMO head (2b6740b), threads
+      ancoradas e LIDAS em todas (ancora=2=efetivas=OMP): 7 divergiram (AMD
+      EPYC 7763/9V74, todas sem avx512f no lscpu do runner), 1 reproduziu
+      os 19 .opus byte a byte (Intel Xeon 8370C, com AVX-512, sem AMX).
+      Duracoes identicas em todas as execucoes: so os bytes mudam. A
+      divergencia nao e de versao (CP-008 fechou versao, build, apt, digest,
+      arquitetura), nem de threads (CP-009 fechou e leu de volta): e a
+      classe de SIMD, que seleciona os kernels do MLAS do onnxruntime.
+    isolamento_independente: >
+      Medicao a parte (nao desta CP): vocoder de timbre e ganho de prosodia
+      com NPY_DISABLE_CPU_FEATURES desligando AVX-512, depois tambem
+      AVX2/FMA3/AVX -- bytes identicos em todas as combinacoes: o DSP do
+      numpy e estavel entre classes. O scipy nao obedece a variavel e segue
+      nao provado (o hash por etapa abaixo e a defesa: a primeira etapa
+      divergente nomeia o culpado, em vez de presumir). O AMX nao e a chave
+      (8370C sem AMX reproduz). Redublar dentro da imagem nao e saida: so
+      troca qual classe passa -- a ancora trocaria de lado, a frota
+      continuaria bifurcada.
+    hipotese: >
+      A divergencia nasce no PCM cru do piper (GEMM do onnxruntime
+      particionado em kernels diferentes por classe de SIMD). Se a
+      primeira etapa divergente for outra (pos-prosodia, pos-timbre, mix
+      ou opus), registra-se ETAPA_INESPERADA e o passo 3 (tolerancia) e
+      reavaliado antes de seguir: o isolamento do numpy estaria
+      incompleto e a tolerancia precisaria de outra justificativa.
+
+  plano:
+    - >
+      1. HASH POR ETAPA: o dublar registra, por fala, o sha256 de cada
+      etapa da cadeia -- PCM cru do piper, pos-prosodia (ganho),
+      pos-timbre, mix PCM pre-opus e .opus. Local: artefato em workspace/
+      (nao commitado). No job: vai para o artefato de identidade, junto
+      com a classe e o veredito. Cinco ou mais execucoes com o codigo novo
+      registram na CP EM QUAL etapa o primeiro hash diverge entre a classe
+      AVX-512 e a AVX2.
+    - >
+      2. CLASSE NO LOCK: voz.lock ganha classe_simd no bloco ambiente,
+      derivada de flags MEDIDAS (lscpu; /proc/cpuinfo como fallback), nunca
+      do nome do fabricante. A funcao que classifica vive num so lugar
+      (estudio_suite/voz.py) e e usada pelo dublar, pelo job e pelos
+      testes. A classe da ancora e a da maquina que sintetizou o
+      commitado, confirmada por medicao (avx512f presente nela; o 8370C,
+      que reproduz, tambem tem avx512f). Se um runner AMD reportar AVX-512
+      e divergir, a chave da classe precisa de mais uma flag: descobrir
+      qual e registrar, nao adivinhar (CLASSE_MAL_DEFINIDA).
+    - >
+      3. PROVA POR CLASSE no job dublador: runner da classe ancora exige
+      .opus byte-identico ao HEAD (como hoje); outra classe exige (i)
+      duracoes identicas por fala, (ii) residuo de nulidade abaixo do teto,
+      (iii) audio-suite compare sem regressao. O resíduo vem do PCM
+      decodificado, medido nos DOIS pontos possiveis (mix pre-opus
+      reconstruido e .opus decodificado), publicado na integra; o teto se
+      aplica ao ponto que separa sinal de ruido de codec (justificado na
+      CP com os numeros de ambos). O teto e DERIVADO da frota: maximo
+      observado nas execucoes AVX2, com margem declarada; mora num lugar
+      so (voz.lock, bloco tolerancia) e tem de ficar abaixo de -60 dBFS --
+      senao, RESIDUO_AUDIVEL.
+    - >
+      4. FILTRO DO JOB: o dublador so processa e so e acionado por filmes
+      que declaram audio, lido do proprio filme.js (audio: true), nunca de
+      lista de nomes. Filme mudo (ex.: relatorio-impacto) nao aciona o job
+      nem entra nele.
+    - >
+      5. PROVA DA CLASSE ANCORA: rodadas ate no minimo 3 execucoes em
+      runner da classe ancora, todas byte-identicas, teto de 30 execucoes
+      no total. Menos de 3 amostras ancora em 30: ANCORA_RARA com a
+      contagem. Amostra ancora divergente: CLASSE_MAL_DEFINIDA.
+    - >
+      6. FECHAMENTO: testes novos e antigos, validar_tudo --sem-lei,
+      test_navegador; CP-008/009/011 em concluida; docs (README, CLAUDE.md,
+      SKILL) e corpo do PR #12 atualizados onde descrevem a prova de
+      bytes. Merge do PR #12 pelo rito do adendo (condicoes de entrada
+      todas verdes, aval do dono registrado, merge commit, CI do main
+      acompanhado, revert se quebrar).
+
+  decisao_de_valor:
+    contexto: >
+      A tolerancia muda a doutrina da prova (byte-identidade vira
+      classe-condicional), e o merge do PR #12 era decisao humana
+      registrada na CP-008 e na CP-009.
+    o_que_acontece: >
+      O dono autorizou por escrito (24/09/2026): "fazer o merge de cada PR
+      corretamente", sob as condicoes do adendo -- que sao mais estritas
+      que o merge padrao: todas as CPs concluidas sem parada nomeada
+      ativa, todos os checks obrigatorios verdes no head exato, PR nao
+      rascunho e atualizado com o main, sem --admin, sem force-push, e
+      reversao se o main quebrar. A tolerancia em si nao foi decidida pelo
+      agente: ela so existe com teto MEDIDO, registrado e abaixo de
+      -60 dBFS -- numero nao negociavel que veio do plano do dono.
+    status: "AUTORIZADO PELO DONO (24/09/2026, adendo da sessao); rito e condicoes registrados no corpo do PR #12"
+
+  doutrina:
+    - >
+      Nenhum .opus commitado muda neste PR, em nenhuma hipotese: o
+      canônico continua sendo o HEAD. Divergencia e registro e parada
+      nomeada, nunca redublagem para "fazer bater".
+    - >
+      Classe, threads e teto vem de um so lugar (voz.lock); numero
+      repetido em segundo lugar e defeito. A tolerancia so existe com teto
+      medido, registrado e abaixo de -60 dBFS; sem teto no lock, o job
+      exige bytes em TODAS as classes (a doutrina antiga, vermelha na
+      classe divergente -- nunca verde por antecipacao).
+    - >
+      Verificacao separada de validacao (Andre Borges, observabilidade):
+      identidade de bytes VERIFICA a mesma classe; o residuo com teto
+      VALIDA que outra classe entrega o mesmo som. As duas provas nunca se
+      confundem no log: cada veredito carrega maquina, classe, prova
+      aplicada e numeros.
+    - >
+      Nao afrouxar fiscal: o job dublador segue obrigatorio, sem
+      continue-on-error. Nenhuma execucao fica vermelha por diferenca
+      abaixo do teto; qualquer .opus alterado de proposito (1 byte no
+      audio decodificado acima do teto) fica vermelho nas duas classes.
+    - >
+      O dublar registra o MEDIDO (classe da maquina, como ja faz com as
+      threads efetivas), e o fiscal de redublagem compara o ambiente do
+      audio.json contra o lock: dublagem commitada de classe divergente e
+      divida apontada. O dublar recusa lock SEM classe_simd (incompleto),
+      mas nao recusa classe divergente -- medir a classe divergente e
+      exatamente o que a prova por classe precisa; quem decide e o gate,
+      nao o sintetizador.
+
+  tecnica:
+    hash_por_etapa: >
+      estudio_suite/dublar.py coleta, por fala, sha256 do PCM cru (saida
+      de sintetizar), pos-prosodia (pos aplicar_ganho), pos-timbre (pos
+      timbre.aplicar); o mix ganha o hash do PCM pre-opus (mesmo grafo de
+      filtros do mixar, segunda execucao ffmpeg saindo WAV pcm_s16le
+      bitexact -- a execucao que gera o .opus permanece IDENTICA a atual,
+      byte a byte) e o sha256 do .opus final. Tudo vai para
+      workspace/voz-etapas/<fid>.etapas.json (gitignored) com a classe
+      medida e as threads; o job copia para o artefato de identidade.
+    classe_no_lock: >
+      voz.lock, bloco ambiente: classe_simd: avx512 (flags medidas da
+      maquina que sintetizou: avx512f presente; o 8370C que reproduz
+      tambem a declara). Classificador: avx512f -> avx512; senao avx2 ->
+      avx2; sem nenhuma das duas, recusa nomeada (nunca palpite). Parser
+      de flags: lscpu --json primeiro, /proc/cpuinfo como fallback (a
+      imagem slim pode nao ter lscpu; /proc/cpuinfo e a mesma fonte do
+      kernel). Leitura de flags e classificacao moram juntas em
+      estudio_suite/voz.py; dublar, job e testes importam DE LA.
+    prova_por_classe: >
+      ci/prova_por_classe.py roda DENTRO da imagem (numpy e o repositorio
+      montado): compara .opus regenerado vs commitado (sha256), duracoes
+      por fala (clipes do audio.json regenerado vs o commitado: plano, em,
+      ate, dur, voz, texto_sha256), residuo em dBFS nos dois pontos (mix
+      pre-opus regenerado vs .opus commitado decodificado; .opus
+      regenerado decodificado vs .opus commitado decodificado). Veredito:
+      classe ancora -> bytes; outra classe com teto no lock -> duracoes +
+      residuo <= teto; outra classe sem teto -> bytes (doutrina antiga,
+      vermelho honesto com os numeros publicados). O audio-suite compare
+      roda no runner (pipx, pinada por SHA como no suite.yml) sobre os
+      WAVs decodificados e e condicao obrigatoria na classe nao-ancora.
+    teto: >
+      bloco novo no voz.lock (tolerancia: residuo_max_dbfs, margem_db,
+      ponto, base), lido pelo mesmo parser de voz.py e exposto por
+      ci/pins_do_lock.py --teto-residuo. Derivacao: maximo OBSERVADO nas
+      execucoes AVX2 (fase de medicao, publicadas nos artefatos) + margem
+      declarada; tem de ficar abaixo de -60 dBFS, senao RESIDUO_AUDIVEL e
+      PARE. Nenhum teto provisorio: a fase 1 mede com a prova de bytes
+      (vermelha na classe divergente, numeros publicados); a fase 2
+      registra o teto e a prova por classe passa a valer.
+    filtro_do_job: >
+      estudio_suite/comum.py ganha filmes_com_audio() (descoberta por
+      disco + dados_do_filme, lendo audio: do proprio filme). O planejar
+      do dublador.yml calcula a lista e decide se o job caro roda: em
+      workflow_dispatch sempre; em PR, so quando muda caminho que assina
+      audio (lock, amostras, cadeia, imagem, workflow) OU o filme.js de
+      filme que declara audio. PR de filme mudo nao aciona o job. O dublar
+      em si recusa filme sem audio: true (criar trilha sem declaracao e a
+      divida que o portao de sonorizacao ja aponta).
+
+  escopo:
+    sprint_14: >
+      Esta CP; voz.lock (classe_simd agora; bloco tolerancia na fase 2,
+      com os numeros da frota); estudio_suite/voz.py (classificador,
+      leitor de flags, conferir_classe, parser de tolerancia);
+      estudio_suite/dublar.py (hash por etapa, classe medida no
+      audio.json, recusa de filme sem audio, mix PCM pre-opus sem tocar o
+      caminho do .opus); estudio_suite/comum.py (filmes_com_audio);
+      ci/pins_do_lock.py (--classe-simd, --teto-residuo);
+      ci/prova_por_classe.py (novo, roda na imagem); .github/workflows/
+      dublador.yml (classe do runner, prova por classe, audio-suite
+      compare, filtro por filme, hash por etapa no artefato);
+      tests/test_vozes.py e tests/test_dublar.py (classificador, borda do
+      lock incompleto, filtro por declaracao) e teste proprio da prova
+      (residuo identico -> -inf; ruido acima do teto -> reprova com
+      numero); audio.json dos dois filmes regenerado (ambiente ganha
+      classe_simd, redublagem local byte-identica ao HEAD); README,
+      CLAUDE.md e SKILL onde descrevem a prova de bytes; corpo do PR #12;
+      fechamento das CP-008/009/011 e merge pelo rito do adendo.
+
+  impacto:
+    - "estudio_suite/voz.py :: classificador de SIMD, flags medidas, conferir_classe, tolerancia()"
+    - "estudio_suite/dublar.py :: hash por etapa, classe no audio.json, recusa de filme mudo, mix PCM pre-opus"
+    - "estudio_suite/comum.py :: filmes_com_audio()"
+    - "voz.lock :: classe_simd: avx512 no ambiente; bloco tolerancia (fase 2, teto derivado da frota)"
+    - "ci/pins_do_lock.py :: --classe-simd e --teto-residuo (uma fonte so: o lock)"
+    - "ci/prova_por_classe.py :: a prova por classe (bytes / duracoes + residuo + compare)"
+    - ".github/workflows/dublador.yml :: classe do runner, prova por classe, filtro por filme, etapas no artefato"
+    - "tests/test_{vozes,dublar,prova_por_classe}.py :: classificador, borda do lock, filtro, residuo"
+    - "filmes/*/audio/audio.json :: ambiente ganha classe_simd (redublagem local byte-identica)"
+    - "README.md, CLAUDE.md, .claude/skills/fazer-filme/SKILL.md :: a prova por classe onde citavam bytes em qualquer runner"
+
+  paradas_nomeadas:
+    PRE_CONDICAO_PR12:
+      status: "conferida e VERDE na abertura (PR aberto, 2b6740b, CP-008/009 em execucao, CLASSE_DE_CPU_DIVERGE registrado)"
+      regra: "PR #12 aberto e nao mergeado no head esperado, CP-008/009 em em-execucao e CLASSE_DE_CPU_DIVERGE registrado; fora disso, PARE antes de tocar em qualquer caminho."
+    ETAPA_INESPERADA:
+      status: "nao disparada (aguardando as 5+ execucoes com hash por etapa)"
+      regra: >
+        Se a primeira etapa divergente entre AVX-512 e AVX2 NAO for o PCM
+        cru do piper: registra a etapa na CP e reavalia o passo 3 antes de
+        seguir (o isolamento do numpy estava incompleto; a tolerancia
+        precisa de justificativa nova). O hash por etapa existe exatamente
+        para que essa conclusao seja medida, nao presumida.
+    RESIDUO_AUDIVEL:
+      status: "nao disparada (aguardando medicao nas execucoes AVX2)"
+      regra: >
+        O teto derivado da frota (max observado + margem declarada) tem de
+        ficar abaixo de -60 dBFS. Se o residuo observado nao permitir um
+        teto abaixo disso, PARE: a divergencia entre classes e audivel e a
+        tolerancia nao existe -- caminho para o humano.
+    CLASSE_MAL_DEFINIDA:
+      status: "nao disparada"
+      regra: >
+        Amostra da classe ancora (pela chave atual do classificador)
+        divergindo byte a byte: a chave da classe nao separa quem reproduz
+        de quem diverge. Se for runner AMD com avx512f reportado, a chave
+        precisa de mais uma flag: descobrir QUAL por medicao (diff das
+        flags dos runners que passam x divergem) e registrar; nunca
+        adivinhar, nunca ampliar a chave por precaucao.
+    ANCORA_RARA:
+      status: "nao disparada"
+      regra: >
+        Menos de 3 amostras da classe ancora em ate 30 execucoes totais:
+        registra a contagem e segue para o fechamento com o que houver,
+        nomeando a rareza no PR (a prova por classe vale; a estatistica da
+        frota e que ficou curta).
+
+  licoes:
+    verificacao_vs_validacao: >
+      A CP-008 prometeu "reproduz em qualquer runner" e a frota desmentiu
+      com a sorte do sorteio. A prova certa pergunta ONDE a identidade e
+      exigivel (a classe que assinou os bytes) e valida o resto com
+      numero (residuo sob teto, duracoes, compare) -- cada veredito diz
+      qual prova rodou e com que numeros. Verde sem dizer qual prova
+      rodou e verde de loteria.
+    tolerancia_e_numero: >
+      "Tolerancia" sem teto medido e afrouxar fiscal com palavra bonita.
+      O teto vem da frota (max observado + margem), mora no lock, e tem um
+      piso de sanidade (-60 dBFS) que nao e negociavel: abaixo dele e
+      sinal igual com kernel diferente; acima dele e som diferente, e som
+      diferente nao e reproducao.
+
+  risco:
+    nivel: medio
+    porque: >
+      A prova por classe adiciona uma condicao ao verde (a classe do
+      runner) e uma tolerancia derivada de medicao -- o teto pode ficar
+      desatualizado se a frota mudar de CPU (novo runner com outra classe
+      ou outro residuo). Contencao: o teto e lido do lock (uma fonte), o
+      residuo e publicado em TODAS as execucoes (verde e vermelho), a
+      classe ancora segue exigindo bytes (a tolerancia nunca substitui a
+      identidade onde ela e exigivel), e o fiscal de redublagem aponta
+      dublagem commitada de classe divergente. O pior caso honesto e a
+      frota sem amostras da classe ancora (ANCORA_RARA): o gate de bytes
+      fica improvavel de rodar verde em PR, e a decisao de runner dedicado
+      volta para o humano -- com a contagem registrada.
+
+  aval_humano_necessario: true   # tolerancia muda a doutrina da prova; merge autorizado sob condicoes (adendo 24/09/2026)
