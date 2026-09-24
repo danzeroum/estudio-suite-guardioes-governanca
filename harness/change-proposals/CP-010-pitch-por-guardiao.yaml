@@ -79,11 +79,11 @@ proposta:
 
       guardiao   declarado    filmes (Hz)      atual  alvo st  alvo Hz  WORLD (erro)    PSOLA (erro)
       elefante   mais-grave   173,73 / 167,47  165,88  -5,0    124,36   124,03 (-4 c)   125,67 (+18 c)
-      aguia      medio-grave  170,70 / --      170,56  -2,5    143,71   142,09 (-19 c)  140,77 (-35 c)
-      tartaruga  medio-grave  171,42 / 163,37  165,76  -2,5    143,71   143,07 (-7 c)   143,57 (-1 c)
+      aguia      medio-grave  170,70 / --      170,56  -2,5    143,67   142,09 (-19 c)  140,77 (-35 c)
+      tartaruga  medio-grave  171,42 / 163,37  165,76  -2,5    143,67   143,07 (-7 c)   143,57 (-1 c)
       coruja     medio        169,19 / 162,53  166,11   0,0    166,00   165,70 (-3 c)   167,42 (+15 c)
       narrador   medio        156,95 / 163,89  165,57   0,0    166,00   164,17 (-19 c)  167,45 (+15 c)
-      raposa     mais-agudo   173,22 / --      167,59  +2,5    191,75   197,06 (+47 c)  199,04 (+64 c)
+      raposa     mais-agudo   173,22 / --      167,59  +2,5    191,78   197,06 (+47 c)  199,04 (+64 c)
 
       Distancia entre guardioes (st, |12*log2(Fa/Fb)|):
       par                    hoje   WORLD  PSOLA   categorias
@@ -112,6 +112,66 @@ proposta:
       Todos masculinos: modelos diferentes dao no maximo 2 niveis distantes
       (faber x cadu), nao 4; e o log do piper acusou "Missing phoneme from
       id map" em um deles -- risco de pronuncia.
+
+  estabilidade_entre_classes:        # vigilia 2 (2026-09-24), harness/prototipos/cp010/estabilidade.py
+    pergunta: >
+      A etapa de pitch muda de bytes com a classe de SIMD da maquina? O
+      Agente A localizou a divergencia entre runners AMD AVX2 e Intel AVX-512
+      no onnxruntime (piper); aqui a etapa de pitch roda SOBRE PCM FIXO
+      (sintetizado uma vez, conferido por sha256 a cada execucao) para isolar.
+    como: >
+      Maquina: Intel Xeon com AVX-512 completo, Python 3.12, numpy 2.1.3,
+      scipy 1.14.1, pyworld 0.3.5 (pinos do voz.lock + pyworld). Cada
+      execucao e um processo novo; 4 niveis x threads 1 e 2
+      (OMP/OPENBLAS/MKL_NUM_THREADS) x 2 repeticoes = 16 execucoes por
+      tecnica. Hash = sha256 do PCM int16 de saida (o artefato que o dublar
+      grava) e do float64 antes da quantizacao.
+        N0  nada desligado
+        N1  NPY_DISABLE_CPU_FEATURES sem AVX-512
+        N2  N1 + AVX2, FMA3, AVX (e F16C, que o numpy exige junto com o AVX)
+        N3  N2 + GLIBC_TUNABLES=glibc.cpu.hwcaps sem AVX-512/AVX2/FMA/AVX
+      Conferido em cada processo: as features ativas do numpy caem como
+      pedido (N0 1111, N1 0111, N2/N3 0000 em AVX512F/AVX2/FMA3/AVX).
+    o_que_escapa_do_npy: >
+      NPY_DISABLE_CPU_FEATURES so controla o despacho do PROPRIO numpy.
+      (1) pyworld nao usa numpy no nucleo: e C++ que liga apenas em
+      libstdc++/libm/libc, e a libm da glibc escolhe variantes por CPU via
+      ifunc (exp/log/sin/cos com FMA/AVX2) -- escapa; por isso o N3.
+      (2) o PSOLA tambem passa pela libm: nem todo cos/float64 do numpy tem
+      caminho SIMD proprio. (3) scipy: NAO entra na etapa de pitch de
+      nenhuma das duas tecnicas (PSOLA = numpy + YIN; WORLD = pyworld). Entra
+      logo depois, no timbre (butter/sosfilt/resample_poly, codigo compilado
+      do scipy, fora do NPY_*) -- medido como extra, e ficou identico ate no N3.
+    tabela: |
+      tecnica  nivel  threads  int16 (artefato)            float64 vs N0
+      psola    N0     1,2      e7e54377bb16 (16/16 iguais) identico
+      psola    N1     1,2      e7e54377bb16                identico
+      psola    N2     1,2      e7e54377bb16                identico
+      psola    N3     1,2      e7e54377bb16                difere: delta max -319,1 dBFS (~1 ulp)
+      world    N0     1,2      7916569f274b (16/16 iguais) identico
+      world    N1     1,2      7916569f274b                identico
+      world    N2     1,2      7916569f274b                identico
+      world    N3     1,2      7916569f274b                difere: delta max -240,3 dBFS
+      timbre*  N0-N3  1,2      7f54532a0b71 (16/16 iguais) identico
+      * fora da etapa de pitch (scipy); medido porque "scipy nao provado".
+      2x no mesmo nivel: hash identico em TODOS os pares (determinismo).
+      Entrada (sha256 dos wav fixos, 12 primeiros): elefante ff0018979043,
+      aguia 87bb6f96af08, tartaruga d0afef88bdd3, raposa aa53916d9854.
+    veredito:
+      psola: >
+        ESTAVEL ENTRE CLASSES. int16 identico em N0-N3; float64 identico em
+        N0-N2 e ~1 ulp em N3. Risco de 1 LSB virar entre maquinas: <= 2e-5
+        amostra por filme de 124 s (limite superior: 2*delta/LSB por amostra).
+      world: >
+        EXIGE TOLERANCIA (ou guarda por hash). int16 identico no que foi
+        medido, mas a folga e 80 dB menor: delta float de -240 dBFS sob a
+        libm sem FMA/AVX, o que da ate ~0,17 amostra por filme de 124 s com
+        risco de virar 1 LSB entre maquinas -- redublagem em outra classe
+        pode mudar bytes sem ninguem ter editado nada.
+    limite_da_prova: >
+      Uma maquina so (Intel AVX-512); N1-N3 EMULAM classes menores dentro
+      dela. AMD real nao foi medida. A guarda definitiva e o hash por etapa
+      da CP-011 rodando nos runners reais (item 6 do sprint).
 
   alternativas:
     A_world:
@@ -145,12 +205,14 @@ proposta:
       custo: "N ancoras novas no voz.lock (sha por modelo), N vezes o download, pronuncia diferente por guardiao"
       veredito: "nao atende sozinho; descartada como tecnica principal"
     recomendacao: >
-      B (PSOLA), porque nao avanca o ambiente do voz.lock e e deterministica
-      por construcao -- CONDICIONADA a escuta humana das amostras (A e B
-      ficam regeraveis em workspace/cp010/amostras/). Se a escuta reprovar
-      o PSOLA no Elefante (-5 st), A (WORLD) com o pyworld travado no
-      voz.lock, por PR proprio.
-
+      B (PSOLA), agora por DOIS motivos medidos: (1) nao avanca o ambiente do
+      voz.lock e erra <= 64 c pos-timbre; (2) e ESTAVEL ENTRE CLASSES de
+      SIMD -- int16 identico em N0-N3 e folga de ~1 ulp, contra -240 dBFS do
+      WORLD, que expoe a redublagem a bytes diferentes entre maquinas. Segue
+      CONDICIONADA a escuta humana (kit de audicao: harness/prototipos/cp010/
+      audicao.py). Se a escuta reprovar o PSOLA no Elefante (-5 st), A
+      (WORLD) com pyworld travado no voz.lock E com a etapa de pitch na guarda
+      de hash por etapa (item 6) desde o primeiro dia.
   escopo:
     sprint_execucao: >
       (depois do merge do PR #12 e de audio-suite#44)
@@ -166,6 +228,10 @@ proposta:
          passa a publicar F0 mediana por falante.
       5. Redublagem dos filmes publicados + carteira regravada (--gravar),
          diffs no PR.
+      6. A etapa de pitch entra na lista de hash por etapa da CP-011
+         (piper -> prosodia/PITCH -> timbre -> mix), para que uma divergencia
+         entre runners aponte a ETAPA que mudou. A CP-011 e do Agente A e NAO
+         e editada aqui: o item e pedido quando esta sprint executar.
     fora: >
       Trocar modelo (C), reabrir noise_scale, mexer no timbre, pitch por
       registro diferente do declarado.
@@ -212,6 +278,7 @@ proposta:
     - "deslocamento 0: pcm devolvido intocado (byte a byte) -- narrador e coruja nao mudam"
     - "duracao de cada clipe identica antes e depois do deslocamento"
     - "dublar 2x no sprint de execucao -> sha256 identicos em todos os .opus"
+    - "estabilidade.py: etapa de pitch sobre PCM fixo em N0-N3 x threads 1/2 x 2 -> int16 identico (psola e world medidos; veredito por tecnica acima)"
 
   pontos_de_decisao:
     - "Tecnica: B (PSOLA, recomendada, condicionada a escuta) ou A (WORLD, +pyworld no voz.lock)."
