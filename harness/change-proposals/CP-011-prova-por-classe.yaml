@@ -54,10 +54,14 @@ proposta:
   titulo: "Prova por classe de SIMD: hash por etapa, classe no lock, tolerancia medida"
   autor: agente/curador
   criada_em: "2026-09-24T14:00:00Z"
-  # concluida com as ENTREGAS acima e as paradas REGISTRADAS (CLASSE_MAL_DEFINIDA
-  # e RESIDUO_AUDIVEL ativas — decisao devolvida ao dono em saidas_para_o_dono);
-  # ver desfecho. 28 execucoes de medicao, 6/6 Intel byte-identicos.
-  estado: concluida
+  # ENCERRADA COM SUCESSORA (CP-012): `concluida` so se aplica a CP sem
+  # parada ativa — esta fechou com CLASSE_MAL_DEFINIDA e RESIDUO_AUDIVEL
+  # ATIVAS, e o dono as resolveu por decisao (24/09/2026): "prova de bytes
+  # no PCM mixado; codec por tolerancia decodificada; AVX2 por equivalencia
+  # de descritores com controle positivo". A execucao dessa decisao mora na
+  # sucessora. 28 execucoes de medicao, 6/6 Intel byte-identicos.
+  estado: encerrada-com-sucessora
+  sucessora: CP-012
 
   sinal:
     tipo: evidencia-medida
@@ -252,13 +256,18 @@ proposta:
       existe abaixo de -60 dBFS com o maximo observado de -38.4 — a
       maquinaria existe, o numero a proibiu.
     paradas_finais: >
-      CLASSE_MAL_DEFINIDA: ATIVA, com descoberta medida completa (doze
-      flags de plataforma separam; nenhuma SIMD; decisao explicita para
-      o dono). RESIDUO_AUDIVEL: ATIVA, confirmada em 18 execucoes avx2
-      (-38.4/-38.2 dBFS, acima do piso de -60). ANCORA_RARA: nao
-      disparou (6 amostras ainda byte-identicas em 28 execucoes). Com
-      paradas ativas, o merge do PR #12 NAO acontece pelo rito do
-      adendo — a decisao volta para o dono com as saidas abaixo.
+      CLASSE_MAL_DEFINIDA: ATIVA ao fechamento, com descoberta medida
+      completa (doze flags de plataforma separam; nenhuma SIMD) —
+      RESOLVIDA pela decisao do dono (24/09/2026): a prova de bytes
+      muda de ETAPA (PCM mixado, onde Intel e AMD-avx512 concordam,
+      medido) e o codificador fica sob tolerancia decodificada; a
+      chave-de-flags deixa de ser a pergunta. RESIDUO_AUDIVEL: ATIVA ao
+      fechamento em 18 execucoes avx2 (-38.4/-38.2 dBFS) — RESOLVIDA
+      pela mesma decisao: a classe avx2 passa a ser validada por
+      EQUIVALENCIA DE DESCRITORES com controle positivo, nao por null
+      test. ANCORA_RARA: nao disparou (6 amostras byte-identicas em 28
+      execucoes). As duas paradas foram devolvidas ao dono e a decisao
+      dele e executada pela CP-012 (sucessora).
     saidas_para_o_dono:
       - >
         (a) Runner dedicado Intel-avx512 (self-hosted ou larger-runner):

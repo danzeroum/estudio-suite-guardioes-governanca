@@ -1,0 +1,297 @@
+# Mudanca proposta a partir de DECISAO DO DONO sobre EVIDENCIA medida.
+# Declarada antes de executada; fica como registro mesmo depois.
+#
+# A CP-011 fechou com duas paradas ativas e DEVOLVIDAS ao dono:
+# CLASSE_MAL_DEFINIDA (nenhuma flag SIMD separa quem reproduz o byte —
+# a divergencia do codificador opus e por FAMILIA de CPU, com a mesma
+# entrada f32) e RESIDUO_AUDIVEL (o residuo avx2 de -38 dBFS nao cabe
+# sob teto abaixo de -60). O dono DECIDIU (24/09/2026):
+#
+#   "prova de bytes no PCM mixado; codec por tolerancia decodificada;
+#    AVX2 por equivalencia de descritores com controle positivo"
+#
+# A decisao move o ponto da prova de bytes do .opus (que a frota nao
+# entrega igual entre familias) para o PCM MIXADO pre-opus (que a frota
+# entrega igual em TODA classe com avx512f visivel — Intel e AMD,
+# medido em 4 amostras da CP-011, s16 E f32); aceita o codificador opus
+# como divergente-por-familia sob TETO decodificado (o maximo observado
+# em AMD-avx512 e -80,9 dBFS, bem abaixo do piso de -60); e troca a
+# pergunta na classe avx2: em vez de null test (cujo residuo alto e
+# aritmetica de rede neural, nao audivel necessariamente), a classe e
+# VALIDADA por descritores por fala — com CONTROLE POSITIVO provando
+# que os tetos escolhidos ainda enxergam mudanca real.
+#
+# Esta CP executa a decisao e a prova na frota; depois, pelo rito do
+# adendo, conduz os merges #12 -> #13 -> #14 (um por vez, sem --admin,
+# sem force-push; o #14 so com a lei conferida ou AGUARDANDO_LEI).
+schema: estudio-suite/change-proposal@1
+
+proposta:
+  id: CP-012
+  titulo: "A prova certa por etapa: bytes no PCM mixado, codec por tolerancia decodificada, AVX2 por descritores com controle positivo"
+  autor: agente/curador
+  criada_em: "2026-09-25T00:00:00Z"
+  estado: em-execucao
+
+  sinal:
+    tipo: decisao-do-dono-sobre-evidencia-medida
+    chave: "cp011-paradas-resolvidas-por-decisao-pcm-codec-descritores"
+    evidencia: >
+      CP-011, 28 execucoes com hash POR ETAPA: (1) entre AVX-512 e AVX2
+      a divergencia nasce no PCM CRU (30/30 falas, onnxruntime/MLAS) —
+      residuo decodificado -38,4/-38,2 dBFS; (2) entre familias com
+      avx512f VISIVEL, o PCM (cru, pos-prosodia, pos-timbre, mix s16 E
+      mix f32) e IDENTICO e o .opus diverge DENTRO da codificacao
+      (-80,9/-83,1 dBFS, mesmo binario pinado); (3) Intel reproduz
+      byte a byte 6/6 (8573C e 6973P-C, duas geracoes). Nenhuma flag
+      SIMD separa reprodutores de divergentes (doze flags de plataforma
+      separam — fabricante disforcado, vedado). Duracoes identicas em
+      TODAS as execucoes, em todas as classes.
+    decisao_do_dono: >
+      24/09/2026, registrada na abertura desta CP: "prova de bytes no
+      PCM mixado; codec por tolerancia decodificada; AVX2 por
+      equivalencia de descritores com controle positivo". A decisao
+      resolve as duas paradas da CP-011 SEM tocar em doutrina alheia:
+      nenhum .opus commitado muda (o canônico continua sendo o HEAD); a
+      verificacao (bytes) e a validacao (tolerancia/descritores) seguem
+      provas separadas, cada veredito carregando classe, etapa
+      comparada, prova aplicada e numeros.
+
+  plano:
+    - >
+      1. HASH CANONICO NO PCM: o audio.json passa a registrar o sha256
+      do mix PCM f32 (a entrada EXATA do codificador, validada por
+      round-trip na CP-011), gerado da MESMA dublagem que produziu os
+      .opus commitados. f32, nao s16, porque a medição da CP-011 mostrou
+      os DOIS estaveis entre Intel e AMD-avx512 — e o f32 e o
+      instrumento mais fino: o s16 tem piso de 1 LSB e o 9V45 entregou
+      mix s16 identico com .opus divergente; ancorar em s16 seria
+      ancorar numa foto que esconde o que o libopus le. Nenhum .opus
+      muda; o fiscal de redublagem e o job comparam ESSE hash.
+    - >
+      2. CLASSES AVX-512 (Intel e AMD): o job exige o mix PCM
+      byte-identico (o hash do audio.json); o .opus e decodificado e
+      comparado com o decodificado do HEAD sob TETO de nulidade derivado
+      da frota (maximo observado em AMD-avx512 com margem declarada,
+      abaixo de -60 dBFS). O log diz "PCM identico; codec dentro do
+      teto X". PCM divergente na classe avx512 e VERMELHO nomeado.
+    - >
+      3. CLASSE AVX2: equivalencia por DESCRITORES, por fala — duracao
+      exata, loudness, F0 mediana (pitch_f0, AS-DESC-008) e centroide
+      espectral, via audio-suite. Os tetos sao DERIVADOS da frota AVX2
+      contra a ancora (maximo observado + margem declarada) e moram num
+      so lugar (voz.lock, bloco tolerancia). CONTROLE POSITIVO
+      obrigatorio em toda execucao: variantes deliberadas (+0,5 dB numa
+      fala, +20 cents numa fala, uma fala trocada por outra do mesmo
+      guardiao, 50 ms de corte) tem de REPROVAR com os tetos escolhidos,
+      nomeando o descritor. Teto que aceita a frota e nao pega todos os
+      controles: TETO_NAO_DISCRIMINA (PARE). O log diz "PCM diferente
+      (classe avx2); equivalente por descritores: <numeros>".
+    - >
+      4. PROVA NA FROTA: rodadas ate no minimo 3 Intel, 3 AMD-avx512 e
+      3 AMD-avx2 VERDES, com teto de 40 execucoes; cada execucao com
+      classe, prova aplicada e numeros na tabela da CP. Em cada
+      execucao os controles positivos rodam e reprovam. Classe sem 3
+      amostras em 40: AMOSTRA_INSUFICIENTE:<classe>, sem merge.
+    - >
+      5. MERGE do #12 pelo rito do adendo: CP-008/009/011/012 sem
+      parada ativa, checks verdes no head exato, atualizado com o main,
+      sem --admin, sem force-push. Depois, CI do main verde — ou
+      reverter com git revert -m 1 e MAIN_QUEBROU.
+    - >
+      6. #13 depois do #12: rebase, CI verde, merge commit. A CP-010
+      CONTINUA proposta — tecnica e escuta sao decisao do dono; o kit
+      de audicao do Agente B fica citado no PR.
+    - >
+      7. #14 depois do #12: rebase, sincronizar_derivados (README), a
+      secao do test_navegador provada pelo B e o controle negativo de
+      novo. NENHUM merge enquanto roteiro e storyboard nao estiverem
+      verdes com LEI_TOKEN e os artigos 38 e 10 nao conferidos contra o
+      lei.lock. Sem LEI_TOKEN: PR pronto e AGUARDANDO_LEI.
+
+  resultado_da_medicao:
+    quando: "a preencher com as execucoes desta CP (fase de medicao e frota)"
+    base_herdada_da_cp011: >
+      Teto do codec derivado da frota JA medida na CP-011: maximo
+      observado em AMD-avx512 = -80,9 dBFS (jornada-dado; -83,1 no
+      legitimo-interesse; 4 amostras: 9V45 x3, 9V74-visivel x1, numeros
+      identicos entre execucoes) + margem declarada de 6 dB (quase 3x a
+      dispersao observada de 2,2 dB entre os filmes) = teto -74,9 dBFS,
+      abaixo do piso de -60. A base e MEDIDA, herda de CP-011 e sera
+      reconfirmada nas execucoes desta CP no head novo.
+    execucoes: 0
+
+  desfecho:
+    entregue: "a preencher no fechamento"
+    saidas_para_o_dono:
+      - >
+        Execucao integral do plano: merges #12 e #13 conduzidos pelo
+        rito, #14 pronto (mergeado so com a lei conferida, ou parado em
+        AGUARDANDO_LEI). Paradas nomeadas, se dispararem, viram ponto
+        de decisao registrado no PR — nenhuma decisao nova e tomada
+        pelo agente fora deste plano.
+
+  decisao_de_valor:
+    contexto: >
+      A CP-011 devolveu ao dono quatro saidas (runner dedicado, redub
+      na familia, tolerancia doutrinaria, vermelho honesto). O dono
+      escolheu um caminho QUINTO, que combina pedacos das saidas (c) e
+      (d) sem tocar em (a)/(b): a tolerancia existe, mas por ETAPA e
+      por CLASSE — bytes onde a frota entrega bytes (PCM avx512),
+      teto decodificado onde o codificador diverge por familia (AMD
+      avx512), descritores com controle positivo onde o grafico inteiro
+      diverge (avx2). O merge dos PRs segue autorizado sob o rito do
+      adendo (24/09/2026).
+    o_que_acontece: >
+      O dono decidiu por escrito (24/09/2026): "prova de bytes no PCM
+      mixado; codec por tolerancia decodificada; AVX2 por equivalencia
+      de descritores com controle positivo". O agente executa, mede e
+      registra; tetos so medidos, num lugar so, acompanhados de
+      controle positivo que prove que ainda discriminam.
+    status: "DECIDIDO PELO DONO (24/09/2026) — executado nesta CP sob o rito do adendo"
+
+  doutrina:
+    - >
+      Nenhum .opus commitado muda, em nenhuma hipotese: o canônico e o
+      HEAD. O audio.json ganha o hash do PCM mixado gerado da MESMA
+      dublagem — regeneracao local tem de devolver .opus byte a byte
+      identicos (git diff --exit-code) antes de qualquer commit.
+    - >
+      Verificacao separada de validacao (Andre Borges): BYTES do PCM
+      VERIFICAM a sintese (o grafico que assinou o commitado);
+      descritores com controle positivo VALIDAM que outra CPU entrega o
+      mesmo som; o controle positivo PROVA que a validacao ainda
+      enxerga mudanca real. Cada veredito leva classe, etapa comparada,
+      prova aplicada e numeros.
+    - >
+      Tetos so medidos, num lugar so (voz.lock, bloco tolerancia),
+      sempre acompanhados de controle positivo na MESMA execucao. Job
+      obrigatorio, sem continue-on-error. Lock sem o teto de uma
+      classe: o job recusa ("lock incompleto"), nunca verde por
+      omissao.
+    - >
+      A nulidade NAO e audibilidade: residuo alto entre classes e
+      aritmetica de rede neural sobre som perceptualmente igual — por
+      isso o AVX2 e validado por descritores com controle positivo, e
+      nao por null test. O teto do codec (-74,9) e o UNICO null test
+      que segue como gate, porque a divergencia que ele cerca (a
+      codificacao com entrada identica) e estreita e medida.
+
+  tecnica:
+    hash_no_pcm: >
+      estudio_suite/dublar.py grava no audio.json (bloco mix) o
+      pcm_f32_sha256 — o sha256 do MESMO arquivo f32 que a CP-011 ja
+      fotografava em workspace/voz-etapas (a entrada exata do
+      codificador, round-trip validada: recodificar o f32 devolve o
+      .opus byte a byte). O caminho do .opus nao muda um byte: a
+      gravacao do f32 e a SEGUNDA execucao do mesmo grafo que ja
+      existia. O fiscal de redublagem (pipeline.fiscal_redublagem)
+      cobra o campo — audio.json sem hash de PCM e divida.
+    prova_avx512: >
+      ci/prova_por_classe.py (dentro da imagem): classe avx512 exige
+      hash do PCM identico (audio.json commitado x regenerado) E
+      residuo decodificado <= teto do lock. CONTROLE do codec em toda
+      execucao da classe: ruido injetado 6 dB acima do teto no .opus
+      regenerado tem de REPROVAR citando o numero — o teto que nao
+      pega o controle e TETO_NAO_DISCRIMINA. Sem teto no lock: recusa
+      nomeada (lock incompleto).
+    prova_avx2: >
+      ci/equivalencia_descritores.py (no runner, com a audio-suite
+      pinada por SHA): extrai cada fala dos WAVs decodificados que a
+      prova publica, mede duracao (energia), loudness (LUFS), F0
+      mediana (pitch_f0/AS-DESC-008) e centroide espectral
+      (spectral_health), compara contra a ancora fala a fala. Tetos no
+      voz.lock (bloco tolerancia, chaves descritores_*), derivados do
+      maximo observado na frota AVX2 + margem declarada. CONTROLES
+      POSITIVOS em toda execucao: +0,5 dB numa fala, +20 cents numa
+      fala, uma fala trocada por outra do mesmo guardiao, 50 ms de
+      corte — todos tem de REPROVAR nomeando o descritor; o que nao
+      reprova e TETO_NAO_DISCRIMINA. Perfil proprio:
+      harness/perfis/guardioes-equivalencia.yaml.
+    pin_da_audio_suite: >
+      O pin avanca de 296226e para 90ffac7 (main do audio-suite): o
+      descritor pitch_f0 (AS-DESC-008, PR #44) nao existe no pin
+      anterior. Avanca nos DOIS workflows (dublador e suite) — um pin
+      so por ferramenta no repositorio.
+
+  escopo:
+    sprint_15: >
+      Esta CP; estudio_suite/dublar.py (pcm_f32_sha256 no audio.json);
+      estudio_suite/pipeline.py (fiscal cobra o hash);
+      estudio_suite/voz.py (leitor do bloco tolerancia estendido);
+      voz.lock (bloco tolerancia: teto do codec agora, tetos de
+      descritores apos a medicao da frota); ci/prova_por_classe.py
+      (prova no PCM + teto do codec + controle do codec);
+      ci/equivalencia_descritores.py (novo);
+      harness/perfis/guardioes-equivalencia.yaml (novo);
+      ci/pins_do_lock.py (expoe os tetos); .github/workflows/dublador.yml
+      (passo de descritores, pin 90ffac7);
+      .github/workflows/suite.yml (pin 90ffac7);
+      tests/test_{prova_por_classe,dublar,pins_do_lock}.py;
+      filmes/{jornada-dado,legitimo-interesse}/audio/audio.json (hash
+      do PCM, regenerado com .opus byte-identicos);
+      README.md, CLAUDE.md, .claude/skills/fazer-filme/SKILL.md onde
+      descrevem a prova; corpo do PR #12.
+
+  impacto:
+    - "estudio_suite/dublar.py :: pcm_f32_sha256 no audio.json (mix)"
+    - "estudio_suite/pipeline.py :: fiscal de redublagem cobra o hash do PCM"
+    - "voz.lock :: bloco tolerancia (teto do codec; tetos de descritores na fase 2)"
+    - "ci/prova_por_classe.py :: bytes no PCM + codec sob teto + controle do codec"
+    - "ci/equivalencia_descritores.py :: a prova por descritores da classe avx2 (novo)"
+    - "harness/perfis/guardioes-equivalencia.yaml :: o perfil da equivalencia (novo)"
+    - "ci/pins_do_lock.py :: --tetos-descritores (uma fonte so: o lock)"
+    - ".github/workflows/dublador.yml :: passo de descritores no runner, pin 90ffac7"
+    - ".github/workflows/suite.yml :: pin 90ffac7"
+    - "tests/test_*.py :: contratos novos (borda do lock, controles, fiscal)"
+    - "filmes/*/audio/audio.json :: pcm_f32_sha256 (redublagem byte-identica)"
+
+  paradas_nomeadas:
+    TETO_NAO_DISCRIMINA:
+      status: "vigilancia ativa — dispara se algum teto que aceita a frota nao pegar TODOS os controles positivos (+0,5 dB, +20 cents, fala trocada, 50 ms; ruido 6 dB acima do teto do codec)"
+      regra: >
+        Controle positivo que PASSA (nao reprova) com os tetos
+        registrados: o teto aceitou a frota e nao enxerga mudanca real —
+        a tolerancia virou point. PARE e devolva ao dono com o numero do
+        controle e o teto. Nenhum merge com essa parada ativa.
+    AMOSTRA_INSUFICIENTE:
+      status: "vigilancia ativa na fase de frota"
+      regra: >
+        Classe sem 3 amostras verdes em ate 40 execucoes da prova na
+        frota: AMOSTRA_INSUFICIENTE:<classe>, sem merge — a frota e
+        sorte, o teto estatistico nao.
+    MAIN_QUEBROU:
+      status: "vigilancia ativa no merge do #12"
+      regra: >
+        CI do main vermelho apos o merge: git revert -m 1 no main, job
+        reexecutado, parada registrada no PR. Nao se conserta o main
+        com commit novo antes de reverter.
+    AGUARDANDO_LEI:
+      status: "reservada ao #14"
+      regra: >
+        Sem LEI_TOKEN, roteiro e storyboard do filme 03 ficam INDECISO
+        (CP-002) e os artigos 38 e 10 nao sao conferiveis contra o
+        lei.lock: o PR fica pronto, sem merge, com a parada registrada.
+    REVISAO_NECESSARIA:
+      status: "reservada a decisoes fora deste plano"
+      regra: >
+        Qualquer decisao que o plano nao previu vira ponto de decisao
+        no PR — o agente nao escolhe por conta propria.
+
+  licoes:
+    (a preencher no fechamento)
+
+  risco:
+    nivel: medio
+    porque: >
+      Os tetos de descritores ainda NAO existem — nascem da medicao na
+      frota (fase 1 desta CP) e sao confirmados na fase 2. O risco
+      honesto e TETO_NAO_DISCRIMINA: se a frota AVX2 medir deltas de
+      F0 ou loudness maiores que os controles (+20 cents ~ 1,9 Hz a
+      166 Hz; +0,5 dB), o teto que aceita a frota nao pega o controle e
+      a CP para com a parada nomeada — que e o desenho, nao o acidente.
+      Contencao: medicao antes do registro, controle positivo em toda
+      execucao, tetos num lugar so, prova de bytes na classe avx512
+      continua exigindo identidade.
+
+  aval_humano_necessario: true   # decisao ja tomada pelo dono (24/09/2026); execucao e medicao desta CP
