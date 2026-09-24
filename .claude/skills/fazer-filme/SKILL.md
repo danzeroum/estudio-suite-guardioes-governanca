@@ -49,10 +49,14 @@ incisos do caput.
 **A legenda é o filme; o áudio é camada derivada.** Toda a informação mora na legenda — o
 modo quadrinhos entrega o filme inteiro em texto. Existe uma camada de áudio **opcional**
 (dublagem sintética, ancorada em `voz.lock`, botão **Som** desligado por padrão): quem
-edita legenda — texto, tempo ou o campo `quem` — deixa dívida até redublar. O caminho
+edita legenda — texto, tempo ou o campo `quem` — deixa dívida até redublar. O filme que
+não declara `audio: true` no próprio `filme.js` é **mudo por declaração**: o job dublador
+do CI não o aciona nem o processa, e o `dublar` recusa dublá-lo (trilha sem declaração é
+a dívida que o portão de sonorização aponta). O caminho
 portátil é `ferramentas/dublador/dublar.sh <id>` (imagem Docker que materializa o `voz.lock`:
 funciona em qualquer host); dublar direto só funciona se o ambiente da máquina bater com o
-lock — e o próprio dublar confere e recusa na divergência. As vozes e poses não se listam aqui:
+lock — e o próprio dublar confere e recusa na divergência (incluindo a classe de SIMD,
+lida de flags medidas e gravada no `audio.json` — CP-011). As vozes e poses não se listam aqui:
 `orientar` e `inventario` respondem.
 
 ## 4. Quando a história pede algo que não existe

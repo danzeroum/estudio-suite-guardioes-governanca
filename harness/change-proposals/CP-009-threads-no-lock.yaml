@@ -39,7 +39,30 @@ proposta:
   titulo: "Threads no lock: a sessao do onnxruntime ancorada (2) e a frota identificada"
   autor: agente/curador
   criada_em: "2026-09-24T12:00:00Z"
-  estado: em-execucao
+  # concluida no Sprint 14: a ancora de threads (2) chegou na sessao em
+  # TODAS as execucoes medidas pela CP-011 (28: ancora=efetivas=OMP=2) e a
+  # variavel threads esta FECHADA. O CLASSE_DE_CPU_DIVERGE registrado aqui
+  # foi medido ate o fim pela CP-011: o residuo entre classes e real
+  # (avx2: -38 dBFS; AMD-avx512: -81 na codificacao), nenhuma flag SIMD
+  # separa quem reproduz bytes, e a decisao de caminho (runner dedicado,
+  # redub, tolerancia doutrinaria) foi devolvida ao dono — ver CP-011,
+  # desfecho. O merge do PR #12 segue bloqueado pelas paradas ativas
+  # (CLASSE_MAL_DEFINIDA e RESIDUO_AUDIVEL), pelo rito do adendo.
+  estado: concluida
+
+  aval_do_dono:
+    quando: "24/09/2026"
+    o_que_autorizou: >
+      "fazer o merge de cada PR corretamente" — merge do PR #12 AUTORIZADO
+      sob as condicoes do adendo da sessao (CPs concluidas sem parada ativa,
+      checks obrigatorios verdes no head exato, PR atualizado com o main,
+      sem --admin, sem force-push, reverter se o main quebrar).
+    estado_das_condicoes: >
+      NAO cumpridas: CP-011 registra CLASSE_MAL_DEFINIDA e RESIDUO_AUDIVEL
+      ATIVAS (medidas, com descoberta completa) — o merge NAO procedeu; a
+      decisao de caminho (runner dedicado Intel / redub / tolerancia
+      doutrinaria / vermelho honesto) foi devolvida ao dono. Registro
+      completo em CP-011.desfecho e no corpo do PR #12.
 
   sinal:
     tipo: evidencia-medida

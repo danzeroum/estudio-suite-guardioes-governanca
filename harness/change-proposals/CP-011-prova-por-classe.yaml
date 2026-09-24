@@ -54,7 +54,10 @@ proposta:
   titulo: "Prova por classe de SIMD: hash por etapa, classe no lock, tolerancia medida"
   autor: agente/curador
   criada_em: "2026-09-24T14:00:00Z"
-  estado: em-execucao
+  # concluida com as ENTREGAS acima e as paradas REGISTRADAS (CLASSE_MAL_DEFINIDA
+  # e RESIDUO_AUDIVEL ativas — decisao devolvida ao dono em saidas_para_o_dono);
+  # ver desfecho. 28 execucoes de medicao, 6/6 Intel byte-identicos.
+  estado: concluida
 
   sinal:
     tipo: evidencia-medida
@@ -136,8 +139,57 @@ proposta:
       acompanhado, revert se quebrar).
 
   resultado_da_medicao:
-    quando: "2026-09-24, head 8a9d684 (fase 1 da instrumentacao), 7 execucoes"
-    tabela:
+    quando: "2026-09-24, heads 8a9d684 (fase 1) e fddd2ca (fase 2, instrumento f32)"
+    execucoes: 16   # + a caçada final da âncora (teto de 30 no total)
+    tabela_fase_2:
+      - {run: 36021081855, copia: gate-1, cpu: "AMD EPYC 7763", lscpu_avx512f: false, bytes: 0/19, primeira_etapa: pcm_cru, residuo_dbfs: "-38.4 / -38.2"}
+      - {run: 36021112280, copia: copia-1, cpu: "AMD EPYC 9V74", lscpu_avx512f: false, bytes: 0/19, primeira_etapa: pcm_cru, residuo_dbfs: "-38.4 / -38.2"}
+      - {run: 36021112280, copia: copia-2, cpu: "AMD EPYC 9V74", lscpu_avx512f: false, bytes: 0/19, primeira_etapa: pcm_cru, residuo_dbfs: "-38.4 / -38.2"}
+      - {run: 36021112280, copia: copia-3, cpu: "AMD EPYC 7763", lscpu_avx512f: false, bytes: 0/19, primeira_etapa: pcm_cru, residuo_dbfs: "-38.4 / -38.2"}
+      - {run: 36021112280, copia: copia-4, cpu: "AMD EPYC 7763", lscpu_avx512f: false, bytes: 0/19, primeira_etapa: pcm_cru, residuo_dbfs: "-38.4 / -38.2"}
+      - {run: 36021112280, copia: copia-5, cpu: "AMD EPYC 7763", lscpu_avx512f: false, bytes: 0/19, primeira_etapa: pcm_cru, residuo_dbfs: "-38.4 / -38.2"}
+      - {run: 36021112280, copia: copia-6, cpu: "INTEL XEON PLATINUM 8573C", lscpu_avx512f: true, bytes: "19/19 IDENTICOS", primeira_etapa: nenhuma, residuo_dbfs: "-inf / -inf"}
+      - {run: 36021112280, copia: copia-7, cpu: "AMD EPYC 7763", lscpu_avx512f: false, bytes: 0/19, primeira_etapa: pcm_cru, residuo_dbfs: "-38.4 / -38.2"}
+      - {run: 36021112280, copia: copia-8, cpu: "AMD EPYC 9V74", lscpu_avx512f: true, bytes: 0/19, primeira_etapa: ".opus (codificação)", residuo_dbfs: "-80.9 / -83.1"}
+    veredito_f32: >
+      O instrumento f32 (a entrada EXATA do codificador, validado por
+      round-trip local) fechou a pergunta: no 9V74 com avx512f visível,
+      pcm_cru, pos_prosodia, pos_timbre, mix s16 E mix f32 sao TODOS
+      identicos a ancora — e o .opus diverge. A divergencia nasce DENTRO
+      da codificacao (ffmpeg/libopus), com o mesmo binario pinado da
+      imagem e a mesma entrada byte a byte. No Intel 8573C, a cadeia
+      inteira bate, inclusive o .opus (residuo -inf).
+    diff_de_flags: >
+      As flags COMPLETAS do Intel-8573C (reproduz) contra o AMD-9V74
+      (diverge na codificacao): as flags avx512* SUBSTANTIVAMENTE iguais
+      exceto avx512_bf16 (presente no AMD, ausente no 8573C — MAS presente
+      na maquina local que REPRODUZ, logo nao separa). As unicas flags que
+      separam reprodutores de divergentes sao de PLATAFORMA (so-Intel:
+      x2apic, tsc_deadline_timer, vmx/ept/vpid/tpr_shadow/vnmi, hle/rtm,
+      la57, arch_capabilities; so-AMD: svm, topoext, sse4a, clzero, ...
+      + avx512_bf16): nenhuma delas e SIMD, nenhuma tem ligacao causal com
+      a codificacao — usa-las como chave seria o teste de fabricante com
+      passos a mais, que o proprio plano veda. A conclusao medida: NAO
+      EXISTE flag SIMD que separe quem reproduz bytes de quem diverge,
+      porque a divergencia do codificador nao e explicavel por flags —
+      e comportamento do binario por FAMILIA de CPU.
+    leitura: >
+      QUATRO achados medidos. (1) A HIPOTESE CONFIRMADA para
+      avx2-vs-avx512: a primeira etapa divergente e o PCM CRU do piper
+      (onnxruntime/MLAS) em 30/30 falas — exatamente onde o plano
+      apontava; a flag avx512f VISIVEL no lscpu e o que separa (o mesmo
+      9V74 aparece com avx512f oculto numa execucao e visivel noutra —
+      mascara do hipervisor por instancia — e o comportamento segue a
+      flag: oculto, PCM diverge; visivel, PCM identico). (2) NOVO: com
+      avx512f visivel, o MLAS do onnxruntime CONCORDA entre Intel e AMD
+      (PCM identico) — mas o CODIFICADOR opus diverge por familia de CPU
+      com a mesma entrada (f32 identico, .opus divergente, mesmo
+      binario). (3) O residuo da classe avx2 (-38 dBFS, 11 execucoes)
+      NAO cabe sob um teto abaixo de -60 dBFS. (4) O residuo da classe
+      AMD-avx512 (-81 dBFS) caberia — mas a chave avx512f NAO separa quem
+      reproduz de quem diverge no byte. Intel caiu UMA vez em 16
+      execucoes (8573C, 19/19 byte-identicos, residuo -inf).
+    tabela_fase_1:
       - {run: 36018593059, copia: gate-1, cpu: "AMD EPYC 9V45", lscpu_avx512f: true, classe_medida: avx512, bytes: "0/19 identicos", primeira_etapa_divergente: ".opus (codificacao)", residuo_opus_dbfs: "-80.9 / -83.1", duracoes: identicas, veredito: "VERMELHO no artefato, job VERDE por defeito do pipe (ver licoes)"}
       - {run: 36018634467, copia: copia-1, cpu: "AMD EPYC 9V45", lscpu_avx512f: true, classe_medida: avx512, bytes: "0/19", primeira_etapa_divergente: ".opus (codificacao)", residuo_opus_dbfs: "-80.9 / -83.1", duracoes: identicas, veredito: VERMELHO-real}
       - {run: 36018634467, copia: copia-2, cpu: "AMD EPYC 9V45", lscpu_avx512f: true, classe_medida: avx512, bytes: "0/19", primeira_etapa_divergente: ".opus (codificacao)", residuo_opus_dbfs: "-80.9 / -83.1", duracoes: identicas, veredito: VERMELHO-real}
@@ -145,24 +197,90 @@ proposta:
       - {run: 36018634467, copia: copia-4, cpu: "AMD EPYC 9V74", lscpu_avx512f: false, classe_medida: avx2, bytes: "0/19", primeira_etapa_divergente: "pcm_cru (30/30 falas)", residuo_opus_dbfs: "-38.4 / -38.2", duracoes: identicas, veredito: VERMELHO-real}
       - {run: 36018634467, copia: copia-5, cpu: "AMD EPYC 7763", lscpu_avx512f: false, classe_medida: avx2, bytes: "0/19", primeira_etapa_divergente: "pcm_cru (30/30 falas)", residuo_opus_dbfs: "-38.4 / -38.2", duracoes: identicas, veredito: VERMELHO-real}
       - {run: 36018634467, copia: copia-6, cpu: "AMD EPYC 7763", lscpu_avx512f: false, classe_medida: avx2, bytes: "0/19", primeira_etapa_divergente: "pcm_cru (30/30 falas)", residuo_opus_dbfs: "-38.4 / -38.2", duracoes: identicas, veredito: VERMELHO-real}
-    leitura: >
-      TRES achados medidos, um deles previsto e dois novos. (1) A HIPOTESE
-      CONFIRMADA para avx2-vs-avx512: a primeira etapa divergente e o PCM
-      CRU do piper (onnxruntime) em 30/30 falas — exatamente onde o plano
-      apontava; a divergencia decodificada fica em -38 dBFS. (2) NOVO: o
-      9V45 tem avx512f no lscpu (chave da ancora) e DIVERGE — com pcm_cru,
-      pos_prosodia, pos_timbre e mix s16 TODOS identicos a ancora: a
-      divergencia nasce na CODIFICACAO opus. O s16 tem piso de 1 LSB e
-      esconde diferencas sub-LSB que o codificador enxerga: o instrumento
-      f32 (a entrada exata do codificador, com round-trip validado) entra
-      na fase 2 para separar "o grafo divergiu" de "o codificador
-      divergiu". (3) O residuo da classe avx2 (-38 dBFS) NAO cabe sob um
-      teto abaixo de -60 dBFS: RESIDUO_AUDIVEL e o caminho se a frota
-      confirmar. E o 9V45 (avx512f, -81 dBFS) caberia — mas a chave
-      avx512f NAO separa quem reproduz de quem diverge: CLASSE_MAL_DEFINIDA
-      com confronto medido. Nenhum Intel caiu nas 7 execucoes (a frota
-      atual do ubuntu-latest e 9V45 + 7763/9V74): as flags COMPLETAS agora
-      vao para o artefato para o descobrimento da chave por diff.
+
+    tabela_cacada_ancora:
+      quando: "2026-09-24, run 36022398667 (rodadas=12, head fddd2ca) — 28 execucoes totais na CP"
+      execucoes: 12
+      tabela:
+        - {copia: copia-4, cpu: "Intel Xeon 6973P-C", bytes: "19/19 IDENTICOS", residuo_dbfs: "-inf", veredito: reproduzido}
+        - {copia: copia-5, cpu: "Intel Xeon 8573C", bytes: "19/19 IDENTICOS", residuo_dbfs: "-inf", veredito: reproduzido}
+        - {copia: copia-6, cpu: "Intel Xeon 8573C", bytes: "19/19 IDENTICOS", residuo_dbfs: "-inf", veredito: reproduzido}
+        - {copia: copia-8, cpu: "Intel Xeon 6973P-C", bytes: "19/19 IDENTICOS", residuo_dbfs: "-inf", veredito: reproduzido}
+        - {copia: copia-11, cpu: "Intel Xeon 6973P-C", bytes: "19/19 IDENTICOS", residuo_dbfs: "-inf", veredito: reproduzido}
+        - {copia: "demais 7", cpu: "AMD EPYC 7763/9V74", bytes: "0/19", residuo_dbfs: "-38.4/-38.2", veredito: DIVERGENTE}
+      leitura: >
+        SEIS execucoes em runner da classe que reproduz bytes (todas Intel
+        com avx512f, DUAS geracoes: 8573C e 6973P-C/Granite Rapids), TODAS
+        byte-identicas ao HEAD — o minimo de 3 da prova da ancora foi
+        superado (ANCORA_RARA nao disparou). E na MESMA chave de classe,
+        as 4 amostras AMD-avx512 divergiram na codificacao: a chave
+        separa o PCM, nao o byte — CLASSE_MAL_DEFINIDA segue ativa, agora
+        com o confronto completo: 6/6 Intel reproduzem, 4/4 AMD-avx512
+        divergem no codificador, 18/18 AMD-avx2 divergem no PCM.
+    validacao_da_flag_descoberta: >
+      O diff das flags COMPLETAS validado em todas as 33 amostras com
+      flags publicadas: DOZE flags separam perfeitamente os 6
+      reprodutores dos 27 divergentes (x2apic, tsc_deadline_timer, vmx,
+      ept, vpid, tpr_shadow, vnmi, hle, rtm, la57, ss, arch_capabilities)
+      — TODAS de plataforma Intel, NENHUMA SIMD, NENHUMA com ligacao
+      causal com a codificacao de audio (x2apic e modo de APIC; vmx/ept
+      sao virtualizacao; hle/rtm sao TSX). Adota-las como chave seria o
+      teste de fabricante com passos a mais — exatamente o que o plano
+      veda. A descoberta pedida esta FEITA e registrada; a decisao de
+      adotar uma chave-fabricante disfarcada (ou rejeita-la e tratar a
+      reproducao de bytes como propriedade da FAMILIA de CPU) e ponto
+      de decisao explicito para o dono, no corpo do PR.
+
+  desfecho:
+    entregue: >
+      (1) hash POR ETAPA por fala (pcm_cru/pos_prosodia/pos_timbre) +
+      mix s16 e mix f32 (a entrada EXATA do codificador, validado por
+      round-trip) + .opus, em workspace/voz-etapas, publicado no artefato
+      de identidade de cada execucao; (2) classe_simd ancorada no lock
+      (avx512, flags medidas, classificador unico em voz.py usado por
+      dublar/job/testes; lock sem a linha e INCOMPLETO — recusado);
+      (3) ci/prova_por_classe.py dentro da imagem: bytes na classe
+      ancora, duracoes por fala + residuo nos DOIS pontos sempre medidos
+      e publicados, audio-suite compare no runner quando ha tolerancia;
+      (4) filtro por declaracao de audio lido do proprio filme.js (nomes
+      hardcoded removidos; filme mudo nao aciona o job nem entra nele;
+      dublar recusa quem nao fala); (5) o verde-falso do pipe morto
+      (shell bash com pipefail em todo passo com pipe — o run que mentiu
+      verde esta registrado nas licoes); (6) flags COMPLETAS no artefato
+      (o instrumento do descobrimento da chave); (7) 28 execucoes de
+      evidencia com tabela completa. A tolerancia NAO nasceu: o teto nao
+      existe abaixo de -60 dBFS com o maximo observado de -38.4 — a
+      maquinaria existe, o numero a proibiu.
+    paradas_finais: >
+      CLASSE_MAL_DEFINIDA: ATIVA, com descoberta medida completa (doze
+      flags de plataforma separam; nenhuma SIMD; decisao explicita para
+      o dono). RESIDUO_AUDIVEL: ATIVA, confirmada em 18 execucoes avx2
+      (-38.4/-38.2 dBFS, acima do piso de -60). ANCORA_RARA: nao
+      disparou (6 amostras ainda byte-identicas em 28 execucoes). Com
+      paradas ativas, o merge do PR #12 NAO acontece pelo rito do
+      adendo — a decisao volta para o dono com as saidas abaixo.
+    saidas_para_o_dono:
+      - >
+        (a) Runner dedicado Intel-avx512 (self-hosted ou larger-runner):
+        a classe que reproduz e estavel e medida em DUAS geracoes de
+        Xeon (6/6); o gate de bytes volta a ser deterministico e o merge
+        pode proceder pelo rito.
+      - >
+        (b) Redublagem completa dentro da imagem em maquina Intel:
+        re-ancora os 19 .opus na familia que domina a frota atual da
+        chave avx512 — mas so troca qual lado diverge (CP-009 ja
+        registrava: os AMD-avx512 continuariam a -81 dBFS, os avx2 a
+        -38); exige CP propria com diff de audio revisado.
+      - >
+        (c) Tolerancia por faixa de classe (uma por classe, com a de
+        avx2 acima de -60 dBFS): muda o piso do plano — decisao
+        doutrinaria que o plano reservou ao humano; a maquinaria e a
+        medicao ja existem para implementar no dia do sim.
+      - >
+        (d) Conviver com o vermelho honesto: o gate acusa a frota real
+        com causa medida e nomeada (era loteria pre-CP-011, agora e
+        diagnostico por execucao) — o PR #12 fica aberto aguardando (a),
+        (b) ou (c).
 
   decisao_de_valor:
     contexto: >
@@ -179,6 +297,11 @@ proposta:
       agente: ela so existe com teto MEDIDO, registrado e abaixo de
       -60 dBFS -- numero nao negociavel que veio do plano do dono.
     status: "AUTORIZADO PELO DONO (24/09/2026, adendo da sessao); rito e condicoes registrados no corpo do PR #12"
+    estado_das_condicoes: >
+      NAO cumpridas no fechamento (2026-09-24): CLASSE_MAL_DEFINIDA e
+      RESIDUO_AUDIVEL ativas — ver paradas_nomeadas e desfecho. O merge do
+      PR #12 NAO procedeu pelo rito do adendo; a decisao volta ao dono com
+      as quatro saidas registradas (desfecho.saidas_para_o_dono).
 
   doutrina:
     - >
@@ -306,14 +429,14 @@ proposta:
         precisa de justificativa nova). O hash por etapa existe exatamente
         para que essa conclusao seja medida, nao presumida.
     RESIDUO_AUDIVEL:
-      status: "PENDENTE DE CONFIRMAÇÃO (medido em 4 execucoes avx2: -38.4/-38.2 dBFS, acima do piso de -60 — se a frota confirmar, o teto não existe e a tolerância não nasce)"
+      status: "ATIVA (confirmada): 18 execuções avx2, resíduo -38.4/-38.2 dBFS — acima do piso de -60; o teto derivado da frota não existe abaixo do piso e a tolerância não nasceu. Decisão devolvida ao dono (saída c do desfecho)"
       regra: >
         O teto derivado da frota (max observado + margem declarada) tem de
         ficar abaixo de -60 dBFS. Se o residuo observado nao permitir um
         teto abaixo disso, PARE: a divergencia entre classes e audivel e a
         tolerancia nao existe -- caminho para o humano.
     CLASSE_MAL_DEFINIDA:
-      status: "DISPAROU (medido): o AMD EPYC 9V45 reporta avx512f e DIVERGE — 3 execuções na classe da âncora com 0/19 bytes; a chave avx512f não separa quem reproduz de quem diverge. Descobrimento da flag adicional em andamento (flags completas publicadas no artefato desde a fase 2); nenhum Intel caiu ainda para o diff"
+      status: "ATIVA (descoberta medida completa): a chave avx512f prevê o PCM (oculta → diverge; visível → idêntico à âncora, Intel e AMD) mas NÃO o byte — 6/6 Intel reproduzem, 4/4 AMD-avx512 divergem na codificação com entrada f32 idêntica. Doze flags de plataforma separam perfeitamente (x2apic, vmx, hle/rtm, tsc_deadline_timer, ...), NENHUMA SIMD — adotá-las seria fabricante disfarçado, que o plano veda. Decisão explícita devolvida ao dono"
       regra: >
         Amostra da classe ancora (pela chave atual do classificador)
         divergindo byte a byte: a chave da classe nao separa quem reproduz
@@ -323,7 +446,7 @@ proposta:
         divergem — agora publicadas no artefato) e registrar; nunca
         adivinhar, nunca ampliar a chave por precaucao.
     ANCORA_RARA:
-      status: "nao disparada"
+      status: "não disparou: 6 amostras da classe que reproduz byte-identicamente em 28 execuções (mínimo de 3 superado — 8573C e 6973P-C, duas gerações)"
       regra: >
         Menos de 3 amostras da classe ancora em ate 30 execucoes totais:
         registra a contagem e segue para o fechamento com o que houver,

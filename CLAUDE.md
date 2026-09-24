@@ -22,20 +22,35 @@ O `validar_tudo` é o gate, não a íntegra do CI: os testes de cada camada e o
 portão de sonorização são passos próprios do workflow — e o portão, no CI,
 mede de verdade (a audio-suite é instalada isolada e pinada por SHA). O job
 `dublador` (workflow próprio, disparado quando o que assina os bytes do áudio
-muda) prova que a imagem `ferramentas/dublador/` reproduz **byte a byte** cada
-`.opus` commitado — e o CI inteiro lê versões do `voz.lock`
+muda) prova que a imagem `ferramentas/dublador/` reproduz o áudio commitado —
+e o CI inteiro lê versões do `voz.lock`
 (`ci/pins_do_lock.py`), nunca digitadas à mão. O que assina os bytes inclui o
-**número de threads** da sessão do onnxruntime (CP-009): o lock ancora, a
-imagem carrega no ENV (OMP/OpenBLAS/MKL) e o dublar lê o valor **de volta** da
-sessão — o dispatch ganha `rodadas` para provar em N runners de uma vez, cada
-uma com a identidade da máquina (lscpu) publicada no log e em artefato.
+**número de threads** da sessão do onnxruntime (CP-009) e a **classe de SIMD**
+da CPU (CP-011: `classe_simd` no lock, lida de flags medidas — nunca do nome do
+fabricante — e gravada como medido no `audio.json`).
+
+**A prova do job dublador é POR CLASSE (CP-011)**, e só acorda para filmes que
+declaram `audio: true` (lido do próprio `filme.js` — filme mudo não aciona o
+job nem entra nele). Runner da classe âncora exige **bytes**; outra classe
+exige durações por fala + **resíduo de nulidade abaixo do teto do lock** +
+`audio-suite compare` — e sem teto registrado no `voz.lock` vale a doutrina
+antiga: bytes em toda classe, vermelho honesto na classe divergente. Medido na
+frota (28 execuções, hash **por etapa**: PCM cru → prosódia → timbre → mix
+pré-opus → `.opus`): a divergência entre AVX-512 e AVX2 nasce no **PCM cru**
+(onnxruntime, 30/30 falas); entre famílias de CPU com `avx512f` visível, nasce
+**na codificação opus** com a entrada idêntica (f32 medido); Intel reproduz
+(6/6, duas gerações), AMD diverge (−81 dBFS só no codec; −38 dBFS no PCM —
+acima do piso de −60 dBFS, por isso a tolerância **não nasceu** e o gate segue
+vermelho na frota divergente, com causa medida — decisão de caminho na CP-011).
 
 **Prova de bytes é contra o HEAD, nunca cópia contra cópia**:
 `git diff --exit-code -- '*.opus'`. Uma "prova" que comparou arquivos
 regenerados com arquivos que o próprio comando reescreveu já mentiu nesta
 suíte — o `sed` de um diagnóstico reescreveu os caminhos e a comparação ficou
 consigo mesma; o `git status` desmentiu. O HEAD é testemunha que não participou
-da geração: só ele fecha o circuito.
+da geração: só ele fecha o circuito. E o veredito de CI que importa é o que
+está no **artefato** (identidade, hash por etapa, resíduos, prova aplicada) —
+o log verde sem artefato já mentiu uma vez (pipe engolindo exit, CP-011).
 
 Códigos: `0` conforme · `1` divergência entre o declarado e o real · `2` algum fiscal
 **não conseguiu** fiscalizar. Os dois últimos são estados diferentes de propósito.

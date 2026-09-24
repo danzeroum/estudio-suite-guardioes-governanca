@@ -189,13 +189,24 @@ dez"). Não existe roteiro de áudio separado. Desde a CP-005, o **timbre animal
   estudio_suite dublar <id>`) só funciona se o ambiente da máquina **bater com o
   lock** (python, piper, onnxruntime, numpy/scipy, ffmpeg, libopus, arquitetura e
   threads da sessão — o dublar mede tudo e
-  recusa na divergência, nomeando pacote, versão e correção). O dublar sintetiza um clipe
+  recusa na divergência, nomeando pacote, versão e correção — e a **classe de SIMD**
+  desde a CP-011: lida de flags medidas, gravada no `audio.json`). O dublar sintetiza um clipe
   por legenda (Piper local, modelo ancorado por sha256 em `voz.lock`, o `lei.lock`
   das vozes) e mixa em `filmes/<id>/audio/<id>.opus` — 48 kHz, mono, loudness
   −16 LUFS. Clipe que estoura o tempo da legenda **reprova**: nunca
   time-stretch, nunca reamostrar — encurta-se a legenda. No CI, o job `dublador`
-  prova que a imagem reproduz **byte a byte** cada `.opus` commitado (sha256,
-  duas rodadas, diff de durações como artefato quando diverge).
+  roda **só para filmes que declaram `audio: true`** (lido do próprio `filme.js` —
+  filme mudo não aciona) e aplica a **prova por classe de SIMD** (CP-011): na
+  classe da âncora, cada `.opus` regenerado tem de ser **byte a byte** o
+  commitado; nas demais, o veredito compara durações por fala e mede o
+  **resíduo de nulidade** nos dois pontos (mix pré-opus e `.opus` decodificado),
+  sempre com hash **por etapa** (PCM cru → prosódia → timbre → mix → `.opus`),
+  classe, máquina e números no artefato de identidade. Medido na frota:
+  Intel com AVX-512 reproduz os bytes (6/6, duas gerações de Xeon); AMD com
+  `avx512f` visível entrega o mesmo PCM e diverge só na codificação (−81 dBFS);
+  AMD sem `avx512f` diverge no PCM (−38 dBFS — audivel, acima do piso de
+  −60 dBFS da tolerância, que por isso **não existe**: vermelho com veredito e
+  números, não verde de loteria — a decisão de caminho está na CP-011).
 - No player, o botão **Som nasce desligado**; sem trilha, ele nem aparece.
   `renderizar(t)` segue pura: o áudio é escravo do tempo, nunca dono dele.
 - O **fiscal de redublagem** reprova quem edita legenda sem redublar — mesmo
