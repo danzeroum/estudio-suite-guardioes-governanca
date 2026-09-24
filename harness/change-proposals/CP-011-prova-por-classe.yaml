@@ -135,6 +135,35 @@ proposta:
       todas verdes, aval do dono registrado, merge commit, CI do main
       acompanhado, revert se quebrar).
 
+  resultado_da_medicao:
+    quando: "2026-09-24, head 8a9d684 (fase 1 da instrumentacao), 7 execucoes"
+    tabela:
+      - {run: 36018593059, copia: gate-1, cpu: "AMD EPYC 9V45", lscpu_avx512f: true, classe_medida: avx512, bytes: "0/19 identicos", primeira_etapa_divergente: ".opus (codificacao)", residuo_opus_dbfs: "-80.9 / -83.1", duracoes: identicas, veredito: "VERMELHO no artefato, job VERDE por defeito do pipe (ver licoes)"}
+      - {run: 36018634467, copia: copia-1, cpu: "AMD EPYC 9V45", lscpu_avx512f: true, classe_medida: avx512, bytes: "0/19", primeira_etapa_divergente: ".opus (codificacao)", residuo_opus_dbfs: "-80.9 / -83.1", duracoes: identicas, veredito: VERMELHO-real}
+      - {run: 36018634467, copia: copia-2, cpu: "AMD EPYC 9V45", lscpu_avx512f: true, classe_medida: avx512, bytes: "0/19", primeira_etapa_divergente: ".opus (codificacao)", residuo_opus_dbfs: "-80.9 / -83.1", duracoes: identicas, veredito: VERMELHO-real}
+      - {run: 36018634467, copia: copia-3, cpu: "AMD EPYC 7763", lscpu_avx512f: false, classe_medida: avx2, bytes: "0/19", primeira_etapa_divergente: "pcm_cru (30/30 falas)", residuo_opus_dbfs: "-38.4 / -38.2", duracoes: identicas, veredito: VERMELHO-real}
+      - {run: 36018634467, copia: copia-4, cpu: "AMD EPYC 9V74", lscpu_avx512f: false, classe_medida: avx2, bytes: "0/19", primeira_etapa_divergente: "pcm_cru (30/30 falas)", residuo_opus_dbfs: "-38.4 / -38.2", duracoes: identicas, veredito: VERMELHO-real}
+      - {run: 36018634467, copia: copia-5, cpu: "AMD EPYC 7763", lscpu_avx512f: false, classe_medida: avx2, bytes: "0/19", primeira_etapa_divergente: "pcm_cru (30/30 falas)", residuo_opus_dbfs: "-38.4 / -38.2", duracoes: identicas, veredito: VERMELHO-real}
+      - {run: 36018634467, copia: copia-6, cpu: "AMD EPYC 7763", lscpu_avx512f: false, classe_medida: avx2, bytes: "0/19", primeira_etapa_divergente: "pcm_cru (30/30 falas)", residuo_opus_dbfs: "-38.4 / -38.2", duracoes: identicas, veredito: VERMELHO-real}
+    leitura: >
+      TRES achados medidos, um deles previsto e dois novos. (1) A HIPOTESE
+      CONFIRMADA para avx2-vs-avx512: a primeira etapa divergente e o PCM
+      CRU do piper (onnxruntime) em 30/30 falas — exatamente onde o plano
+      apontava; a divergencia decodificada fica em -38 dBFS. (2) NOVO: o
+      9V45 tem avx512f no lscpu (chave da ancora) e DIVERGE — com pcm_cru,
+      pos_prosodia, pos_timbre e mix s16 TODOS identicos a ancora: a
+      divergencia nasce na CODIFICACAO opus. O s16 tem piso de 1 LSB e
+      esconde diferencas sub-LSB que o codificador enxerga: o instrumento
+      f32 (a entrada exata do codificador, com round-trip validado) entra
+      na fase 2 para separar "o grafo divergiu" de "o codificador
+      divergiu". (3) O residuo da classe avx2 (-38 dBFS) NAO cabe sob um
+      teto abaixo de -60 dBFS: RESIDUO_AUDIVEL e o caminho se a frota
+      confirmar. E o 9V45 (avx512f, -81 dBFS) caberia — mas a chave
+      avx512f NAO separa quem reproduz de quem diverge: CLASSE_MAL_DEFINIDA
+      com confronto medido. Nenhum Intel caiu nas 7 execucoes (a frota
+      atual do ubuntu-latest e 9V45 + 7763/9V74): as flags COMPLETAS agora
+      vao para o artefato para o descobrimento da chave por diff.
+
   decisao_de_valor:
     contexto: >
       A tolerancia muda a doutrina da prova (byte-identidade vira
@@ -269,7 +298,7 @@ proposta:
       status: "conferida e VERDE na abertura (PR aberto, 2b6740b, CP-008/009 em execucao, CLASSE_DE_CPU_DIVERGE registrado)"
       regra: "PR #12 aberto e nao mergeado no head esperado, CP-008/009 em em-execucao e CLASSE_DE_CPU_DIVERGE registrado; fora disso, PARE antes de tocar em qualquer caminho."
     ETAPA_INESPERADA:
-      status: "nao disparada (aguardando as 5+ execucoes com hash por etapa)"
+      status: "NÃO disparada para a pergunta do plano (AVX-512 x AVX2: primeira etapa = pcm_cru, 30/30 falas — a hipótese confirmou); MAS o 9V45 (avx512 no lscpu) diverge a partir da CODIFICAÇÃO .opus com todo o PCM idêntico — fenômeno NOVO, o instrumento f32 separa grafo x codificador na fase 2"
       regra: >
         Se a primeira etapa divergente entre AVX-512 e AVX2 NAO for o PCM
         cru do piper: registra a etapa na CP e reavalia o passo 3 antes de
@@ -277,20 +306,21 @@ proposta:
         precisa de justificativa nova). O hash por etapa existe exatamente
         para que essa conclusao seja medida, nao presumida.
     RESIDUO_AUDIVEL:
-      status: "nao disparada (aguardando medicao nas execucoes AVX2)"
+      status: "PENDENTE DE CONFIRMAÇÃO (medido em 4 execucoes avx2: -38.4/-38.2 dBFS, acima do piso de -60 — se a frota confirmar, o teto não existe e a tolerância não nasce)"
       regra: >
         O teto derivado da frota (max observado + margem declarada) tem de
         ficar abaixo de -60 dBFS. Se o residuo observado nao permitir um
         teto abaixo disso, PARE: a divergencia entre classes e audivel e a
         tolerancia nao existe -- caminho para o humano.
     CLASSE_MAL_DEFINIDA:
-      status: "nao disparada"
+      status: "DISPAROU (medido): o AMD EPYC 9V45 reporta avx512f e DIVERGE — 3 execuções na classe da âncora com 0/19 bytes; a chave avx512f não separa quem reproduz de quem diverge. Descobrimento da flag adicional em andamento (flags completas publicadas no artefato desde a fase 2); nenhum Intel caiu ainda para o diff"
       regra: >
         Amostra da classe ancora (pela chave atual do classificador)
         divergindo byte a byte: a chave da classe nao separa quem reproduz
-        de quem diverge. Se for runner AMD com avx512f reportado, a chave
-        precisa de mais uma flag: descobrir QUAL por medicao (diff das
-        flags dos runners que passam x divergem) e registrar; nunca
+        de quem diverge. Se for runner AMD com avx512f reportado (E O CASO
+        medido: 9V45, Zen 5), a chave precisa de mais uma flag: descobrir
+        QUAL por medicao (diff das flags completas dos runners que passam x
+        divergem — agora publicadas no artefato) e registrar; nunca
         adivinhar, nunca ampliar a chave por precaucao.
     ANCORA_RARA:
       status: "nao disparada"

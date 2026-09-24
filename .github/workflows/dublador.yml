@@ -89,6 +89,7 @@ jobs:
       - id: copias
         env:
           RODADAS: ${{ inputs.rodadas }}
+        shell: bash
         run: |
           N="${RODADAS:-1}"
           case "$N" in ''|*[!0-9]*) N=1;; esac
@@ -113,6 +114,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           EVENTO: ${{ github.event_name }}
+        shell: bash
         run: |
           python3 - <<'EOF' | tee /tmp/planejar.log
           import os, subprocess, sys
@@ -209,14 +211,17 @@ jobs:
       # CP-009: a IDENTIDADE DA MAQUINA, medida e publicada ANTES de
       # dublar — no log e num artefato JSON. lscpu --json: o parser e
       # deterministico, o grep em campo traduzido nao seria.
-      # CP-011: a CLASSE DO RUNNER nasce AQUI, pelo MESMO classificador
-      # do dublar (estudio_suite/voz.py — um lugar so), lendo as MESMAS
-      # flags; a classe da ANCOR vem do lock (pins_do_lock --classe-simd),
-      # e o TETO de residuo tambem (ou a ausencia nomeada dele — sem
-      # teto, a prova cai na doutrina antiga: bytes em toda classe).
-      - name: A identidade da máquina (lscpu, classe, ancora, teto)
+      # CP-011: a classe do runner nasce AQUI, pelo MESMO classificador do
+      # dublar (estudio_suite/voz.py — um lugar so), lendo as MESMAS flags;
+      # e as FLAGS COMPLETAS vão para o artefato: a chave da classe pode
+      # precisar de mais uma flag (CLASSE_MAL_DEFINIDA — um 9V45 com avx512f
+      # divergiu), e descobrir QUAL exige o diff das flags de quem passa x
+      # quem diverge. Flags fora do artefato seria descobrimento impossível.
+      - name: A identidade da máquina (lscpu, classe, ancora, teto, flags)
+        shell: bash
         run: |
           lscpu --json > /tmp/lscpu.json
+          mkdir -p /tmp/identidade
           python3 - <<'EOF' | tee /tmp/identidade-maquina.env
           import json
           d = json.load(open('/tmp/lscpu.json'))
@@ -235,8 +240,13 @@ jobs:
               f"AVX2={int('avx2' in flags)}",
               f"AVX512F={int('avx512f' in flags)}",
               f"AMX_TILE={int('amx_tile' in flags)}",
+              f"FLAGS_SIMD={' '.join(sorted(f for f in flags if f.startswith(('avx', 'amx', 'sse', 'fma', 'mmx', 'xop', 'gfni', 'vaes', 'vpclmul', 'sha'))))}",
           ]
           print('\n'.join(linhas))
+          # as flags COMPLETAS vão para o artefato (a descoberta da chave
+          # da classe é o diff destas listas entre quem passa e quem falha)
+          open('/tmp/identidade/flags-completas.txt', 'w').write(
+              campos.get('Model name', '?') + '\n' + ' '.join(sorted(flags)) + '\n')
           EOF
           cat /tmp/identidade-maquina.env >> "$GITHUB_ENV"
           NPROC=$(nproc)
@@ -258,11 +268,12 @@ jobs:
           TETO_RESIDUO=$(python3 ci/pins_do_lock.py --teto-residuo 2>/dev/null || true)
           echo "TETO_RESIDUO=${TETO_RESIDUO:-}" >> "$GITHUB_ENV"
           echo "== identidade do runner (CP-009/CP-011):"
-          cat /tmp/identidade-maquina.env
+          cat /tmp/identidade-maquina.env | grep -v '^FLAGS_SIMD='
           echo "  nproc:         $NPROC"
           echo "  cgroup cpu:    $CGROUP_CPU"
           echo "  classe SIMD:   $CLASSE_DO_RUNNER (ancora: $CLASSE_ANCORA)"
           echo "  teto residuo:  ${TETO_RESIDUO:-NAO REGISTRADO — prova de bytes em toda classe}"
+          echo "  flags SIMD:    $(grep '^FLAGS_SIMD=' /tmp/identidade-maquina.env | cut -d= -f2- | tr ' ' '\n' | wc -l) flags (completas no artefato)"
 
       # buildx com cache de camadas do GitHub Actions: a base por digest e
       # os pins do lock mudam raramente; o build efetivo costuma ser so
@@ -320,6 +331,7 @@ jobs:
       # (e os sha256, e desde a CP-011 tambem o audio.json, referencia das
       # DURACOES POR FALA) acontece ANTES da primeira rodada.
       - name: Os sha256 do que esta commitado
+        shell: bash
         run: |
           mkdir -p /tmp/commitado
           find filmes -path '*/audio/*.opus' | sort | while read -r f; do
@@ -382,6 +394,7 @@ jobs:
       # residuos nos DOIS pontos (mix pre-opus e opus decodificado) sao
       # sempre publicados: e deles que o teto um dia nasce.
       - name: A prova por classe (dentro da imagem)
+        shell: bash
         run: |
           mkdir -p /tmp/prova
           docker run --rm --platform linux/amd64 \
@@ -397,6 +410,7 @@ jobs:
       # BYTES (mais forte), e o log diz exatamente isso.
       - name: O compare da audio-suite (na tolerância, no runner)
         if: env.CLASSE_DO_RUNNER != env.CLASSE_ANCORA && env.TETO_RESIDUO != ''
+        shell: bash
         run: |
           pipx install "git+https://github.com/danzeroum/audio-suite@296226eb803adbe380f1473c25c5a22ebb857029"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
@@ -437,6 +451,7 @@ jobs:
       # com os residuos medidos nos dois pontos.
       - name: O artefato de identidade (run, CPU, classe, prova, números)
         if: always()
+        shell: bash
         run: |
           mkdir -p /tmp/identidade
           THREADS_GRAVADAS=$(python3 -c "
@@ -505,6 +520,7 @@ jobs:
       # JUNTO com a identidade da maquina que divergiu.
       - name: O diff de duracoes (diagnostico da falha)
         if: failure()
+        shell: bash
         run: |
           docker run --rm --platform linux/amd64 \
             -v "$PWD":/app -v /tmp/commitado:/commitado -w /app \

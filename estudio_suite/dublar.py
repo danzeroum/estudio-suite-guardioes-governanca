@@ -290,7 +290,7 @@ def _gravar_wav(caminho: Path, pcm: bytes) -> None:
 
 
 def mixar(clipes: list, duracao_filme: float, saida: Path, earcons=None,
-          pcm_saida: Path = None) -> None:
+          pcm_saida: Path = None, pcm_saida_f32: Path = None) -> None:
     """Clipes [(pcm, em_abs, dur)] (+ earcons [(wav, em_abs)]) -> um .opus.
 
     O ffmpeg faz a mixagem porque ja e dependencia declarada do ambiente; um
@@ -305,6 +305,13 @@ def mixar(clipes: list, duracao_filme: float, saida: Path, earcons=None,
     -- e nao um segundo caminho de mix que pudesse divergir do mix de
     verdade. O comando que gera o .opus permanece IDENTICO ao de sempre
     (nenhum byte do .opus pode mudar por causa do diagnostico).
+    pcm_saida_f32 grava o grafo em pcm_f32le: a FOTOGRAFIA EXATA da
+    entrada do codificador (o que o libopus VE). O s16 tem piso de
+    resolucao de 1 LSB (~-90 dBFS): diferenças SUB-LSB no grafo float
+    passam invisíveis pelo WAV s16 e o codificador as enxerga -- medido
+    na frota: o 9V45 entrega mix s16 IDENTICO e .opus DIVERGENTE. O f32
+    e o instrumento que separa "o grafo divergiu" de "o codificador
+    divergiu" -- e a pergunta certa para a CP.
     """
     earcons = earcons or []
     with tempfile.TemporaryDirectory() as tmp:
@@ -358,6 +365,21 @@ def mixar(clipes: list, duracao_filme: float, saida: Path, earcons=None,
                 raise SystemExit(
                     f"  ERRO: ffmpeg nao gravou o mix pre-opus (CP-011):\n"
                     f"{r2.stderr[-800:]}")
+        if pcm_saida_f32 is not None:
+            # CP-011 (fase 2 da medicao): a entrada EXATA do codificador,
+            # em float -- o s16 esconde diferencas sub-LSB que o libopus
+            # enxerga (medido: mix s16 identico, .opus divergente).
+            cmd_f32 = (["ffmpeg", "-y", "-nostdin", "-fflags", "+bitexact"] +
+                       entradas +
+                       ["-filter_complex", ";".join(filtros), "-map", "[aout]",
+                        "-ac", str(CANAIS), "-ar", str(TAXA),
+                        "-c:a", "pcm_f32le", "-f", "wav",
+                        "-fflags", "+bitexact", str(pcm_saida_f32)])
+            r3 = subprocess.run(cmd_f32, capture_output=True, text=True)
+            if r3.returncode != 0:
+                raise SystemExit(
+                    f"  ERRO: ffmpeg nao gravou o mix pre-opus f32 (CP-011):\n"
+                    f"{r3.stderr[-800:]}")
 
 
 # ---- o comando ------------------------------------------------------------
@@ -596,7 +618,9 @@ def dublar(fid: str) -> int:
     dir_etapas = WORKSPACE / "voz-etapas"
     dir_etapas.mkdir(parents=True, exist_ok=True)
     mix_wav = dir_etapas / f"{fid}.mix.wav"
-    mixar(clipes, d["duracao"], opus, earcons=earcons_mix, pcm_saida=mix_wav)
+    mix_f32 = dir_etapas / f"{fid}.mix.f32.wav"
+    mixar(clipes, d["duracao"], opus, earcons=earcons_mix,
+          pcm_saida=mix_wav, pcm_saida_f32=mix_f32)
     quadrinhos = _clipes_por_plano(opus, d, dir_audio, fid)
     (dir_etapas / f"{fid}.etapas.json").write_text(
         json.dumps({
@@ -607,7 +631,12 @@ def dublar(fid: str) -> int:
             "classe_simd": str(classe),
             "threads": str(efetivo),
             "clipes": etapas,
+            # mix_pcm (s16) e o snapshot quantizado; mix_pcm_f32 e a
+            # ENTRADA EXATA do codificador — a frota provou que o s16
+            # esconde diferencas sub-LSB que o libopus enxerga (9V45:
+            # mix s16 identico, .opus divergente)
             "mix_pcm": hashlib.sha256(mix_wav.read_bytes()).hexdigest(),
+            "mix_pcm_f32": hashlib.sha256(mix_f32.read_bytes()).hexdigest(),
             "opus": hashlib.sha256(opus.read_bytes()).hexdigest(),
         }, ensure_ascii=False, indent=1) + "\n",
         encoding="utf-8")
