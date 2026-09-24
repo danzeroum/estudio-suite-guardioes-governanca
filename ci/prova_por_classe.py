@@ -33,9 +33,12 @@ O que ela decide, com numeros e no log, para CADA execucao:
   citando o numero. Teto que aceita a frota e nao pega o ruido e
   TETO_NAO_DISCRIMINA — parada nomeada, nunca verde.
 
-  LOCK INCOMPLETO: sem o teto da sua classe (tolerancia.residuo_max_dbfs
-  para a avx512; tolerancia.descritores_* para a avx2), o job RECUSA
-  (saida 2, nomeando) — nunca verde por omissao.
+  LOCK INCOMPLETO: sem o teto do codec (tolerancia.residuo_max_dbfs),
+  ESTE passo recusa (saida 2, nomeando). Sem os tetos de descritores
+  (tolerancia.descritores_*), a recusa e do PASSO DO RUNNER — quem os
+  julga — depois de medir e publicar os deltas desta execucao: a fase
+  de medicao colhe os numeros, e verde por omissao nao existe em passo
+  nenhum.
 
 Os DOIS pontos de residuo sao sempre medidos e publicados (diagnostico
 herdado da CP-011): mix pre-opus regenerado x commitado decodificado, e
@@ -338,9 +341,8 @@ def main() -> int:
           + (f"{len(tetos_desc)}/{len(CHAVES_DESCRITORES)} registrados"
              + (f" ({', '.join(sorted(tetos_desc))})" if tetos_desc else "")
              if tetos_desc else
-             " NAO REGISTRADOS — lock INCOMPLETO para a classe avx2 "
-             "(fase de medicao: os numeros saem publicados, o veredito "
-             "nao fica verde por omissao)"))
+             " NAO REGISTRADOS — a recusa e do passo de descritores "
+             "(depois de medir): fase de medicao da CP-012"))
     print(f"   PROVA APLICADA:    {prova}")
 
     filmes = list(filmes_com_audio())
@@ -354,9 +356,12 @@ def main() -> int:
             encoding="utf-8")
         return 0
 
-    # lock incompleto para a classe que roda: RECUSA nomeada (nunca verde
-    # por omissao) — mas os numeros desta execucao sao medidos e publicados
-    # ANTES da recusa: e deles que o teto um dia nasce (CP-011 ensinou).
+    # lock incompleto para a classe ANCORA: RECUSA AQUI (o teto do codec
+    # e julgado NESTE passo). Para a classe avx2, a recusa dos tetos de
+    # descritores mora no PASSO DO RUNNER (quem os julga): este passo nao
+    # derruba o job antes de o runner MEDIR — a fase de medicao precisa
+    # dos numeros, e o veredito verde nao nasce de passo nenhum sem teto
+    # (nunca verde por omissao, nos DOIS lados).
     recusa_lock = None
     if classe_runner == classe_ancora and teto is None:
         recusa_lock = ("voz.lock sem tolerancia.residuo_max_dbfs — lock "
@@ -365,12 +370,10 @@ def main() -> int:
                        "a codificacao; recusa, nunca verde por omissao")
     elif classe_runner != classe_ancora and len(tetos_desc) < len(CHAVES_DESCRITORES):
         faltam = sorted(set(CHAVES_DESCRITORES) - set(tetos_desc))
-        recusa_lock = (f"voz.lock sem os tetos de descritores da classe "
-                       f"avx2 — lock INCOMPLETO (faltam: {', '.join(faltam)}). "
-                       f"As medidas desta execucao sao publicadas no "
-                       f"prova.json e no passo de descritores: o teto nasce "
-                       f"da medicao da frota (CP-012, fase 2); sem ele a "
-                       f"classe avx2 nao fica verde")
+        print(f"   (lock incompleto para a avx2: faltam {', '.join(faltam)} — "
+              f"a RECUSA e do passo de descritores, que mede ESTA execucao "
+              f"antes de recusar; verde por omissao nao existe em passo "
+              f"nenhum)")
 
     relatorio, vermelho, instrumento = [], [], []
     wavs_para_compare = []

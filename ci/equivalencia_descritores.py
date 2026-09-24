@@ -32,8 +32,10 @@ da imagem publica (/tmp/prova/<fid>-commitado.wav e <fid>-regenerado.wav):
   deliberadas sobre o lado REGENERADO — +0,5 dB numa fala, +20 cents
   numa fala, uma fala TROCADA por outra do mesmo guardiao e 50 ms de
   corte — cada uma tem de REPROVAR nomeando o descritor que a pegou.
-  Controle que passa e TETO_NAO_DISCRIMINA (saida 1, parada nomeada):
-  teto que aceita a frota e nao enxerga mudanca real e tolerancia morta.
+  As variantes sao numpy puro (deterministicas, sem ffmpeg no runner —
+  medido: o ubuntu-latest nao o tem no PATH). Controle que passa e
+  TETO_NAO_DISCRIMINA (saida 1, parada nomeada): teto que aceita a
+  frota e nao enxerga mudanca real e tolerancia morta.
 
 O veredito desta classe COMPLETA o da prova na imagem: la o PCM foi
 declarado DIFERENTE (a classe avx2 nao entrega bytes iguais — e por isso
@@ -156,44 +158,57 @@ def medir_segmento(wav: Path) -> dict:
     return d
 
 
-# ---- as variantes dos controles (ffmpeg — o mesmo da cadeia) ---------------
-def _ffmpeg_filtro(seg: Path, filtros: str, destino: Path) -> Path:
-    r = subprocess.run(
-        ["ffmpeg", "-y", "-nostdin", "-v", "error", "-fflags", "+bitexact",
-         "-i", str(seg), "-af", filtros, "-ac", "1", "-ar", "48000",
-         "-c:a", "pcm_s16le", "-fflags", "+bitexact", str(destino)],
-        capture_output=True, text=True, timeout=120)
-    if r.returncode != 0:
-        raise SystemExit(f"ERRO: ffmpeg nao gerou a variante do controle "
-                         f"({filtros}): {r.stderr[-300:]}")
-    return destino
+# ---- as variantes dos controles (numpy puro — deterministico) -------------
+# Os controles sao PERTURBACOES deliberadas, nao producao: nao precisam do
+# DSP da cadeia, precisam de determinismo e do efeito certo. Numpy puro
+# tira a dependencia de ffmpeg no runner (medido: o ubuntu-latest NAO tem
+# ffmpeg no PATH — o passo de descritores quebrou nele na primeira rodada
+# real; a audio-suite decodifica WAV pcm16 por conta propria e nao precisa
+# dele para os descritores).
+def _gravar_wav_np(caminho: Path, pcm: np.ndarray, sr: int) -> Path:
+    with wave.open(str(caminho), "wb") as o:
+        o.setnchannels(1)
+        o.setsampwidth(2)
+        o.setframerate(sr)
+        o.writeframes(np.asarray(pcm, dtype=np.int16).tobytes())
+    return caminho
 
 
-def variante_ganho(seg: Path, destino: Path) -> Path:
+def _ler_sr(wav: Path) -> int:
+    with wave.open(str(wav), "rb") as w:
+        return w.getframerate()
+
+
+def variante_ganho(pcm: np.ndarray) -> np.ndarray:
     """+0,5 dB na fala — o controle do teto de loudness."""
-    return _ffmpeg_filtro(seg, f"volume={GANHO_DB_CONTROLE}dB", destino)
+    g = 10.0 ** (GANHO_DB_CONTROLE / 20.0)
+    return np.clip(np.rint(pcm.astype(np.float64) * g),
+                   -32768, 32767).astype(np.int16)
 
 
-def variante_cents(seg: Path, destino: Path) -> Path:
-    """+20 cents na fala, duracao preservada — o controle do teto de F0.
+def variante_cents(pcm: np.ndarray) -> np.ndarray:
+    """+20 cents na fala — o controle do teto de F0.
 
-    asetrate sobe a altura (e acelera), aresample volta a taxa, atempo
-    devolve o tempo: o que sobra e UM tom acima. O numero que tem de
-    reprovar e o da F0 mediana (pitch_f0) — a duracao pode mexer poucos
-    ms de borda, e o recorte segue comparavel.
+    Reamostragem por interpolacao linear: tocar o mesmo PCM a uma taxa
+    20 cents acima sobe a altura de F0 exatamente f = 2^(20/1200) e
+    encurta a duracao em 1/f (1,16% — ~23 ms numa fala de 2 s). O numero
+    que tem de reprovar e o da F0 mediana (pitch_f0), que o controle
+    AFIRMA por nome; a duracao pode co-reprovar (o teto dela e apertado),
+    e o numero da F0 continua sendo o que assina o controle.
     """
     f = 2.0 ** (CENTS_CONTROLE / 1200.0)
-    return _ffmpeg_filtro(
-        seg, f"asetrate=48000*{f:.6f},aresample=48000,"
-             f"atempo={1.0 / f:.6f}", destino)
+    n = len(pcm)
+    novo_n = max(1, int(round(n / f)))
+    base = pcm.astype(np.float64)
+    return np.clip(
+        np.rint(np.interp(np.arange(novo_n) * f, np.arange(n), base)),
+        -32768, 32767).astype(np.int16)
 
 
-def variante_corte(seg: Path, destino: Path) -> Path:
+def variante_corte(pcm: np.ndarray, sr: int) -> np.ndarray:
     """50 ms cortados do FIM da fala — o controle do teto de duracao."""
-    with wave.open(str(seg), "rb") as w:
-        dur = w.getnframes() / w.getframerate()
-    return _ffmpeg_filtro(seg, f"atrim=0:{max(0.0, dur - CORTE_MS_CONTROLE / 1000.0):.3f}",
-                          destino)
+    n = int(round(CORTE_MS_CONTROLE / 1000.0 * sr))
+    return pcm[:max(1, len(pcm) - n)]
 
 
 # ---- o julgamento -----------------------------------------------------------
@@ -378,7 +393,9 @@ def main() -> int:
                 seg_r = extrair_segmento(wav_reg, alvo_ganho["em"],
                                          alvo_ganho["dur"],
                                          tmp / f"{fid}-ctl-ganho-in.wav")
-                var = variante_ganho(seg_r, tmp / f"{fid}-ctl-ganho.wav")
+                var = _gravar_wav_np(tmp / f"{fid}-ctl-ganho.wav",
+                                     variante_ganho(ler_pcm(seg_r)),
+                                     _ler_sr(seg_r))
                 m_var = medir_segmento(var)
                 m_com = medicoes["commitado"][k]
                 delta = m_var["loudness_lu"] - m_com["loudness_lu"]
@@ -403,7 +420,9 @@ def main() -> int:
                 seg_r = extrair_segmento(wav_reg, alvo_cents["em"],
                                          alvo_cents["dur"],
                                          tmp / f"{fid}-ctl-cents-in.wav")
-                var = variante_cents(seg_r, tmp / f"{fid}-ctl-cents.wav")
+                var = _gravar_wav_np(tmp / f"{fid}-ctl-cents.wav",
+                                     variante_cents(ler_pcm(seg_r)),
+                                     _ler_sr(seg_r))
                 m_var = medir_segmento(var)
                 m_com = medicoes["commitado"][k]
                 delta = m_var["f0_hz"] - m_com["f0_hz"]
@@ -429,7 +448,10 @@ def main() -> int:
                 seg_r = extrair_segmento(wav_reg, alvo_corte["em"],
                                          alvo_corte["dur"],
                                          tmp / f"{fid}-ctl-corte-in.wav")
-                var = variante_corte(seg_r, tmp / f"{fid}-ctl-corte.wav")
+                var = _gravar_wav_np(tmp / f"{fid}-ctl-corte.wav",
+                                     variante_corte(ler_pcm(seg_r),
+                                                    _ler_sr(seg_r)),
+                                     _ler_sr(seg_r))
                 m_var = medir_segmento(var)
                 m_com = medicoes["commitado"][k]
                 delta = m_var["duracao_ms"] - m_com["duracao_ms"]
