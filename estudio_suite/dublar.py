@@ -11,6 +11,14 @@ CP-004 ate o mix, a CP-005 acrescentando o estagio de timbre:
    deslocam ate +0,08 s em outra maquina, e a menor folga da jornada e
    0,07 s. Divergencia levanta ErroDeDados nomeando pacote, versao
    esperada, instalada e o comando que corrige. Sem contorno.
+   CP-009: o NUMERO DE THREADS e parte desse ambiente -- o ENV de
+   threads (OMP/OpenBLAS/MKL) e conferido na entrada (voz.conferir_
+   threads), e a SESSAO do onnxruntime nasce aqui mesmo, com
+   intra_op_num_threads = inter_op_num_threads = o numero do lock,
+   pelo caminho publico do piper (PiperVoice(session=..., config=...)).
+   A conferencia le DE VOLTA o numero efetivo da sessao e o grava no
+   audio.json (ambiente.threads): o manifesto registra o MEDIDO, nao o
+   pedido. Proibido monkeypatch global de onnxruntime em producao.
 3. Clipe que estoura o tempo da legenda REPROVA, apontando a legenda exata.
    Nao estica, nao reamostra para caber: encurta-se a legenda. (Converter a
    taxa 22050->48000 e mudanca de FORMATO, com duracao identica -- isso o
@@ -200,6 +208,60 @@ def _length_scale(ritmo: float) -> float:
 
 
 # ---- sintese --------------------------------------------------------------
+def _voz_do_lock(onnx, threads: int):
+    """A voz do lock com a SESSAO construida aqui — caminho PUBLICO do piper.
+
+    PiperVoice.load() cria a sessao com SessionOptions() default, e o
+    default do onnxruntime segue os NUCLEOS FISICOS da maquina: o GEMM e
+    particionado pelo numero de threads e a ordem das somas parciais em
+    float muda com a particao — medido nas 42 FALAS REAIS dos dois filmes
+    (CP-009): 1, 2 e 3 assinam tres resultados distintos (4 falas mudam
+    entre 1 e 2, 33 entre 2 e 3; a frase curta do experimento inicial
+    era regime-insensivel); a frota do GitHub oscilava entre regimes com
+    codigo identico. Aqui a sessao nasce com intra_op_num_threads =
+    inter_op_num_threads = threads do lock, e o numero veio de voz.lock —
+    de nenhum outro lugar. Monkeypatch global de onnxruntime e proibido
+    em producao: PiperVoice(session=..., config=...) aceita sessao
+    propria, e e esse o caminho validado.
+    """
+    import json as _json
+    import onnxruntime as _ort
+    from piper import PiperConfig, PiperVoice
+    so = _ort.SessionOptions()
+    so.intra_op_num_threads = threads
+    so.inter_op_num_threads = threads
+    session = _ort.InferenceSession(str(onnx), sess_options=so,
+                                    providers=["CPUExecutionProvider"])
+    config = _json.loads(Path(str(onnx) + ".json").read_text(encoding="utf-8"))
+    return PiperVoice(session=session, config=PiperConfig.from_dict(config))
+
+
+def _conferir_threads_da_sessao(voice, esperado: int) -> int:
+    """Le DE VOLTA as threads efetivas da sessao e compara com a ancora.
+
+    A conferencia nao confia na construcao: pergunta o numero EFETIVO a
+    propria sessao (get_session_options().intra_op_num_threads — devolve
+    0 quando onnxruntime decide sozinho, e 0 e divergencia de qualquer
+    ancora) e divergencia levanta ErroDeDados ANTES de sintetizar,
+    nomeando esperado e efetivo. O numero lido e o que vai para o
+    audio.json em ambiente.threads: o manifesto registra o que foi
+    MEDIDO, nao o que foi pedido.
+    """
+    efetivo = voice.session.get_session_options().intra_op_num_threads
+    if efetivo != esperado:
+        raise ErroDeDados(
+            f"as threads EFETIVAS da sessao do onnxruntime divergem da "
+            f"ancora: esperado {esperado} (voz.lock, bloco ambiente), "
+            f"efetivo {efetivo} (get_session_options). A sessao nao nasceu "
+            f"com o numero do lock — dublar aqui assinaria os bytes com a "
+            f"particao de GEMM errada (0 = onnxruntime decidindo sozinho, "
+            f"ou seja, os nucleos da maquina). Reconstrua a sessao com "
+            f"intra_op_num_threads = {esperado} — o dublar faz isso "
+            f"sozinho; sessao injetada que ignora o lock e defeito de "
+            f"quem injetou.")
+    return efetivo
+
+
 def sintetizar(voice, texto: str, ritmo: float) -> tuple:
     """(bytes PCM16, duracao) — deterministico: noise zero nos dois eixos."""
     from piper import SynthesisConfig
@@ -333,18 +395,33 @@ def dublar(fid: str) -> int:
     # editou, e o diff mentiria sobre o que mudou.
     a = _voz.ancora()
     amb = _voz.conferir_ambiente(a["ambiente"])
+    # CP-009: o ENV de threads e conferido NA ENTRADA — antes de tocar o
+    # workspace, antes de materializar o modelo. Threads vem do lock, e o
+    # ENV (OMP/OpenBLAS/MKL) e a face externa da mesma ancora: sem ele, o
+    # GEMM do onnxruntime e as BLAS do timbre particionam no regime da
+    # maquina, e o audio nasce divergente sem ninguem ter editado nada.
+    threads = _voz.conferir_threads(a["ambiente"])
     base = _voz.materializar()
     onnx = base / f"{a['nome']}.onnx"
 
     try:
-        from piper import PiperVoice
+        from piper import PiperVoice  # noqa: F401 — valida a presenca do sintetizador
     except ImportError:
         raise ErroDeDados(
             "piper-tts nao esta instalado. O dublar e offline e local:\n"
             "  pip install piper-tts\n"
             "  (no CI ele nao roda: o portao de sonorizacao mede a trilha "
             "commitada pela audio-suite, nao sintetiza)") from None
-    voice = PiperVoice.load(onnx)
+    # CP-009: a sessao nasce AQUI, com as threads do lock, pelo caminho
+    # publico do piper — nao no PiperVoice.load, cujo SessionOptions()
+    # default deixa o onnxruntime seguir os nucleos da maquina.
+    voice = _voz_do_lock(onnx, threads)
+    efetivo = _conferir_threads_da_sessao(voice, threads)
+    # o audio.json registra o MEDIDO: as threads lidas da propria sessao
+    # (== lock por construcao; a conferencia acima levantaria na
+    # divergencia). String, como todo valor do bloco ambiente do lock —
+    # o fiscal compara o dict inteiro.
+    amb = dict(amb, threads=str(efetivo))
 
     elenco = d.get("elenco", {})
     # O timbre materializa as portadoras SO se algum rig do filme declara
@@ -485,7 +562,8 @@ def dublar(fid: str) -> int:
         print(f"  quadrinhos: {len(quadrinhos)} clipe(s) por plano com fala (modo \"ouvir este plano\")")
     print(f"  ambiente do lock conferido: python {amb['python']}, piper-tts "
           f"{amb['piper-tts']}, onnxruntime {amb['onnxruntime']}, "
-          f"numpy {amb['numpy']}/scipy {amb['scipy']}, ffmpeg {amb['ffmpeg']}")
+          f"numpy {amb['numpy']}/scipy {amb['scipy']}, ffmpeg {amb['ffmpeg']}, "
+          f"threads {amb['threads']} (lidas da sessao)")
     print(f"  loudness ancorado em {LOUDNESS_LUFS} LUFS / true peak "
           f"{TRUE_PEAK_DBTP} dBTP; manifesto em audio/audio.json")
     return 0

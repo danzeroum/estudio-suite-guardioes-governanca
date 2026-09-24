@@ -14,10 +14,27 @@ name: Dublador
 # com o commitado). Um byte que difere reprova o job e publica o diff de
 # duracoes como artefato -- ONDE divergiu, nao so que divergiu.
 #
-# workflow_dispatch: reprovacao manual a qualquer hora, sem PR.
+# CP-009: a prova agora IDENTIFICA A MAQUINA. O gate ja oscilou em 3
+# runs com codigo identico (dois atratores estaveis) porque o default de
+# threads do onnxruntime segue os nucleos da maquina: verde sem lscpu
+# seria sorte, nao prova. Antes de dublar, o job publica no log E num
+# artefato JSON a identidade do runner -- lscpu (modelo, nucleos fisicos,
+# flags SIMD), nproc, o limite do cgroup e as THREADS EFETIVAS da sessao
+# (lidas de dentro da imagem, pelo mesmo caminho do dublar). A ancora
+# de threads (voz.lock) explica o PORQUE; a frota mostra que bate.
+#
+# workflow_dispatch ganhou `rodadas`: N copias INDEPENDENTES do job (a
+# matrix) -- a prova de portabilidade em N maquinas de uma vez. Padrao 1
+# em PR; a CP-009 provou com 5 + 2 reruns avulsos. Reprovacao manual a
+# qualquer hora, sem PR.
 
 on:
   workflow_dispatch:
+    inputs:
+      rodadas:
+        description: "Cópias independentes do job (a prova de portabilidade em N)"
+        default: 1
+        type: number
   pull_request:
     paths:
       - 'voz.lock'
@@ -33,7 +50,41 @@ on:
       - 'filmes/*/*.filme.js'
 
 jobs:
+  # A matrix de copias nasce AQUI: em PR nao ha input (1 copia); em
+  # workflow_dispatch, `rodadas` copias. fail-fast desligado de proposito:
+  # numa frota heterogenea, cancelar as outras copias na primeira falha
+  # destruiria exatamente a evidencia que o diagnostico precisa (quem
+  # passou x quem falhou). O job segue OBRIGATORIO: sem continue-on-error,
+  # sem tolerancia -- copia reprovada reprova o run inteiro.
+  planejar:
+    runs-on: ubuntu-latest
+    outputs:
+      copias: ${{ steps.copias.outputs.lista }}
+    steps:
+      - id: copias
+        env:
+          RODADAS: ${{ inputs.rodadas }}
+        run: |
+          N="${RODADAS:-1}"
+          case "$N" in ''|*[!0-9]*) N=1;; esac
+          [ "$N" -lt 1 ] && N=1
+          [ "$N" -gt 12 ] && N=12
+          lista="["
+          i=1
+          while [ "$i" -le "$N" ]; do
+            [ "$i" -gt 1 ] && lista="$lista,"
+            lista="$lista\"copia-$i\""
+            i=$((i+1))
+          done
+          echo "lista=$lista]" >> "$GITHUB_OUTPUT"
+          echo "copias: $lista] (rodadas pedidas: ${RODADAS:-1, padrao de PR})"
+
   dublador:
+    needs: planejar
+    strategy:
+      fail-fast: false
+      matrix:
+        copia: ${{ fromJSON(needs.planejar.outputs.copias) }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -60,21 +111,101 @@ jobs:
           path: workspace/amostras
           key: amostras-${{ env.AMOSTRAS_LOCK_SHA }}
 
+      # CP-009: a IDENTIDADE DA MAQUINA, medida e publicada ANTES de
+      # dublar — no log e num artefato JSON. Um gate que alterna vermelho
+      # e verde com a maquina que o roda so pode ser diagnosticado se a
+      # maquina for identificada: modelo de CPU, nucleos fisicos, flags
+      # SIMD (o onnxruntime despacha kernels por elas), nproc e o limite
+      # de CPU do cgroup (a frota do GitHub anuncia 4 vCPU — o cgroup
+      # confere o que o runner EFETIVAMENTE deixa usar). lscpu --json:
+      # o parser e deterministico, o grep em campo traduzido nao seria.
+      - name: A identidade da máquina (lscpu, nproc, cgroup)
+        run: |
+          lscpu --json > /tmp/lscpu.json
+          python3 - <<'EOF' | tee /tmp/identidade-maquina.env
+          import json
+          d = json.load(open('/tmp/lscpu.json'))
+          campos = {e['field'].rstrip(':').strip(): (e['data'] or '').strip()
+                    for e in d['lscpu']}
+          flags = set(campos.get('Flags', '').split())
+          sockets = int(campos.get('Socket(s)', '0') or 0)
+          por_socket = int(campos.get('Core(s) per socket', '0') or 0)
+          fisicos = sockets * por_socket
+          linhas = [
+              f"CPU_MODELO={campos.get('Model name', 'ilegivel')}",
+              f"SOCKETS={sockets}",
+              f"NUCLEOS_POR_SOCKET={por_socket}",
+              f"NUCLEOS_FISICOS={fisicos}",
+              f"THREADS_POR_NUCLEO={campos.get('Thread(s) per core', 'ilegivel')}",
+              f"AVX2={int('avx2' in flags)}",
+              f"AVX512F={int('avx512f' in flags)}",
+              f"AMX_TILE={int('amx_tile' in flags)}",
+          ]
+          print('\n'.join(linhas))
+          EOF
+          cat /tmp/identidade-maquina.env >> "$GITHUB_ENV"
+          NPROC=$(nproc)
+          CGROUP_CPU=$(cat /sys/fs/cgroup/cpu.max 2>/dev/null || echo "ilegivel")
+          echo "NPROC=$NPROC" | tee -a "$GITHUB_ENV"
+          echo "CGROUP_CPU=$CGROUP_CPU" | tee -a "$GITHUB_ENV"
+          echo "COPIA=${{ matrix.copia }}" >> "$GITHUB_ENV"
+          echo "RUN_ID=${{ github.run_id }}" >> "$GITHUB_ENV"
+          echo "ATTEMPT=${{ github.run_attempt }}" >> "$GITHUB_ENV"
+          echo "== identidade do runner (CP-009):"
+          cat /tmp/identidade-maquina.env
+          echo "  nproc:         $NPROC"
+          echo "  cgroup cpu:    $CGROUP_CPU"
+
       # buildx com cache de camadas do GitHub Actions: a base por digest e
       # os pins do lock mudam raramente; o build efetivo costuma ser so
       # resolver metadata. O rollback e o proprio digest + os pins do lock.
+      # CP-009: o --build-arg de threads vem do voz.lock (pins_do_lock.py
+      # --threads) — o ENV OMP/OPENBLAS/MKL da imagem nasce dele, e o
+      # dublar confere o ENV na entrada. Numero digitado em segundo lugar
+      # seria defeito; aqui ha so uma fonte.
       - name: O builder com cache de camadas
         run: docker buildx create --name dublador --driver docker-container --use
 
       - name: A imagem que materializa o lock
         run: |
+          THREADS_DO_LOCK=$(python3 ci/pins_do_lock.py --threads)
+          echo "== threads da ancora (voz.lock): $THREADS_DO_LOCK"
+          echo "THREADS_ANCORA=$THREADS_DO_LOCK" >> "$GITHUB_ENV"
           docker buildx build \
             --platform linux/amd64 \
+            --build-arg THREADS_DO_LOCK="$THREADS_DO_LOCK" \
             --cache-from type=gha \
             --cache-to type=gha,mode=max \
             --load \
             -t estudio-dublador:voz-lock \
             -f ferramentas/dublador/Dockerfile .
+
+      # CP-009: as THREADS EFETIVAS DA SESSAO, lidas de DENTRO da imagem,
+      # pelo MESMO caminho do dublar (ancora -> ENV -> materializar ->
+      # sessao -> get_session_options). E a prova de que a ancora chega
+      # na sessao ANTES de qualquer sintese — e o valor que vai para o
+      # audio.json e para o artefato de identidade.
+      - name: As threads efetivas da sessão (de dentro da imagem)
+        env:
+          ESTUDIO_VOZ_CACHE: ${{ github.workspace }}/workspace/voz
+        run: |
+          docker run --rm --platform linux/amd64 \
+            -v "$PWD":/app -v "$ESTUDIO_VOZ_CACHE":/app/workspace/voz -w /app \
+            estudio-dublador:voz-lock python3 -c '
+          import sys
+          sys.path.insert(0, ".")
+          from estudio_suite import voz
+          from estudio_suite.dublar import _voz_do_lock, _conferir_threads_da_sessao
+          a = voz.ancora()
+          threads = voz.conferir_threads(a["ambiente"])
+          base = voz.materializar()
+          voice = _voz_do_lock(base / (a["nome"] + ".onnx"), threads)
+          efetivo = _conferir_threads_da_sessao(voice, threads)
+          print("THREADS_EFETIVAS=%d" % efetivo)
+          print("OMP_NUM_THREADS=%s" % __import__("os").environ.get("OMP_NUM_THREADS"))
+          ' | tee /tmp/probe-threads.txt
+          grep "THREADS_EFETIVAS=" /tmp/probe-threads.txt >> "$GITHUB_ENV"
+          grep "OMP_NUM_THREADS=" /tmp/probe-threads.txt >> "$GITHUB_ENV" || true
 
       # O compromisso: os .opus commitados. As dublagens regeneram POR
       # CIMA (o dublar escreve no repositorio montado) -- por isso a copia
@@ -121,9 +252,62 @@ jobs:
           echo "== os sha256 comparados:"
           cat /tmp/rodada2.sha256
 
+      # CP-009: o artefato de identidade — SEMPRE (verde ou vermelho).
+      # Verde sem identidade seria sorte sem prova; vermelho sem
+      # identidade seria diagnostico perdido (André Borges: cada
+      # divergencia carrega a maquina que a produziu).
+      - name: O artefato de identidade (run, CPU, threads, veredito)
+        if: always()
+        run: |
+          mkdir -p /tmp/identidade
+          THREADS_GRAVADAS=$(python3 -c "
+          import json
+          d = json.load(open('filmes/jornada-dado/audio/audio.json'))
+          print(d['ambiente'].get('threads', 'ausente'))" 2>/dev/null || echo "ilegivel")
+          if [ -f /tmp/rodada1.sha256 ] && [ -f /tmp/rodada2.sha256 ] \
+             && [ -f /tmp/commitado.sha256 ] \
+             && diff -q /tmp/commitado.sha256 /tmp/rodada2.sha256 >/dev/null 2>&1 \
+             && diff -q /tmp/rodada1.sha256 /tmp/rodada2.sha256 >/dev/null 2>&1; then
+            VEREDITO="reproduzido"
+          elif [ -f /tmp/rodada2.sha256 ]; then
+            VEREDITO="DIVERGENTE"
+          else
+            VEREDITO="NAO COMPLETOU"
+          fi
+          export THREADS_GRAVADAS VEREDITO
+          python3 - <<'EOF' > /tmp/identidade/identidade.json
+          import json, os
+          dados = {
+            "run_id": os.environ.get("RUN_ID"),
+            "run_attempt": os.environ.get("ATTEMPT"),
+            "copia": os.environ.get("COPIA"),
+            "cpu": {
+              "modelo": os.environ.get("CPU_MODELO"),
+              "sockets": os.environ.get("SOCKETS"),
+              "nucleos_fisicos": os.environ.get("NUCLEOS_FISICOS"),
+              "threads_por_nucleo": os.environ.get("THREADS_POR_NUCLEO"),
+              "avx2": bool(int(os.environ.get("AVX2", "0"))),
+              "avx512f": bool(int(os.environ.get("AVX512F", "0"))),
+              "amx_tile": bool(int(os.environ.get("AMX_TILE", "0"))),
+              "nproc": os.environ.get("NPROC"),
+              "cgroup_cpu_max": os.environ.get("CGROUP_CPU"),
+            },
+            "threads": {
+              "ancora_voz_lock": os.environ.get("THREADS_ANCORA", "nao lida"),
+              "efetivas_da_sessao": os.environ.get("THREADS_EFETIVAS", "nao medida"),
+              "gravadas_no_audio_json": os.environ.get("THREADS_GRAVADAS", "nao lidas"),
+              "omp_da_imagem": os.environ.get("OMP_NUM_THREADS", "nao medido"),
+            },
+            "veredito": os.environ.get("VEREDITO", "desconhecido"),
+          }
+          print(json.dumps(dados, indent=1, ensure_ascii=False))
+          EOF
+          cat /tmp/identidade/identidade.json
+
       # Onde divergiu, quando diverge: duracoes do commitado contra as
       # regeneradas, medidas pelo ffprobe DA PROPRIA IMAGEM (a ancora e
-      # ele tambem) -- e publicadas como artefato para o diagnostico.
+      # ele tambem) -- e publicadas como artefato para o diagnostico,
+      # JUNTO com a identidade da maquina que divergiu.
       - name: O diff de duracoes (diagnostico da falha)
         if: failure()
         run: |
@@ -134,11 +318,18 @@ jobs:
                 a=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "/commitado/$f" 2>/dev/null || echo "?")
                 b=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f" 2>/dev/null || echo "?")
                 printf "%s  commitado=%s  regenerado=%s\n" "$f" "$a" "$b"
-              done' | tee /tmp/duracoes.diff
+              done' | tee /tmp/identidade/duracoes.diff
 
       - name: Publicar o diff de duracoes
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: diff-de-duracoes
-          path: /tmp/duracoes.diff
+          name: diff-de-duracoes-${{ matrix.copia }}
+          path: /tmp/identidade/
+
+      - name: Publicar a identidade (verde tambem)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: identidade-${{ matrix.copia }}-run${{ github.run_id }}
+          path: /tmp/identidade/identidade.json

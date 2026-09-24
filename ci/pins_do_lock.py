@@ -13,6 +13,10 @@ Comportamento:
   --python                imprime a serie do lock (ex. 3.12) para o
                           setup-python -- o CI roda o python da ancora,
                           nao o python da moda
+  --threads               imprime o numero de threads da ancora (CP-009)
+                          para o --build-arg da imagem dubladora e o ENV
+                          do job — o numero nunca e digitado em segundo
+                          lugar
   --conferir python,numpy,scipy
                           mede o ambiente EFETIVO (o mesmo
                           ambiente_instalado() do dublar) e confere as
@@ -35,9 +39,13 @@ from estudio_suite import voz                    # noqa: E402
 
 # Chaves ancoradas que NAO sao pacote pip: python e runtime, espeak-ng
 # vem EMBUTIDO no wheel do piper (ancora por sha256 dos dados), ffmpeg e
-# libopus sao do apt, arquitetura e a CPU. Pedir pin pip para elas seria
-# imprimir um comando que nao existe -- o erro nomeia a confusao.
-NAO_PIP = {"python", "espeak-ng", "ffmpeg", "libopus", "arquitetura"}
+# libopus sao do apt, arquitetura e a CPU e threads e o numero que a
+# SESSAO do onnxruntime tem de carregar (CP-009 — lido pelo dublar com
+# get_session_options, espelhado no ENV OMP/OpenBLAS/MKL da imagem).
+# Pedir pin pip para elas seria imprimir um comando que nao existe -- o
+# erro nomeia a confusao.
+NAO_PIP = {"python", "espeak-ng", "ffmpeg", "libopus", "arquitetura",
+           "threads"}
 
 
 def _lock() -> dict:
@@ -100,14 +108,14 @@ def conferir(chaves: list) -> int:
 
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    if not argv or argv[0] not in ("--so", "--python", "--conferir"):
-        print("uso: pins_do_lock.py --so numpy,scipy | --python | "
+    if not argv or argv[0] not in ("--so", "--python", "--threads", "--conferir"):
+        print("uso: pins_do_lock.py --so numpy,scipy | --python | --threads | "
               "--conferir python,numpy,scipy", file=sys.stderr)
         return 64
     flag = argv[0]
     if flag == "--python":
         if len(argv) != 1:
-            print("ERRO: --python nao recebe valor -- a serie vem do lock",
+            print("ERRO: --python nao recebe valor — a serie vem do lock",
                   file=sys.stderr)
             return 64
         amb = _lock()
@@ -116,6 +124,32 @@ def main(argv=None) -> int:
                   "sabe qual runtime a ancora pede", file=sys.stderr)
             return 2
         print(amb["python"])
+        return 0
+    if flag == "--threads":
+        # CP-009: o ENV de threads da imagem e o build-arg vem DAQUI — o
+        # numero tem uma fonte so, e ela e o lock. Lock sem threads e
+        # lock INCOMPLETO: a saida e 2 nomeando, nunca um numero chutado.
+        if len(argv) != 1:
+            print("ERRO: --threads nao recebe valor — o numero vem do lock",
+                  file=sys.stderr)
+            return 64
+        amb = _lock()
+        if "threads" not in amb:
+            print("ERRO: voz.lock sem threads no bloco ambiente -- lock "
+                  "INCOMPLETO (CP-009): o ENV da imagem e a sessao do "
+                  "dublar nao sabem o que carregar", file=sys.stderr)
+            return 2
+        try:
+            n = int(str(amb["threads"]).strip())
+        except ValueError:
+            print(f"ERRO: a ancora de threads nao e inteiro "
+                  f"({amb['threads']!r}) — lock ilegivel", file=sys.stderr)
+            return 2
+        if n < 1:
+            print(f"ERRO: ancora de threads {n} < 1 — lock ilegivel",
+                  file=sys.stderr)
+            return 2
+        print(n)
         return 0
     if len(argv) != 2:
         print("ERRO: " + flag + " exige a lista de chaves (ex. numpy,scipy)",

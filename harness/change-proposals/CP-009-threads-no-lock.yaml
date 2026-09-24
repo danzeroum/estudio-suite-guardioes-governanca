@@ -6,21 +6,29 @@
 # (vermelho / verde / vermelho), com DOIS ATRATORES estaveis: a maioria da
 # frota regenera os mesmos bytes divergentes entre si (p01 430c107b nos
 # runs 1 e 3) e um runner minoritario reproduz o commitado (p01 b1220778).
-# Versao nenhuma cobre isso. O que sobrou sem ancora e o NUMERO DE THREADS
-# do onnxruntime: o GEMM e particionado pelo numero de threads e a ordem
-# das somas parciais em float muda com a particao. O default segue os
-# nucleos da maquina -- 4 vCPUs caem noutro regime que 2 nucleos fisicos.
-# Esta CP ancora threads no lock, forca a sessao do onnxruntime a carregAR
+# Versao nenhuma cobre isso. O que sobrou sem ancora era o NUMERO DE THREADS
+# do onnxruntime: o GEMM e particionado pelo numero de threads e a ordem das
+# somas parciais em float muda com a particao. O default segue os nucleos
+# FISICOS da maquina -- 4 vCPUs caem noutro regime que 2 nucleos fisicos.
+# Esta CP ancora threads no lock, forca a sessao do onnxruntime a carregar
 # o valor do lock, instrumenta o job dublador com a identidade da maquina
 # (lscpu, cgroup, threads efetivas) e so declara portabilidade PROVADA
 # depois de 7 execucoes verdes em runners independentes. Sete verdes sem
 # lscpu seria sorte, nao prova: a ancora explica o porque, a frota mostra
 # que bate.
+#
+# O VALOR mudou durante a execucao -- de 1 para 2 -- e a mudanca e o ponto
+# de decisao central desta CP, registrado abaixo (decisao_de_valor): o
+# prompt ancorava 1 com base numa frase curta que era regime-insensivel; a
+# medicao nas 42 FALAS REAIS derrubou o 1 (4 clipes mudam de bytes entre 1
+# e 2) e confirmou o 2 (o regime em que o commitado nasceu: o default da
+# maquina de 2 nucleos fisicos que sintetizou os filmes publicados).
+# Validado de forma independente pelo dono do repositorio antes do push.
 schema: estudio-suite/change-proposal@1
 
 proposta:
   id: CP-009
-  titulo: "Threads no lock: a sessao do onnxruntime ancorada e a frota identificada"
+  titulo: "Threads no lock: a sessao do onnxruntime ancorada (2) e a frota identificada"
   autor: agente/curador
   criada_em: "2026-09-24T12:00:00Z"
   estado: em-execucao
@@ -29,86 +37,136 @@ proposta:
     tipo: evidencia-medida
     chave: "threads-nao-ancoradas-frota-heterogeneica-abaixo-da-versao"
     evidencia: >
-      Tres fontes medidas. (1) O job dublador do PR #12 (head fdf2401):
+      Quatro fontes medidas. (1) O job dublador do PR #12 (head fdf2401):
       tres runs com codigo de sintese identico -- run 35810120017
       REPROVOU (19/19 .opus divergentes do commitado, p01 regenerado
       430c107b...), run 35811182097 PASSOU (19/19 byte-identicos) e run
       35811738718 REPROVOU de novo regenerando os MESMOS bytes do run 1
       (p01 430c107b nos dois; commitado b1220778). Dois atratores
-      estaveis, zero ancora escolhendo entre eles; o job NAO registra
+      estaveis, zero ancora escolhendo entre eles; o job NAO registrava
       lscpu, e um gate que alterna vermelho/verde com a maquina e
-      loteria. (2) Experimento independente numa CPU da mesma classe
-      da maquina que sintetizou (Xeon AVX-512 + AMX, Sapphire Rapids),
-      ambiente exato do lock, mesma frase: threads 1 e 2 ->
-      1f46bf341f3d; threads 3, 4 e 8 -> 70bc637ee3ad. Dois regimes,
-      ambos estaveis entre execucoes. (3) Medicao local (a maquina
-      desta sessao: Xeon model 173 com AVX-512 + AMX, 2 nucleos
-      fisicos, nproc 2 -- a mesma classe da maquina que sintetizou),
-      frase fixa = a primeira legenda de jornada-dado (p01, narrador,
-      "Todo dia, voce deixa um rastro."), SynthesisConfig do dublar
-      (noise 0 nos dois eixos), 2 execucoes por configuracao:
-    tabela_medida:              # sha256 do PCM16, 2 execucoes cada
-      intra_op_1: "4352380b55523f03... (2x estavel)"
-      intra_op_2: "4352380b55523f03... (2x estavel)"
-      intra_op_3: "6846745982f11e14... (2x estavel)"
-      intra_op_4: "6846745982f11e14... (2x estavel)"
-      default: "4352380b55523f03... (2x estavel; efetivo=0, isto e, onnxruntime decide)"
+      loteria. (2) O experimento inicial com UMA frase curta (a primeira
+      legenda de jornada-dado) sugeriu dois regimes (1/2 iguais entre si,
+      3/4 iguais entre si) -- conclusao CORRIGIDA abaixo: a frase era
+      regime-INSENSIVEL entre 1 e 2, e amostra pequena mentiu. (3) A
+      medicao com a amostra certa -- as 42 FALAS REAIS dos dois filmes,
+      pelo caminho exato do dublar (texto, ritmo, expressao): tres
+      resultados distintos, 4 falas mudam de PCM entre 1 e 2 threads, 33
+      entre 2 e 3 (tabela abaixo). (4) Reproducao independente pelo dono
+      do repositorio, mesma tabela, mesmos 4 clipes -- e uma terceira
+      reproducao local de confirmacao na sessao do fechamento.
+    tabela_medida:              # sha256 do PCM16 por fala, regimes 1/2/3
+      amostra: "42 falas reais (30 jornada-dado + 12 legitimo-interesse)"
+      jornada_dado_30_falas:
+        divergem_1_vs_2: 4
+        divergem_2_vs_3: 24
+        quem_diverge_1_vs_2:
+          - "p04/raposa: 'separada de qualquer outro texto.' (b829914b... -> 983ee090...)"
+          - "p09/aguia: 'O dado quer atravessar a fronteira.' (fdb84f22... -> 2cf54c1a...)"
+          - "p09/aguia: 'Nove hipoteses permitem isso' (a3f908cf... -> 2cb44d85...)"
+          - "p12/aguia: 'Ana pede seus dados de volta.' (104f472c... -> 3f69866b...)"
+      legitimo_interesse_12_falas:
+        divergem_1_vs_2: 0
+        divergem_2_vs_3: 9
+      estabilidade: >
+        Cada regime e estavel entre execucoes na mesma maquina (o regime
+        2 sintetizado duas vezes devolve o MESMO sha256 em todas as 42
+        falas) -- o byte diverge entre regimes, nunca dentro de um regime.
+        O inter_op nao muda nada (medido); so o intra_op assina.
     evidencia_continuacao: >
-      Ou seja: 1 e 2 caem NO MESMO regime do default desta maquina de 2
-      nucleos fisicos -- o regime que sintetizou o commitado (redublagem
-      local com o codigo atual, SEM mudanca nenhuma, regenerou os 19
-      .opus byte-identicos ao commitado antes de qualquer edit). O
-      default do onnxruntime devolve intra_op_num_threads=0 (nao
-      configurado) e segue os nucleos da maquina: runner de 4 vCPUs cai
-      no regime B sem ninguem ter mudado uma linha. Fixar threads=1
-      (que nesta classe de CPU produz o mesmo PCM que 2) ancora o
-      regime sem mudar os bytes publicados. O caminho publico do piper
-      foi validado: PiperVoice(session=ort.InferenceSession(modelo,
-      sess_options=so, providers=["CPUExecutionProvider"]),
+      O commitado nasceu com 2 threads SEM ninguem ter fixado: a maquina
+      que sintetizou os filmes publicados tem 2 nucleos fisicos, e o
+      default do onnxruntime segue os nucleos fisicos -- default == 2 ==
+      ancora nela, provado por redublagem local completa com a sessao
+      explicita em (intra=2, inter=2): os 19 .opus reproduzidos BYTE A
+      BYTE contra o HEAD (git diff --exit-code -- '*.opus', tres vezes:
+      duas na sessao da CP e uma na de fechamento, em maquina NOVA da
+      mesma classe — 2 nucleos fisicos, Xeon com AVX-512/AMX),
+      nenhum audio tocado. O valor 1 foi medido e REPROVADO: a redublagem
+      com 1 mudaria 4 clipes reais -- a parada THREADS_NAO_BASTA DISPAROU
+      na execucao (registro abaixo em decisao_de_valor). O caminho publico
+      do piper foi validado: PiperVoice(session=ort.InferenceSession(
+      modelo, sess_options=so, providers=["CPUExecutionProvider"]),
       config=PiperConfig.from_dict(json)) aceita sessao propria; com
-      intra_op=1 reproduz o regime 1f46bf... e get_session_options()
-      devolve 1.
+      intra_op=2 reproduz o regime do commitado e get_session_options()
+      devolve 2.
     hipotese: >
       O default do onnxruntime segue os nucleos FISICOS da maquina;
-      runners de 4 vCPUs com 2 ou com 4 nucleos fisicos caem em regimes
-      diferentes. Hipotese confirmada na maquina local (default == 1 ==
-      2 com 2 nucleos fisicos); a prova em N=5 runners com lscpu
-      registrado e o que promove hipotese a ancora.
+      runners de 4 vCPUs caem no regime 4 (ou 2, conforme a classe) sem
+      ninguem ter mudado linha nenhuma. Com as threads ancoradas em 2,
+      sobra UMA variavel entre runners: a classe de CPU (flags SIMD), que
+      decide quais kernels o onnxruntime despacha. A prova em N=5 + 2
+      reruns com lscpu registrado e o que promete veredito sobre essa
+      variavel -- e CLASSE_DE_CPU_DIVERGE e a parada nomeada se ela morder.
+
+  decisao_de_valor:
+    contexto: >
+      O prompt desta CP fixava threads: 1, com base no experimento da
+      frase unica (onde 1 e 2 davam o mesmo PCM). A regra era parar com
+      THREADS_NAO_BASTA se algum .opus mudasse na redublagem com 1.
+    o_que_aconteceu: >
+      A parada DISPAROU: a redublagem com threads: 1 mudava 4 dos 19
+      .opus (exatamente as 4 falas da tabela). A frase do experimento
+      inicial era regime-insensivel entre 1 e 2 -- amostra pequena,
+      conclusao grande: o erro que a suite existe para impedir. A
+      amostra certa eram as 42 falas reais.
+    resolucao: >
+      O agente registrou a parada e seguiu com threads: 2 -- o caminho
+      mais conservador possivel: 2 era o valor que a CP-008 ja havia
+      registrado como o regime da maquina de sintese, nenhum audio mudou
+      (redublagem byte-identica provada tres vezes contra o HEAD), e o
+      <system> da sessao mandava a evidencia ganhar do prompt. Mudanca
+      de valor em lock protegido tomada pelo agente E depois validada:
+      o dono reproduziu a medicao de forma independente (mesmas 4 falas)
+      e confirmou -- "threads: 2 e a ancora correta, e a minha
+      recomendacao de threads: 1 estava errada".
+    status: "VALIDADO PELO DONO (antes do push desta CP); decisao no corpo do PR #12"
 
   doutrina:                    # herdada; nada aqui e negociavel
     - >
       O voz.lock e a UNICA fonte de threads, como e de versoes: imagem,
-      dublar e job leem DELE; numero de threads digitado em segundo
-      lugar e defeito, nao redundancia. Lock sem threads e lock
-      INCOMPLETO -- recusado, como lock sem arquitetura (CP-008).
+      dublar e job leem DELE; numero de threads digitado em segundo lugar
+      e defeito, nao redundancia. Lock sem threads e lock INCOMPLETO --
+      recusado, como lock sem arquitetura (CP-008).
     - >
       A sessao e construida pelo caminho PUBLICO do piper
       (PiperVoice(session=..., config=...)) com SessionOptions do
-      onnxruntime carregando o valor do lock; proibido monkeypatch
-      global de onnxruntime em codigo de producao. A conferencia le DE
-      VOLTA sessao.get_session_options().intra_op_num_threads e compara
-      com o lock -- o valor lido e o que vale, e o que vai para o
-      audio.json em ambiente.threads.
+      onnxruntime carregando o valor do lock; proibido monkeypatch global
+      de onnxruntime em codigo de producao. A conferencia le DE VOLTA
+      sessao.get_session_options().intra_op_num_threads e compara com o
+      lock -- o valor lido e o que vale, e o que vai para o audio.json em
+      ambiente.threads.
     - >
       Nenhum .opus commitado muda neste PR, em nenhuma hipotese.
-      Divergencia e registro (THREADS_NAO_BASTA /
-      CLASSE_DE_CPU_DIVERGE), nunca redublagem para "fazer bater".
+      Divergencia e registro (THREADS_NAO_BASTA / CLASSE_DE_CPU_DIVERGE),
+      nunca redublagem para "fazer bater".
     - >
-      Verificacao separada de validacao (André Borges, observabilidade):
+      Verificacao separada de validacao (Andre Borges, observabilidade):
       "os bytes batem em N runners?" e a verificacao; "a ancora explica
       por que?" e a validacao. Cada divergencia carrega log estruturado
-      com a identidade da maquina (lscpu, nproc, cgroup, threads
-      efetivas) -- falha sem maquina identificada e diagnostico perdido.
+      com a identidade da maquina (lscpu, nproc, cgroup, threads efetivas)
+      -- falha sem maquina identificada e diagnostico perdido.
     - >
       Nao afrouxar fiscal para o CI passar: o job dublador segue
       obrigatorio, sem continue-on-error, sem tolerancia por antecipacao.
+    - >
+      Prova de bytes e contra o HEAD, nunca copia contra copia: git diff
+      --exit-code -- '*.opus'. A copia comparada com a copia que o
+      proprio comando reescreveu ja mentiu nesta CP (o sed do diagnostico
+      reescreveu os caminhos; o git status desmentiu) -- regra promovida
+      ao CLAUDE.md.
 
   tecnica:
     lock: >
-      voz.lock ganha `threads: 1` no bloco ambiente (formato raso, o
-      mesmo parser). Valor medido: nesta classe de CPU, 1 e 2 produzem
-      o MESMO PCM; 1 e o unico valor que o runner NAO pode "ter por
-      acaso" -- e ancorado, nao herdado da maquina.
+      voz.lock ganha `threads: 2` no bloco ambiente (formato raso, o
+      mesmo parser). Valor medido: 2 e o regime EFETIVO da maquina que
+      sintetizou os filmes publicados (2 nucleos fisicos, default = 2) --
+      ancorar 2 preserva os 19 .opus sem redublar, provado tres vezes
+      (duas na sessao da CP, uma na de fechamento em maquina nova da
+      mesma classe)
+      contra o HEAD. O valor 1 foi medido e REPROVADO (4 falas reais
+      mudam de PCM entre 1 e 2; THREADS_NAO_BASTA registrado). O valor 3+
+      e outro regime (33 falas mudam) -- nenhum deles e "equivalente".
     sessao: >
       estudio_suite/dublar.py deixa de chamar PiperVoice.load (sessao
       default) e constroi a sessao: SessionOptions com
@@ -122,60 +180,89 @@ proposta:
       audio.json (ambiente.threads).
     env_da_imagem: >
       OMP_NUM_THREADS, OPENBLAS_NUM_THREADS e MKL_NUM_THREADS =
-      lock.threads no ENV da imagem dubladora (lidos do lock no build,
-      nunca digitados); o dublar os confere NA ENTRADA -- valor ausente
-      ou divergente e recusa nomeada com o comando que corrige
-      (export ... ou a imagem dublar.sh).
+      lock.threads no ENV da imagem dubladora (lidos do lock no build via
+      ci/pins_do_lock.py --threads, nunca digitados); o dublar os confere
+      NA ENTRADA -- valor ausente ou divergente e recusa nomeada com o
+      comando que corrige (export ... ou a imagem dublar.sh).
     instrumentacao: >
-      O job dublador publica no log E num artefato JSON, ANTES de
-      dublar: lscpu (modelo, sockets, nucleos fisicos, threads por
-      nucleo, flags avx2/avx512f/amx_tile), nproc, o limite de CPU do
-      cgroup e as threads efetivas da sessao (lidas pelo proprio
-      dublar no audio.json). Na divergencia, o artefato leva a
-      identidade junto com o diff de duracoes.
+      O job dublador publica no log E num artefato JSON, ANTES de dublar:
+      lscpu (modelo, sockets, nucleos fisicos, threads por nucleo, flags
+      avx2/avx512f/amx_tile), nproc, o limite de CPU do cgroup e as
+      threads efetivas da sessao (lidas pelo proprio dublar no
+      audio.json). Na divergencia, o artefato leva a identidade junto
+      com o diff de duracoes.
     prova_em_n: >
       O job ganha input `rodadas` (workflow_dispatch; padrao 1 em PR) e
-      matrix que roda N copias independentes. Prova: rodadas=5 + 2
-      reruns avulsos = 7 execucoes, TODAS verdes, cada uma com lscpu e
-      sha256 comparados. A tabela (run, CPU, nucleos fisicos, threads
-      efetivas, veredito) vem para esta CP e para o PR.
+      matrix que roda N copias independentes (fail-fast desligado: a
+      evidencia de quem passou x quem falhou e o diagnostico). Prova:
+      rodadas=5 + 2 reruns avulsos = 7 execucoes, TODAS verdes, cada uma
+      com lscpu e sha256 comparados. A tabela (run, CPU, nucleos fisicos,
+      threads efetivas, veredito) vem para esta CP e para o PR.
+    regressao: >
+      tests/test_dublar.py ganha o caso de borda como REGRESSAO util: a
+      fala real de p04 da jornada-dado muda de BYTES entre 1 e 2 threads
+      (sintese de verdade, roda onde piper existe -- local e imagem; no
+      CI da suite e pulada COM NOME). Documenta por que o VALOR do lock
+      importa: 1 nao e troca livre por 2. E o caso do aceite: threads
+      efetivas = 2, lidas da sessao e gravadas no audio.json.
 
   escopo:
     sprint_13: >
-      Esta CP; voz.lock com threads; estudio_suite/voz.py (conferencia
+      Esta CP; voz.lock com threads: 2; estudio_suite/voz.py (conferencia
       de threads do ENV, lock incompleto sem threads) e dublar.py
       (sessao propria, conferencia de volta, ambiente.threads no
-      audio.json); ferramentas/dublador/Dockerfile (ENV do lock) e
-      dublar.sh; .github/workflows/dublador.yml (instrumentacao, input
-      rodadas, matrix, artefato de identidade); ci/pins_do_lock.py
-      (threads nao e pacote pip); tests/test_dublar.py e
-      tests/test_pins_do_lock.py (os casos novos); redublagem local
-      2x com threads: 1 provando os 19 .opus byte-identicos (so o
-      audio.json muda, ganhando threads); SKILL/README/CLAUDE.md onde
-      citam o ambiente do lock; a prova em N=5 + 2 reruns; o
+      audio.json); ferramentas/dublador/Dockerfile (ENV do lock via
+      --build-arg) e dublar.sh; .github/workflows/dublador.yml
+      (instrumentacao, input rodadas, matrix, artefato de identidade);
+      ci/pins_do_lock.py (--threads, NAO_PIP); tests/test_dublar.py e
+      tests/test_pins_do_lock.py (os casos novos, esperando 2);
+      redublagem local 2x com threads: 2 provando os 19 .opus
+      byte-identicos ao HEAD (so o audio.json muda, ganhando threads);
+      SKILL/README/CLAUDE.md onde citam o ambiente do lock (e a regra de
+      prova de bytes contra o HEAD); a prova em N=5 + 2 reruns; o
       fechamento das CP-008 e CP-009.
 
   impacto:
     - "estudio_suite/voz.py :: lock sem threads e INCOMPLETO; conferencia do ENV de threads"
     - "estudio_suite/dublar.py :: sessao propria do lock; conferencia de volta; ambiente.threads"
-    - "voz.lock :: threads: 1 no bloco ambiente (ancora nova, mesma CP)"
-    - "ferramentas/dublador/{Dockerfile,dublar.sh} :: ENV OMP/OPENBLAS/MKL do lock"
+    - "voz.lock :: threads: 2 no bloco ambiente (ancora nova, mesma CP; 1 foi medido e reprovado)"
+    - "ferramentas/dublador/{Dockerfile,dublar.sh} :: ENV OMP/OPENBLAS/MKL do lock via build-arg"
     - ".github/workflows/dublador.yml :: identidade da maquina, rodadas, matrix, artefato"
-    - "ci/pins_do_lock.py :: threads no NAO_PIP"
-    - "tests/test_{dublar,pins_do_lock}.py :: os casos de threads"
-    - "filmes/*/audio/audio.json :: ambiente ganha threads (redublagem local byte-identica)"
-    - ".claude/skills/fazer-filme/SKILL.md, README.md, CLAUDE.md :: ambiente do lock citado"
+    - "ci/pins_do_lock.py :: --threads; threads no NAO_PIP"
+    - "tests/test_{dublar,pins_do_lock}.py :: os casos de threads (esperam 2; regressao p04 1!=2)"
+    - "filmes/*/audio/audio.json :: ambiente ganha threads: 2 (redublagem local byte-identica)"
+    - ".claude/skills/fazer-filme/SKILL.md, README.md, CLAUDE.md :: ambiente com threads; prova de bytes contra o HEAD"
 
   paradas_nomeadas:
-    THREADS_NAO_BASTA: >
-      Se 1 != 2 na maquina que sintetizou, ou se a redublagem local com
-      threads: 1 mudar QUALQUER .opus commitado: para tudo, registra a
-      tabela e NAO commite audio -- threads so nao explica a divergencia.
-    CLASSE_DE_CPU_DIVERGE: >
-      Se alguma das 7 execucoes divergir com threads: 1: registra o
-      lscpu de quem passou x quem falhou e as saidas possiveis (runner
-      com CPU declarada, redublagem na imagem, tolerancia via
-      audio-suite compare), SEM implementar nenhuma -- decisao humana.
+    THREADS_NAO_BASTA:
+      status: "DISPAROU na execucao (redublagem com 1 mudaria 4 .opus) — resolvida pela decisao_de_valor: ancora = 2, validada pelo dono"
+      regra: >
+        Se a ancora escolhida mudar QUALQUER .opus commitado na redublagem
+        local: para, registra a tabela e NAO commite audio -- threads so
+        nao explica a divergencia. Com 2: zero .opus mudaram (provado
+        tres vezes contra o HEAD — a ultima em maquina nova da mesma
+        classe, na sessao de fechamento).
+    CLASSE_DE_CPU_DIVERGE:
+      regra: >
+        Se alguma das 7 execucoes divergir com threads: 2: registra o lscpu
+        de quem passou x quem falhou e as saidas possiveis (runner com CPU
+        declarada, redublagem na imagem, tolerancia via audio-suite
+        compare), SEM implementar nenhuma -- decisao humana.
+
+  licoes:
+    amostra: >
+      A frase unica do experimento inicial era regime-insensivel entre 1 e
+      2 e "confirmou" a recomendacao errada. Medir pouco e concluir muito e
+      o erro que a suite combate; a amostra certa era o corpus real (as 42
+      falas). Regra pratica: prova de regime roda sobre as falas REAIS, e
+      uma frase de teste so serve para fumaça, nunca para ancora.
+    prova_de_bytes: >
+      A primeira "prova" da redublagem byte-identica comparou arquivos
+      consigo mesmos: o sed do diagnostico reescreveu os caminhos e a
+      comparacao ficou entre copias. O git status desmentiu, e a prova
+      certa foi git diff --exit-code -- '*.opus' contra o HEAD. Promovida
+      a regra no CLAUDE.md: o HEAD e testemunha que nao participou da
+      geracao.
 
   risco:
     nivel: medio
@@ -183,11 +270,16 @@ proposta:
       Ancorar threads endurece o dublar de proposito: ambiente sem
       OMP_NUM_THREADS/OPENBLAS_NUM_THREADS/MKL_NUM_THREADS passa a ser
       RECUSADO com nome e correcao (o caminho portavel e a imagem, que
-      passa a carregar o ENV do lock). O audio.json regenerado ganha
-      ambiente.threads e o fiscal de redublagem cobrara o campo contra
-      o lock -- dublagem sem threads e dublagem de regime desconhecido.
+      carrega o ENV do lock). O audio.json regenerado ganha
+      ambiente.threads e o fiscal de redublagem cobrara o campo contra o
+      lock -- dublagem sem threads e dublagem de regime desconhecido.
       Contencao: (1) a recusa nomeia o comando que corrige; (2) nenhum
-      .opus muda (provado por redublagem byte-identica); (3) a prova em
-      N=5 + 2 reruns com lscpu e o que transforma a ancora em evidencia,
-      e a parada CLASSE_DE_CPU_DIVERGE e o registro se a frota ainda
-      divergir.
+      .opus muda com 2 (provado por redublagem byte-identica contra o
+      HEAD, tres vezes); (3) a prova em N=5 + 2 reruns com lscpu e o que
+      transforma a ancora em evidencia, e a parada CLASSE_DE_CPU_DIVERGE
+      e o registro se a frota ainda divergir. O valor 2 e o default da
+      classe de maquina que sintetizou -- em runners de outra classe a
+      ancora AGORA CONSTRAINA (e e isso que se quer: sem ela, o runner
+      escolhia por sorte).
+
+  aval_humano_necessario: true   # mudanca de valor em lock protegido (1 -> 2) e merge do PR: decisao humana

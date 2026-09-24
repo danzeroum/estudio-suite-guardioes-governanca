@@ -184,10 +184,11 @@ dez"). Não existe roteiro de áudio separado. Desde a CP-005, o **timbre animal
 
 - **`ferramentas/dublador/dublar.sh <id>`** é o caminho portátil: constrói a imagem
   que **materializa o `voz.lock`** (base pinada por digest, ffmpeg/libopus na versão
-  exata, pins pip do lock, sempre `linux/amd64`) e dubla dentro dela — em qualquer
-  host com Docker, Debian ou não. Dublar direto (`python3 -m estudio_suite dublar
-  <id>`) só funciona se o ambiente da máquina **bater com o lock** (python, piper,
-  onnxruntime, numpy/scipy, ffmpeg, libopus, arquitetura — o dublar mede tudo e
+  exata, pins pip do lock, ENV de threads do lock, sempre `linux/amd64`) e dubla dentro
+  dela — em qualquer host com Docker, Debian ou não. Dublar direto (`python3 -m
+  estudio_suite dublar <id>`) só funciona se o ambiente da máquina **bater com o
+  lock** (python, piper, onnxruntime, numpy/scipy, ffmpeg, libopus, arquitetura e
+  threads da sessão — o dublar mede tudo e
   recusa na divergência, nomeando pacote, versão e correção). O dublar sintetiza um clipe
   por legenda (Piper local, modelo ancorado por sha256 em `voz.lock`, o `lei.lock`
   das vozes) e mixa em `filmes/<id>/audio/<id>.opus` — 48 kHz, mono, loudness

@@ -24,6 +24,21 @@ x86_64 nao sao provados por uma conferencia que passou em arm64. Lock
 sem arquitetura e lock INCOMPLETO -- o dublar recusa em vez de assumir
 x86_64 por padrao, e o caminho portavel e a imagem que materializa o
 lock (ferramentas/dublador/dublar.sh, sempre linux/amd64).
+
+CP-009: as THREADS entram na mesma ancora, pelo mesmo motivo: o GEMM do
+onnxruntime e particionado pelo numero de threads e a ordem das somas
+parciais em float muda com a particao -- medido nas 42 FALAS REAIS dos
+dois filmes: 1, 2 e 3 assinam TRES resultados distintos (4 falas mudam
+entre 1 e 2, 33 entre 2 e 3; a frase curta do experimento inicial era
+regime-insensivel e mentiu por amostragem pequena). O default segue os
+nucleos FISICOS da maquina: o mesmo codigo sintetiza regimes diferentes
+em runners de classes diferentes, e o gate dublador oscilava com a
+sorte da frota. Lock sem threads e lock INCOMPLETO (conferir_threads
+recusa); o ENV de threads (OMP/OpenBLAS/MKL) e a face externa da mesma
+ancora -- ausente ou divergente, o ambiente nao e o que o lock declara.
+A sessao em si e conferida pelo dublar, lendo DE VOLTA o numero EFETIVO
+da sessao construida com o valor do lock (dublar._conferir_threads_da_
+sessao): o valor lido e o que vale.
 """
 import ctypes
 import hashlib
@@ -91,6 +106,14 @@ def ancora() -> dict:
 # entra como major.minor: patch de CPython nao muda o resultado das
 # extensoes C (quem roda os numeros e numpy/scipy), mas a serie sim.
 PACOTES = ("piper-tts", "onnxruntime", "numpy", "scipy")
+
+# CP-009: o ENV de threads e a face externa da ancora `threads` do lock.
+# OMP rege o pool do onnxruntime quando o SessionOptions nao fixa (o dublar
+# FIXA, mas ambiente mentido deriva em diagnostico mentido); OPENBLAS e MKL
+# regem as BLAS que numpy/scipy carregam -- o motor de timbre roda nelas.
+# Um so numero no lock governa as tres variaveis: threads vem do lock, de
+# nenhum outro lugar.
+THREADS_ENV = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
 
 
 def _versao_pacote(nome: str) -> str:
@@ -194,6 +217,70 @@ def _correcao(pacote: str, esperado: dict) -> str:
     return f"pip install {pacote}=={esperado[pacote]}"
 
 
+def conferir_threads(esperado: dict) -> int:
+    """As threads do lock contra o ENV de entrada — na entrada, antes de tudo.
+
+    Três recusas, uma por vez: (1) lock SEM a linha threads e lock
+    INCOMPLETO — assumir "a maquina resolve" seria ancorar por
+    coincidencia, e foi exatamente a loteria que esta ancora fecha; (2)
+    ancora ilegivel (nao inteiro, menor que 1) e defeito de lock, nao de
+    ambiente; (3) qualquer uma das variaveis de THREADS_ENV ausente ou
+    divergente e ambiente divergente, com nome e comando que corrige —
+    a saida nunca e sintetizar por cima. Devolve o numero INTEIRO para
+    quem constroi a sessao (o dublar), que ainda le de volta o valor
+    EFETIVO da sessao e compara de novo: ENV conferido e sessao lida sao
+    provas diferentes da mesma ancora.
+    """
+    import os
+    if "threads" not in esperado:
+        raise ErroDeDados(
+            "voz.lock sem o numero de threads no bloco ambiente (CP-009) — "
+            "lock INCOMPLETO: o GEMM do onnxruntime e particionado pelo "
+            "numero de threads, e a ordem das somas parciais em float muda "
+            "com a particao (medido nas 42 falas reais dos dois filmes: 4 "
+            "mudam entre 1 e 2, 33 entre 2 e 3). Assumir as threads da "
+            "maquina que roda seria ancorar por coincidencia — e o gate "
+            "dublador oscilando com a sorte da frota. Ancore por "
+            "change-proposal, como qualquer ancora.")
+    try:
+        threads = int(str(esperado["threads"]).strip())
+    except (TypeError, ValueError):
+        raise ErroDeDados(
+            f"a ancora de threads do voz.lock nao e um numero inteiro "
+            f"({esperado['threads']!r}) — lock ilegivel e recusado antes de "
+            f"qualquer sintese; corrija o lock por change-proposal.") from None
+    if threads < 1:
+        raise ErroDeDados(
+            f"a ancora de threads do voz.lock e {threads} — threads < 1 nao "
+            f"existe em maquina nenhuma; corrija o lock por change-proposal.")
+    divergencias = []
+    for var in THREADS_ENV:
+        valor = os.environ.get(var, "").strip()
+        if not valor:
+            divergencias.append(
+                f"{var}: ausente no ambiente — o ENV de threads e parte da "
+                f"ancora (CP-009), nao enfeite: OpenBLAS/MKL/OMP leem daqui")
+        elif valor != str(threads):
+            divergencias.append(
+                f"{var}: esperado {threads}, encontrado {valor}")
+    if divergencias:
+        raise ErroDeDados(
+            "o ENV de threads NAO e o ancorado em voz.lock (bloco ambiente, "
+            "CP-009) — dublar aqui deixaria o GEMM do onnxruntime e as BLAS "
+            "do timbre particionados em outro regime, e o audio nasceria "
+            "divergente do commitado sem ninguem ter editado nada.\n"
+            "  O caminho portavel e a imagem que materializa o lock:\n"
+            "      ferramentas/dublador/dublar.sh <id-do-filme>\n"
+            "  Ou exporte o ENV da ancora nesta maquina:\n"
+            "      export OMP_NUM_THREADS=" + str(threads) +
+            " OPENBLAS_NUM_THREADS=" + str(threads) +
+            " MKL_NUM_THREADS=" + str(threads) + "\n  "
+            + "\n  ".join(divergencias) +
+            "\n  O lock avanca por change-proposal; a saida nunca e dublar "
+            "por cima da divergencia.")
+    return threads
+
+
 def conferir_ambiente(esperado: dict) -> dict:
     """Confere o ambiente instalado contra o bloco ambiente do voz.lock.
 
@@ -208,10 +295,15 @@ def conferir_ambiente(esperado: dict) -> dict:
     Excecao proposital (CP-008): lock SEM arquitetura e lock INCOMPLETO,
     nao "medida a mais" — assumir x86_64 por padrao seria ancorar por
     coincidencia, e a saida e recusar ate alguem medir e ancorar por CP.
+    Excecao igual e proposital (CP-009): `threads` NAO entra neste loop —
+    threads nao e propriedade instalada, e sim ancora LIDA DA SESSAO que
+    o dublar constroi com o valor do lock (dublar le de volta o numero
+    EFETIVO e compara de novo); a face externa dela no ambiente (OMP/
+    OpenBLAS/MKL) tem conferencia propria em conferir_threads, na entrada.
     """
     instalado = ambiente_instalado()
     divergencias = []
-    for pacote in sorted(set(esperado) | set(instalado)):
+    for pacote in sorted((set(esperado) | set(instalado)) - {"threads"}):
         esp, inst = esperado.get(pacote), instalado.get(pacote)
         if esp == inst:
             continue
@@ -239,7 +331,7 @@ def conferir_ambiente(esperado: dict) -> dict:
     if divergencias:
         raise ErroDeDados(
             "o ambiente de sintese NAO e o ancorado em voz.lock (bloco "
-            "ambiente, CP-007/CP-008) — dublar aqui produziria audio divergente "
+            "ambiente, CP-007/CP-008/CP-009) — dublar aqui produziria audio divergente "
             "do commitado sem ninguem ter editado nada.\n"
             "  O caminho portatil e a imagem que materializa o lock:\n"
             "      ferramentas/dublador/dublar.sh <id-do-filme>\n"

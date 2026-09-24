@@ -19,6 +19,19 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
+# CP-009: o ENV de threads da ancora. O numero NAO e digitado aqui: quem
+# constroi a imagem le o voz.lock FORA (ci/pins_do_lock.py --threads) e
+# entrega via --build-arg — threads vem do lock, de nenhum outro lugar.
+# OMP rege o pool do onnxruntime, OPENBLAS/MKL regem as BLAS que o motor
+# de timbre usa: as tres variaveis espelham a MESMA ancora. Build SEM o
+# build-arg deixa o ENV vazio — e o dublar RECUSA na entrada (valor
+# ausente e recusa nomeada, nao chute): imagem mal construida falha
+# alto, imagem errada nao dubla em silencio.
+ARG THREADS_DO_LOCK
+ENV OMP_NUM_THREADS=${THREADS_DO_LOCK} \
+    OPENBLAS_NUM_THREADS=${THREADS_DO_LOCK} \
+    MKL_NUM_THREADS=${THREADS_DO_LOCK}
+
 # O ffmpeg e o libopus do mix, na versao EXATA do lock. A familia libav*
 # vem junto no mesmo pin: no Debian ela nasce do MESMO source package do
 # ffmpeg e carrega a mesma versao -- pinar so o binario deixaria a porta

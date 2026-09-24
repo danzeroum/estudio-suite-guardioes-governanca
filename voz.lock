@@ -41,6 +41,26 @@ arquivos:
 # dublar recusa em vez de assumir. O caminho portavel para dublar em
 # qualquer host e a imagem que materializa este lock:
 # ferramentas/dublador/dublar.sh <id> (build sempre linux/amd64).
+#
+# CP-009: o NUMERO DE THREADS do onnxruntime assina os bytes do mesmo
+# jeito -- medido: o GEMM e particionado pelo numero de threads e a
+# ordem das somas parciais em float muda com a particao. O default segue
+# os nucleos FISICOS da maquina: o runner de 4 vCPU caia noutro regime
+# sem ninguem ter mudado linha nenhuma, e o gate dublador oscilava com
+# a sorte da frota (3 runs, 2 atratores).
+#
+# O valor ancorado e 2, o regime EFETIVO da maquina que sintetizou os
+# filmes publicados (2 nucleos fisicos, default = 2) — provado por
+# medicao, nao por hipotese: com a sessao explicita em (intra=2,
+# inter=2), os 30 clipes reais da jornada saem com o MESMO sha256 do
+# default, e a redublagem completa reproduz os 19 .opus byte a byte.
+# O valor 1 foi medido e REPROVADO: 4 clipes reais (p04-raposa,
+# p09-aguia x2, p12-aguia) mudam de PCM entre 1 e 2 -- a frase fixa do
+# experimento inicial era regime-insensivel e mentiu por amostragem
+# pequena (THREADS_NAO_BASTA registrado na CP-009). Lock sem esta linha
+# e lock INCOMPLETO, e o dublar tambem exige
+# OMP_NUM_THREADS/OPENBLAS_NUM_THREADS/MKL_NUM_THREADS iguais a ela no
+# ambiente: threads vem daqui, de nenhum outro lugar.
 ambiente:
   python: 3.12
   piper-tts: 1.8.0
@@ -51,3 +71,4 @@ ambiente:
   ffmpeg: 7.1.5-0+deb13u1
   libopus: 1.5.2
   arquitetura: x86_64
+  threads: 2

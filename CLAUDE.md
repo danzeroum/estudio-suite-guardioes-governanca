@@ -24,7 +24,18 @@ mede de verdade (a audio-suite é instalada isolada e pinada por SHA). O job
 `dublador` (workflow próprio, disparado quando o que assina os bytes do áudio
 muda) prova que a imagem `ferramentas/dublador/` reproduz **byte a byte** cada
 `.opus` commitado — e o CI inteiro lê versões do `voz.lock`
-(`ci/pins_do_lock.py`), nunca digitadas à mão.
+(`ci/pins_do_lock.py`), nunca digitadas à mão. O que assina os bytes inclui o
+**número de threads** da sessão do onnxruntime (CP-009): o lock ancora, a
+imagem carrega no ENV (OMP/OpenBLAS/MKL) e o dublar lê o valor **de volta** da
+sessão — o dispatch ganha `rodadas` para provar em N runners de uma vez, cada
+uma com a identidade da máquina (lscpu) publicada no log e em artefato.
+
+**Prova de bytes é contra o HEAD, nunca cópia contra cópia**:
+`git diff --exit-code -- '*.opus'`. Uma "prova" que comparou arquivos
+regenerados com arquivos que o próprio comando reescreveu já mentiu nesta
+suíte — o `sed` de um diagnóstico reescreveu os caminhos e a comparação ficou
+consigo mesma; o `git status` desmentiu. O HEAD é testemunha que não participou
+da geração: só ele fecha o circuito.
 
 Códigos: `0` conforme · `1` divergência entre o declarado e o real · `2` algum fiscal
 **não conseguiu** fiscalizar. Os dois últimos são estados diferentes de propósito.

@@ -20,8 +20,14 @@
 # arquitetura produziria outros bytes (o dublar recusa, de dentro). Em
 # host arm64 a imagem roda emulada -- lento, mas ancora-conforme.
 #
-# Requisitos: docker com buildx (padrao em instalacoes atuais). Sem
-# docker, dublar direto so funciona se o ambiente da maquina bater com o
+# CP-009: o build-arg de threads vem do voz.lock, lido por
+# ci/pins_do_lock.py --threads (python3 do host, so para LER o lock):
+# o ENV OMP/OPENBLAS/MKL da imagem nasce dele, e o dublar confere o ENV
+# na entrada — imagem sem o numero do lock recusa, nao chuta.
+#
+# Requisitos: docker com buildx (padrao em instalacoes atuais) e python3
+# no host (para ler o lock — a suite e um projeto Python). Sem docker,
+# dublar direto so funciona se o ambiente da maquina bater com o
 # voz.lock -- e o dublar mesmo quem confere e recusa.
 set -eu
 
@@ -44,11 +50,19 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 echo "== construindo $IMG (cache de camadas; instantaneo se nada mudou)"
+# CP-009: o numero de threads vem do voz.lock — lido AQUI, passado como
+# build-arg, e a imagem o materializa no ENV OMP/OPENBLAS/MKL. Lock sem
+# threads derruba o build com nome (pins_do_lock.py saida 2), nunca
+# assume um numero.
+THREADS_DO_LOCK=$(python3 "$RAIZ/ci/pins_do_lock.py" --threads)
 if docker buildx version >/dev/null 2>&1; then
     docker buildx build --platform linux/amd64 --load \
+        --build-arg THREADS_DO_LOCK="$THREADS_DO_LOCK" \
         -t "$IMG" -f "$DOCKERFILE" "$RAIZ"
 else
-    docker build --platform linux/amd64 -t "$IMG" -f "$DOCKERFILE" "$RAIZ"
+    docker build --platform linux/amd64 \
+        --build-arg THREADS_DO_LOCK="$THREADS_DO_LOCK" \
+        -t "$IMG" -f "$DOCKERFILE" "$RAIZ"
 fi
 
 # O volume do modelo: caminho do CI (bind) ou volume nomeado (local).
