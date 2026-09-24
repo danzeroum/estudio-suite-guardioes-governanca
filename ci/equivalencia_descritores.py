@@ -300,7 +300,13 @@ def main() -> int:
         tmp = Path(td)
         pares = prova.get("wavs_para_compare", [])
         for i in range(0, len(pares), 2):
-            wav_com, wav_reg = Path(pares[i]), Path(pares[i + 1])
+            # o prova.json publica NOMES; o diretorio e o do passo. (Se um
+            # dia vier caminho absoluto que existe, tambem serve — o contrato
+            # e o WAV certo, nao a casa dele.)
+            def _resolve(w):
+                w = Path(w)
+                return w if w.exists() else (prova_dir / w.name)
+            wav_com, wav_reg = _resolve(pares[i]), _resolve(pares[i + 1])
             fid = wav_com.name.replace("-commitado.wav", "")
             print(f"\n== {fid}")
             mani = commitado / "filmes" / fid / "audio" / "audio.json"

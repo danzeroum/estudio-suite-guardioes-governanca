@@ -447,7 +447,13 @@ def main() -> int:
         if len(pcm_com) != len(pcm_reg):
             print(f"   ATENCAO: {len(pcm_com)} amostras no commitado x "
                   f"{len(pcm_reg)} no regenerado")
-        wavs_para_compare += [str(wav_com), str(wav_reg)]
+        # CP-012: os WAVs sao publicados por NOME no prova.json (o passo de
+        # descritores roda NO RUNNER, onde o diretorio da prova e outro —
+        # caminho absoluto da gravacao era caminho do CONTAINER e o passo
+        # antigo de compare ja arrastava esse defeito latente: nunca rodou
+        # porque o teto nunca existiu. Nome + diretorio do passo = sem amarrar
+        # o consumidor a casa de quem produziu.
+        wavs_para_compare += [wav_com.name, wav_reg.name]
 
         # o veredito deste filme, pela prova que vale para a classe
         problema = None
