@@ -24,15 +24,25 @@ name: Dublador
 # CP-011: a prova e POR CLASSE DE SIMD. Com threads ancoradas e lidas em
 # 8/8 execucoes, a frota bifurcou por CLASSE (7/8 AMD sem avx512f
 # divergiram; 1/8 Intel com AVX-512 reproduziu): exigir bytes "em
-# qualquer runner" era loteria, nao prova. Agora: runner da classe da
-# ancora exige BYTES; outra classe exige TOLERANCIA MEDIDA (duracoes por
-# fala + residuo de nulidade sob teto do voz.lock + audio-suite compare
-# sem regressao). O teto vem do bloco `tolerancia:` do lock -- SEM ele,
-# a doutrina e a antiga: bytes em toda classe, vermelho honesto na
-# divergente com os numeros publicados (e com os residuos medidos nos
-# DOIS pontos, para o teto um dia nascer da medicao). O log e o artefato
-# dizem SEMPRE qual prova rodou, com que classe e com que numeros --
-# verificacao (bytes) e validacao (tolerancia) nunca se confundem.
+# qualquer runner" era loteria, nao prova.
+#
+# CP-012: a decisao do dono (24/09/2026) definiu a prova certa POR
+# ETAPA: "prova de bytes no PCM mixado; codec por tolerancia
+# decodificada; AVX2 por equivalencia de descritores com controle
+# positivo". Classe avx512 (Intel E AMD): o hash do PCM mixado f32 do
+# audio.json regenerado contra o commitado (medido na CP-011, o PCM e
+# identico entre as duas familias) + o .opus DECODIFICADO sob o teto do
+# lock (base -80.9 dBFS + margem 6 = -74.9, abaixo de -60) + CONTROLE
+# POSITIVO (ruido 6 dB acima do teto reprova citando o numero; teto que
+# nao pega e TETO_NAO_DISCRIMINA). Classe avx2: o PCM diverge no cru e
+# a nulidade nao e audibilidade — a validacao e por DESCRITORES por
+# fala (loudness, F0 mediana/pitch_f0, centroide, duracao) contra os
+# tetos do lock, com CONTROLES POSITIVOS (+0,5 dB, +20 cents, fala
+# trocada do mesmo guardiao, 50 ms de corte) reprovando em toda
+# execucao. Sem o teto da sua classe, o job RECUSA (lock incompleto) --
+# nunca verde por omissao. O log e o artefato dizem SEMPRE qual prova
+# rodou, com que classe e com que numeros -- verificacao (bytes no PCM)
+# e validacao (teto do codec / descritores) nunca se confundem.
 #
 # CP-011: o FILTRO POR DECLARACAO. O job so processa filmes que DECLARAM
 # audio (audio: true no proprio filme.js, lido de la -- nunca de lista de
@@ -267,12 +277,15 @@ jobs:
           echo "CLASSE_ANCORA=$CLASSE_ANCORA" | tee -a "$GITHUB_ENV"
           TETO_RESIDUO=$(python3 ci/pins_do_lock.py --teto-residuo 2>/dev/null || true)
           echo "TETO_RESIDUO=${TETO_RESIDUO:-}" >> "$GITHUB_ENV"
-          echo "== identidade do runner (CP-009/CP-011):"
+          TETOS_DESCRITORES=$(python3 ci/pins_do_lock.py --tetos-descritores 2>/dev/null || true)
+          echo "TETOS_DESCRITORES=${TETOS_DESCRITORES:-}" >> "$GITHUB_ENV"
+          echo "== identidade do runner (CP-009/CP-011/CP-012):"
           cat /tmp/identidade-maquina.env | grep -v '^FLAGS_SIMD='
           echo "  nproc:         $NPROC"
           echo "  cgroup cpu:    $CGROUP_CPU"
           echo "  classe SIMD:   $CLASSE_DO_RUNNER (ancora: $CLASSE_ANCORA)"
-          echo "  teto residuo:  ${TETO_RESIDUO:-NAO REGISTRADO — prova de bytes em toda classe}"
+          echo "  teto do codec: ${TETO_RESIDUO:-NAO REGISTRADO — lock INCOMPLETO para a classe avx512}"
+          echo "  tetos descritores: ${TETOS_DESCRITORES:-NAO REGISTRADOS — lock INCOMPLETO para a classe avx2 (fase de medicao: numeros publicados, veredito recusado)}"
           echo "  flags SIMD:    $(grep '^FLAGS_SIMD=' /tmp/identidade-maquina.env | cut -d= -f2- | tr ' ' '\n' | wc -l) flags (completas no artefato)"
 
       # buildx com cache de camadas do GitHub Actions: a base por digest e
@@ -386,13 +399,17 @@ jobs:
             echo "   ATENCAO: etapas divergem entre rodadas com .opus iguais — diagnostico"
           fi
 
-      # CP-011: A PROVA POR CLASSE. Roda DENTRO da imagem (numpy, ffmpeg,
-      # repositorio montado, o MESMO classificador do dublar): bytes na
-      # classe da ancora; duracoes por fala + residuo sob teto na classe
-      # divergente COM teto registrado; bytes (doutrina antiga) na classe
-      # divergente SEM teto — vermelho honesto com todos os numeros. Os
-      # residuos nos DOIS pontos (mix pre-opus e opus decodificado) sao
-      # sempre publicados: e deles que o teto um dia nasce.
+      # CP-012: A PROVA POR CLASSE. Roda DENTRO da imagem (numpy, ffmpeg,
+      # repositorio montado, o MESMO classificador do dublar): na classe
+      # avx512, BYTES NO PCM MIXADO (o hash f32 do audio.json) + codec
+      # decodificado sob teto + o CONTROLE do teto (ruido 6 dB acima
+      # reprova citando o numero; teto que nao pega e
+      # TETO_NAO_DISCRIMINA); na classe avx2, duracoes do manifesto aqui
+      # e a EQUIVALENCIA POR DESCRITORES no runner (passo seguinte). Sem
+      # o teto da classe, RECUSA nomeada (lock incompleto) — os numeros
+      # desta execucao sao medidos e publicados ANTES da recusa: e deles
+      # que o teto nasce. Os residuos nos DOIS pontos seguem publicados
+      # como diagnostico.
       - name: A prova por classe (dentro da imagem)
         shell: bash
         run: |
@@ -403,45 +420,26 @@ jobs:
             python3 ci/prova_por_classe.py --commitado /commitado --saida /prova \
             | tee /tmp/prova/prova.log
 
-      # CP-011: a terceira condicao da tolerancia — o compare da
-      # audio-suite (CLI externa, isolada por pipx, pinada por SHA, como
-      # no suite.yml) sobre os WAVs que a prova decodificou. So existe
-      # na classe divergente COM teto: na classe da ancora a prova e
-      # BYTES (mais forte), e o log diz exatamente isso.
-      - name: O compare da audio-suite (na tolerância, no runner)
-        if: env.CLASSE_DO_RUNNER != env.CLASSE_ANCORA && env.TETO_RESIDUO != ''
+      # CP-012: a EQUIVALENCIA POR DESCRITORES — no RUNNER, com a
+      # audio-suite (CLI externa, isolada por pipx, PINADA POR SHA —
+      # avancada para 90ffac7 porque o pitch_f0/AS-DESC-08 nao existe no
+      # pin anterior) e numpy (pin do voz.lock, uma fonte so). Roda em
+      # TODA classe: na avx2 e o veredito da equivalencia (deltas por
+      # fala contra os tetos do lock); na avx512 os deltas sao ~0 e o
+      # passo vale pelos CONTROLES POSITIVOS — que provam, em toda
+      # execucao, que os tetos ainda enxergam mudanca real (+0,5 dB,
+      # +20 cents, fala trocada do mesmo guardiao, 50 ms de corte). Sem
+      # os tetos no lock, o passo MEDE e publica e RECUSA (lock
+      # incompleto) — nunca verde por omissao. O teto do codec tem o
+      # proprio controle DENTRO da prova da imagem.
+      - name: A equivalência por descritores (no runner, com controles)
         shell: bash
         run: |
-          pipx install "git+https://github.com/danzeroum/audio-suite@296226eb803adbe380f1473c25c5a22ebb857029"
+          pipx install "git+https://github.com/danzeroum/audio-suite@90ffac796d7615e798b5bb7e17e48726be7fa686"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          python3 - <<'EOF' | tee /tmp/prova/compare.txt
-          import json, os, subprocess, sys
-          prova = json.load(open('/tmp/prova/prova.json'))
-          wavs = prova.get('wavs_para_compare', [])
-          regressao = []
-          for i in range(0, len(wavs), 2):
-              a, b = wavs[i], wavs[i+1]
-              fid = os.path.basename(a).replace('-commitado.wav', '')
-              r = subprocess.run(
-                  ['audio-suite', 'compare', a, b,
-                   '--profile', 'harness/perfis/guardioes-narracao.yaml',
-                   '--fail-on-regression'],
-                  capture_output=True, text=True, timeout=600)
-              saida = r.stdout.strip()
-              try:
-                  d = json.loads(saida)
-                  det = (f"regression_detected={d.get('regression_detected')}"
-                         f" deltas={d.get('deltas')}")
-              except Exception:
-                  det = saida[:200]
-              print(f"  {fid}: audio-suite compare {det} [exit {r.returncode}]")
-              if r.returncode != 0:
-                  regressao.append(fid)
-          if regressao:
-              print(f"\n  REGRESSAO na tolerancia: {', '.join(regressao)}", file=sys.stderr)
-              sys.exit(1)
-          print("  compare sem regressao em todos os filmes que declaram audio")
-          EOF
+          python3 -m pip install --user --quiet             $(python3 ci/pins_do_lock.py --so numpy) 2>/dev/null
+          set -o pipefail
+          python3 ci/equivalencia_descritores.py             --prova /tmp/prova --commitado /tmp/commitado             | tee /tmp/prova/descritores.log
 
       # CP-009/CP-011: o artefato de identidade — SEMPRE (verde ou
       # vermelho). Verde sem identidade seria sorte sem prova; vermelho
@@ -465,13 +463,20 @@ jobs:
           else
             VEREDITO_PROVA="NAO RODOU"
           fi
+          if [ -f /tmp/prova/descritores.json ]; then
+            VEREDITO_DESCRITORES=$(python3 -c "
+          import json
+          print(json.load(open('/tmp/prova/descritores.json')).get('veredito', '?'))")
+          else
+            VEREDITO_DESCRITORES="NAO RODOU"
+          fi
           if [ -f /tmp/rodada1.sha256 ] && [ -f /tmp/rodada2.sha256 ] \
              && diff -q /tmp/rodada1.sha256 /tmp/rodada2.sha256 >/dev/null 2>&1; then
             DETERMINISMO="estavel"
           else
             DETERMINISMO="DIVERGENTE"
           fi
-          export THREADS_GRAVADAS VEREDITO_PROVA DETERMINISMO
+          export THREADS_GRAVADAS VEREDITO_PROVA VEREDITO_DESCRITORES DETERMINISMO
           python3 - <<'EOF' > /tmp/identidade/identidade.json
           import json, os
           dados = {
@@ -503,6 +508,10 @@ jobs:
             "prova": {
               "determinismo_interno": os.environ.get("DETERMINISMO"),
               "veredito_da_prova_por_classe": os.environ.get("VEREDITO_PROVA"),
+              "veredito_da_equivalencia_descritores": os.environ.get(
+                  "VEREDITO_DESCRITORES"),
+              "tetos_descritores": os.environ.get("TETOS_DESCRITORES") or
+                  "NAO REGISTRADOS (lock incompleto p/ avx2)",
             },
           }
           print(json.dumps(dados, indent=1, ensure_ascii=False))
@@ -510,7 +519,7 @@ jobs:
           cat /tmp/identidade/identidade.json
           cp -r /tmp/etapas-rodada1 /tmp/identidade/ 2>/dev/null || true
           cp -r /tmp/etapas-rodada2 /tmp/identidade/ 2>/dev/null || true
-          cp /tmp/prova/prova.json /tmp/prova/prova.log /tmp/prova/compare.txt /tmp/identidade/ 2>/dev/null || true
+          cp /tmp/prova/prova.json /tmp/prova/prova.log              /tmp/prova/descritores.json /tmp/prova/descritores.log              /tmp/identidade/ 2>/dev/null || true
           echo "== hash por etapa (rodada 2):"
           cat /tmp/etapas-rodada2/*.etapas.json 2>/dev/null | head -40 || echo "  (sem etapas)"
 

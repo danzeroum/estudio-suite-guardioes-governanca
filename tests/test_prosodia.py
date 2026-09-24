@@ -186,20 +186,23 @@ def main():
     ambiente = __import__("estudio_suite.voz", fromlist=["voz"]).ancora()["ambiente"]
     (dir_a / "audio.json").write_text(
         json.dumps({"filme": FANTASMA, "clipes": _clipes([None, None]),
-                    "ambiente": ambiente}, indent=1) + "\n",
+                    "ambiente": ambiente,
+                    "mix": {"pcm_f32_sha256": "f" * 64}}, indent=1) + "\n",
         encoding="utf-8")
     a = pipeline.fiscal_redublagem(FANTASMA)
     chk(len(a) == 1 and "ganhou expressao" in a[0] and "surpreso" in a[0],
         f"expressao nova no filme sem redublar e divida ({a})")
     (dir_a / "audio.json").write_text(
         json.dumps({"filme": FANTASMA, "ambiente": ambiente,
-                    "clipes": _clipes([prosodia.manifesto("surpreso"), None])}, indent=1) + "\n",
+                    "clipes": _clipes([prosodia.manifesto("surpreso"), None]),
+                    "mix": {"pcm_f32_sha256": "f" * 64}}, indent=1) + "\n",
         encoding="utf-8")
     a = pipeline.fiscal_redublagem(FANTASMA)
     chk(a == [], f"prosodia gravada em sincronia: fiscal cala ({a})")
     (dir_a / "audio.json").write_text(
         json.dumps({"filme": FANTASMA, "ambiente": ambiente,
-                    "clipes": _clipes([prosodia.manifesto("feliz"), None])}, indent=1) + "\n",
+                    "clipes": _clipes([prosodia.manifesto("feliz"), None]),
+                    "mix": {"pcm_f32_sha256": "f" * 64}}, indent=1) + "\n",
         encoding="utf-8")
     a = pipeline.fiscal_redublagem(FANTASMA)
     chk(len(a) == 1 and "prosodia divergente" in a[0],

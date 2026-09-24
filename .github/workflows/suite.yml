@@ -83,7 +83,7 @@ jobs:
       # mantido. So o binario vai pro PATH, nunca o python do venv dela.
       - name: Instalar a audio-suite (isolada, pinada por SHA)
         run: |
-          pipx install "git+https://github.com/danzeroum/audio-suite@296226eb803adbe380f1473c25c5a22ebb857029"
+          pipx install "git+https://github.com/danzeroum/audio-suite@90ffac796d7615e798b5bb7e17e48726be7fa686"
           pipx list --short
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
@@ -148,8 +148,15 @@ jobs:
       # filtro por declaracao de audio e a borda do lock incompleto — tudo
       # funcao pura ou dado sintetico, porque a sintese de verdade e da
       # imagem dubladora; aqui se prova o GATE, que e o que o CI roda.
-      - name: A prova por classe de SIMD (CP-011)
+      - name: A prova por classe de SIMD (CP-011/CP-012)
         run: python3 tests/test_prova_por_classe.py
+
+      # CP-012: a equivalência por descritores da classe avx2 — controles
+      # positivos provados nos dois sentidos (verde com tetos apertados;
+      # TETO_NAO_DISCRIMINA com teto folgado; lock incompleto recusa).
+      # Precisa da audio-suite (instalada acima, pinada) e do ffmpeg.
+      - name: A equivalência por descritores (CP-012)
+        run: python3 tests/test_equivalencia_descritores.py
 
       # CP-004/CP-007: o sexto portao, agora MEDINDO de verdade -- a
       # audio-suite esta instalada (isolada, pinada) e o job a prometeu no

@@ -96,12 +96,15 @@ def _criar_filme(legendas):
     return d
 
 
-def _criar_dublagem(clipes, ambiente="do-lock"):
+def _criar_dublagem(clipes, ambiente="do-lock", mix="com-hash"):
     """audio.json fantasma: [{plano, em, ate, dur, voz, texto_sha256}].
 
     ambiente="do-lock" grava o bloco ambiente do voz.lock (o que o dublar
     gravaria); ambiente=None grava manifesto SEM o campo (a divida que a
     CP-007 cobra); qualquer dict e gravado como esta (divergencia proposital).
+    mix="com-hash" grava o bloco mix com o pcm_f32_sha256 (o contrato da
+    CP-012); mix=None grava SEM o bloco (a divida que a CP-012 cobra: sem
+    o hash do PCM mixado, a prova de bytes do job nao tem canônico).
     """
     from estudio_suite import voz as _voz
     d = FILMES / FANTASMA / "audio"
@@ -111,6 +114,10 @@ def _criar_dublagem(clipes, ambiente="do-lock"):
         manifesto["ambiente"] = _voz.ancora()["ambiente"]
     elif ambiente is not None:
         manifesto["ambiente"] = ambiente
+    if mix == "com-hash":
+        manifesto["mix"] = {"arquivo": f"{FANTASMA}.opus", "taxa_hz": 48000,
+                            "canais": 1,
+                            "pcm_f32_sha256": "f" * 64}
     (d / "audio.json").write_text(
         json.dumps(manifesto, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
@@ -178,6 +185,21 @@ def main():
     a = fiscal_redublagem(FANTASMA)
     chk(any("clipe(s) para" in x for x in a),
         f"clipe orfao de legenda apagada e apontado ({a})")
+
+    # --- audio.json sem o hash do PCM mixado: divida da CP-012 ----------
+    # o contrato do PCM e o que a prova de bytes do job compara; sem ele,
+    # dublagem anterior a CP-012 fica sem canônico — o fiscal acusa com o
+    # mesmo comando que resolve as outras dividas
+    _criar_filme([L1, L2])
+    _criar_dublagem([
+        {"plano": "p01", "em": 0.3, "ate": 5.5, "dur": 4.2, "voz": "coruja",
+         "texto_sha256": _hash(L1[2]), "timbre": dict(T)},
+        {"plano": "p01", "em": 6.0, "ate": 11.0, "dur": 3.1, "voz": "coruja",
+         "texto_sha256": _hash(L2[2]), "timbre": dict(T)},
+    ], mix=None)
+    a = fiscal_redublagem(FANTASMA)
+    chk(len(a) == 1 and "pcm_f32_sha256" in a[0] and "dublar" in a[0],
+        f"manifesto sem o hash do PCM e apontado com o comando que resolve ({a})")
 
     # --- audio.json sem ambiente: dublagem de mundo desconhecido (CP-007) --
     _criar_filme([L1, L2])

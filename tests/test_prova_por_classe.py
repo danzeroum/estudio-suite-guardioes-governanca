@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""A prova por classe de SIMD, provada nos dois sentidos (CP-011).
+"""A prova por classe de SIMD, provada nos dois sentidos (CP-011 + CP-012).
 
-O contrato em quatro frentes, todas exigidas pela CP:
+O contrato, todas exigidas pela CP:
 
   CLASSIFICADOR: flags de lscpu sintéticas (Intel com avx512f; AMD sem
   avx512f; AMD COM avx512f) -> classes esperadas. A chave é a FLAG, não o
@@ -13,12 +13,22 @@ O contrato em quatro frentes, todas exigidas pela CP:
   do teto -> reprova COM O NÚMERO. O resíduo é o que sobra quando a
   hipótese é "mesmo som": sem número não existe tolerância.
 
+  CONTRATO DO PCM (CP-012): o hash f32 do mix mora no audio.json —
+  sem ele, SEM CONTRATO (divida do fiscal); divergente, reprova na
+  classe avx512 e é o ESTADO esperado na avx2.
+
+  CONTROLE DO TETO DO CODEC (CP-012): "Mix PCM identico + .opus com
+  ruido injetado 6 dB acima do teto -> reprova, citando o numero" —
+  o ruido entra na ENTREGA decodificada, o residuo mede o numero
+  injetado, e teto que deixa passar e TETO_NAO_DISCRIMINA.
+
   FILTRO: filme sem declaração de áudio -> fora da lista do job; filme
   com áudio -> dentro. A declaração mora no próprio filme.js, nunca em
   lista de nomes — e o dublar recusa quem não fala.
 
   BORDA: lock sem classe_simd -> dublar e job recusam ("lock
-  incompleto"), como lock sem threads e sem arquitetura.
+  incompleto"), como lock sem threads e sem arquitetura; lock sem os
+  tetos de descritores -> --tetos-descritores sai 2 nomeando.
 
 Roda em CI (numpy do lock, sem piper): tudo aqui é função pura ou dado
 sintético — a síntese de verdade é da imagem dubladora.
@@ -162,6 +172,52 @@ def main():
     chk(len(dv) == 1 and "p02" in dv[0] and "dur" in dv[0],
         f"duração divergente aponta a fala e o campo ({dv})")
 
+    # --- o CONTRATO do PCM mixado (CP-012) --------------------------------
+    mani = {"mix": {"pcm_f32_sha256": "a" * 64}}
+    h_com, h_reg, sem_c, divg = prova.comparar_hash_pcm(mani, dict(mani))
+    chk(h_com == h_reg and not sem_c and not divg,
+        "hash do PCM igual: contrato presente, sem divida, sem divergencia")
+    h_com, h_reg, sem_c, divg = prova.comparar_hash_pcm({}, {})
+    chk(len(sem_c) == 2 and not h_com,
+        f"audio.json sem o hash -> SEM CONTRATO dos dois lados ({sem_c[0][:50]}...)")
+    mani_div = {"mix": {"pcm_f32_sha256": "b" * 64}}
+    h_com, h_reg, sem_c, divg = prova.comparar_hash_pcm(mani, mani_div)
+    chk(divg and not sem_c,
+        "hash divergente: DIVERGE na classe avx512 reprova — e na avx2 e o "
+        "estado que abre a validacao por descritores (verificacao separada "
+        "de validacao)")
+
+    # --- CONTROLE DO TETO DO CODEC (CP-012): o numero e a parada ----------
+    # cenario do plano: "Mix PCM identico + .opus com ruido injetado 6 dB
+    # acima do teto de codec -> reprova, citando o numero"
+    teto = -74.9
+    nivel = prova.nivel_de_controle(teto)
+    chk(abs(nivel - (teto + 6.0)) < 1e-9,
+        f"o nivel do controle e teto + 6 dB ({nivel:g} para teto {teto:g})")
+    ruido = prova.injetar_ruido(sinal, nivel)
+    chk(prova.residuo_dbfs(ruido, sinal) > teto,
+        "ruido injetado 6 dB acima do teto: residuo acima do teto")
+    # deterministico: duas injecoes devolvem o MESMO pcm
+    chk((prova.injetar_ruido(sinal, nivel) == ruido).all(),
+        "a injecao e deterministica (semente fixa) — o numero do controle "
+        "e conferivel no artefato")
+    # o controle completo: com o PCM dos dois lados IGUAL, o ruido na
+    # ENTREGA decodificada reprova citando o numero
+    reprovou, res_c, frase_c = prova.controlar_teto_do_codec(sinal, sinal, teto)
+    chk(reprovou and "-68.9" in frase_c and "REPROVOU" in frase_c,
+        f"controle do codec: ruido a -68.9 reprova CITANDO O NUMERO ({frase_c})")
+    chk(-69.4 < res_c < -68.4,
+        f"o residuo do controle bate com o nivel injetado (mediu {res_c:.1f})")
+    # o controle e a prova de VIDA do instrumento: ruido a teto+6 sempre
+    # excede o teto — a folga do teto e guardada por OUTRA porta (o piso
+    # de -60 dBFS no pins_do_lock --teto-residuo, que recusa teto >= -60).
+    # O caminho TETO_NAO_DISCRIMINA do controle existe para o dia em que
+    # o instrumento quebrar (injecao ou residuo medindo errado) — e o
+    # teste acima prova que ele esta vivo e com o numero certo.
+    chk(prova.controlar_teto_do_codec(sinal, sinal, -30.0)[0],
+        "o controle reprova em QUALQUER teto vivo: ruido 6 dB acima sempre "
+        "excede — a folga do teto e guardada pelo piso de -60 no pins")
+
     # --- filtro: a declaração mora no filme, não em lista de nomes --------
     try:
         _filme_fantasma(declara_audio=False)
@@ -243,6 +299,45 @@ def main():
         chk(rc == 0 and float(saida.getvalue().strip()) < -60.0,
             f"com tolerancia registrada: --teto-residuo imprime o teto do lock "
             f"({saida.getvalue().strip()} dBFS, abaixo de -60)")
+
+    # CP-012: lock sem os tetos de descritores -> --tetos-descritores sai 2
+    # nomeando (lock incompleto para a classe avx2) — nunca verde por omissao
+    _lock_real = voz.LOCK
+    with tempfile.TemporaryDirectory() as tmp:
+        sem_descritores = Path(tmp) / "voz.lock"
+        sem_descritores.write_text(
+            _lock_real.read_text(encoding="utf-8") + (
+                "" if "descritores_f0_hz_max" in _lock_real.read_text(
+                    encoding="utf-8") else
+                "\n# (teste: tolerancia sem descritores)\n"),
+            encoding="utf-8")
+        voz.LOCK = sem_descritores
+        try:
+            saida, erro = io.StringIO(), io.StringIO()
+            with redirect_stdout(saida), redirect_stderr(erro):
+                rc = pins.main(["--tetos-descritores"])
+            tol_t = voz.tolerancia()
+            if "descritores_f0_hz_max" not in tol_t:
+                chk(rc == 2 and "INCOMPLETO" in erro.getvalue(),
+                    f"lock sem tetos de descritores: --tetos-descritores sai 2 "
+                    f"nomeando o lock incompleto (rc {rc})")
+            else:
+                chk(False, "o lock de teste devia estar sem descritores")
+        finally:
+            voz.LOCK = _lock_real
+    # o lock real (fase 1 da CP-012): sem os tetos — a recusa e o estado
+    # honesto ate a medicao da frota registrar os numeros
+    saida, erro = io.StringIO(), io.StringIO()
+    with redirect_stdout(saida), redirect_stderr(erro):
+        rc = pins.main(["--tetos-descritores"])
+    if "descritores_f0_hz_max" not in voz.tolerancia():
+        chk(rc == 2 and "INCOMPLETO" in erro.getvalue(),
+            "o lock REAL sem tetos de descritores: recusa nomeada — a fase 1 "
+            "da CP-012 mede, a fase 2 registra, o verde nunca nasce por omissao")
+    else:
+        chk(rc == 0 and "descritores_f0_hz_max=" in saida.getvalue(),
+            f"com os tetos registrados: --tetos-descritores imprime os quatro "
+            f"({saida.getvalue().strip()[:60]}...)")
 
     print(f"  {len(ok)} verificações da prova por classe.")
     if bad:

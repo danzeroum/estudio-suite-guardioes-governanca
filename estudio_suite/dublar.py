@@ -31,6 +31,18 @@ CP-004 ate o mix, a CP-005 acrescentando o estagio de timbre:
    commitado), porque a prova de bytes do gate e contra o HEAD, e o
    hash por etapa e o DIAGNOSTICO de onde a divergencia nasce, nao um
    contrato do repositorio.
+   CP-012: o hash do PCM mixado PROMOVIDO A CONTRATO. O audio.json
+   passa a registrar mix.pcm_f32_sha256 — o sha256 do MESMO arquivo f32
+   da CP-011 (a entrada EXATA do codificador, round-trip validado:
+   recodificar o f32 devolve o .opus byte a byte). A decisao do dono
+   (24/09/2026) move a prova de bytes do .opus (que a frota nao entrega
+   igual entre familias de CPU) para o PCM mixado (que Intel e
+   AMD-avx512 entregam igual — medido em 4 amostras da CP-011, s16 E
+   f32; o f32 e o instrumento mais fino: o s16 tem piso de 1 LSB e o
+   9V45 entregou mix s16 identico com .opus divergente). O fiscal de
+   redublagem cobra o campo; o job dublador compara ESSE hash. O
+   caminho do .opus nao muda um byte: a gravacao do f32 ja era a
+   SEGUNDA execucao do mesmo grafo.
 3. Clipe que estoura o tempo da legenda REPROVA, apontando a legenda exata.
    Nao estica, nao reamostra para caber: encurta-se a legenda. (Converter a
    taxa 22050->48000 e mudanca de FORMATO, com duracao identica -- isso o
@@ -654,7 +666,14 @@ def dublar(fid: str) -> int:
         "ambiente": amb,
         "mix": {"arquivo": opus.name, "taxa_hz": TAXA, "canais": CANAIS,
                 "loudness_alvo_lufs": LOUDNESS_LUFS,
-                "true_peak_alvo_dbtp": TRUE_PEAK_DBTP},
+                "true_peak_alvo_dbtp": TRUE_PEAK_DBTP,
+                # CP-012: o CONTRATO do PCM mixado — o sha256 da
+                # entrada exata do codificador (f32), gravado da MESMA
+                # dublagem que produziu o .opus commitado. A prova de
+                # bytes do job compara contra AQUI; o fiscal de
+                # redublagem cobra o campo (audio.json sem hash de PCM
+                # e divida, como legenda editada sem redublar).
+                "pcm_f32_sha256": hashlib.sha256(mix_f32.read_bytes()).hexdigest()},
         "earcons": [{"plano": p, "em": em, "tipo": t,
                      "arquivo": f"dado-{t}.wav", "ganho_db": GANHO_EARCON_DB}
                     for p, em, t in earcons_agenda],

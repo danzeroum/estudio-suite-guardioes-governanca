@@ -21,10 +21,16 @@ Comportamento:
                           para o job decidir qual prova aplicar — a classe
                           vem do lock, de nenhum outro lugar; lock sem a
                           linha e lock INCOMPLETO (saida 2, nunca chute)
-  --teto-residuo          imprime o teto de residuo em dBFS (CP-011, bloco
-                          tolerancia do lock) — a tolerancia so existe
-                          com teto registrado; sem o bloco, saida 2
-                          nomeando (o job exige bytes em toda classe)
+  --teto-residuo          imprime o teto de residuo do codec em dBFS
+                          (CP-012, bloco tolerancia do lock) — a
+                          tolerancia so existe com teto registrado; sem
+                          o bloco, saida 2 nomeando (lock incompleto)
+  --tetos-descritores    imprime "chave=valor" dos tetos de descritores da
+                          classe avx2 (CP-012, bloco tolerancia) — a
+                          equivalencia por descritores so julga com os
+                          quatro tetos; sem eles, saida 2 nomeando (o
+                          passo mede e publica, o veredito nao fica
+                          verde por omissao)
   --conferir python,numpy,scipy
                           mede o ambiente EFETIVO (o mesmo
                           ambiente_instalado() do dublar) e confere as
@@ -51,11 +57,12 @@ from estudio_suite import voz                    # noqa: E402
 # SESSAO do onnxruntime tem de carregar (CP-009 — lido pelo dublar com
 # get_session_options, espelhado no ENV OMP/OpenBLAS/MKL da imagem),
 # classe_simd e a classe de SIMD que o job compara com a do runner
-# (CP-011) e teto_residuo e o bloco tolerancia do lock (CP-011).
+# (CP-011) e teto_residuo/tetos de descritores sao o bloco tolerancia do
+# lock (CP-012: codec por tolerancia decodificada; AVX2 por descritores).
 # Pedir pin pip para elas seria imprimir um comando que nao existe -- o
 # erro nomeia a confusao.
 NAO_PIP = {"python", "espeak-ng", "ffmpeg", "libopus", "arquitetura",
-           "threads", "classe_simd", "teto_residuo"}
+           "threads", "classe_simd", "teto_residuo", "tetos_descritores"}
 
 
 def _lock() -> dict:
@@ -119,10 +126,10 @@ def conferir(chaves: list) -> int:
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     acoes = ("--so", "--python", "--threads", "--classe-simd",
-             "--teto-residuo", "--conferir")
+             "--teto-residuo", "--tetos-descritores", "--conferir")
     if not argv or argv[0] not in acoes:
         print("uso: pins_do_lock.py --so numpy,scipy | --python | --threads | "
-              "--classe-simd | --teto-residuo | "
+              "--classe-simd | --teto-residuo | --tetos-descritores | "
               "--conferir python,numpy,scipy", file=sys.stderr)
         return 64
     flag = argv[0]
@@ -217,6 +224,38 @@ def main(argv=None) -> int:
                   f"corrija o lock por CP com medicao", file=sys.stderr)
             return 2
         print(f"{teto:g}")
+        return 0
+    if flag == "--tetos-descritores":
+        # CP-012: os tetos de descritores da classe avx2 vem do bloco
+        # `tolerancia:` do lock — a UNICA morada dos numeros. Sem as
+        # quatro chaves, a saida e 2 nomeando: o passo de descritores
+        # MEDE e publica, mas nao julga — verde por omissao nao existe.
+        if len(argv) != 1:
+            print("ERRO: --tetos-descritores nao recebe valor — os tetos "
+                  "vem do lock", file=sys.stderr)
+            return 64
+        tol = voz.tolerancia()
+        chaves = ("descritores_duracao_ms_max",
+                  "descritores_loudness_lu_max",
+                  "descritores_f0_hz_max",
+                  "descritores_centroide_hz_max")
+        faltam = [k for k in chaves if k not in tol]
+        if faltam:
+            print("ERRO: voz.lock sem os tetos de descritores da classe "
+                  "avx2 (faltam: " + ", ".join(faltam) + ") — lock "
+                  "INCOMPLETO (CP-012): a equivalencia por descritores "
+                  "exige os quatro tetos; o passo mede e publica, o "
+                  "veredito nao fica verde por omissao", file=sys.stderr)
+            return 2
+        valores = []
+        for k in chaves:
+            try:
+                valores.append(f"{k}={float(str(tol[k]).strip()):g}")
+            except ValueError:
+                print(f"ERRO: o teto {k} ({tol[k]!r}) nao e numero — lock "
+                      f"ilegivel", file=sys.stderr)
+                return 2
+        print(" ".join(valores))
         return 0
     if len(argv) != 2:
         print("ERRO: " + flag + " exige a lista de chaves (ex. numpy,scipy)",

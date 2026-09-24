@@ -110,7 +110,7 @@ proposta:
       lei.lock. Sem LEI_TOKEN: PR pronto e AGUARDANDO_LEI.
 
   resultado_da_medicao:
-    quando: "a preencher com as execucoes desta CP (fase de medicao e frota)"
+    quando: "fase 1 (maquinaria) local: 2026-09-25; frota: a preencher"
     base_herdada_da_cp011: >
       Teto do codec derivado da frota JA medida na CP-011: maximo
       observado em AMD-avx512 = -80,9 dBFS (jornada-dado; -83,1 no
@@ -119,10 +119,41 @@ proposta:
       dispersao observada de 2,2 dB entre os filmes) = teto -74,9 dBFS,
       abaixo do piso de -60. A base e MEDIDA, herda de CP-011 e sera
       reconfirmada nas execucoes desta CP no head novo.
+    validacao_local_fase_1: >
+      Redublagem dos dois filmes com o codigo novo: 19/19 .opus
+      BYTE-IDENTICOS ao HEAD (git diff --exit-code -- '*.opus'), os
+      audio.json com mix.pcm_f32_sha256 == etapas.json mix_pcm_f32 ==
+      sha256 do arquivo f32 (jornada 6978cb72981bd942..., legitimo
+      61ddf58a6e4c2916...). A prova da imagem no runner local (avx512,
+      a classe ancora): PCM IDENTICO, residuo codec -inf, CONTROLE do
+      codec reprova com o numero exato — ruido injetado a -68,9 dBFS
+      (teto -74,9 + 6) devolve residuo -68,9 dBFS, citando o numero.
+      Os controles de descritores, medidos localmente sobre a ancora:
+      +0,5 dB -> loudness delta +0,50 LU exato; +20 cents -> F0 delta
+      +1,93 Hz (jornada) e +4,72 Hz (legitimo); 50 ms -> duracao -50,0
+      e -49,8 ms; fala trocada do mesmo guardiao -> centroide -624,14 Hz
+      (jornada, aguia) e duracao -1009,90 ms (legitimo, tartaruga).
+      Testes: prova por classe 35 verificacoes, equivalencia por
+      descritores 13 (lock incompleto recusa; verde com tetos
+      apertados; TETO_NAO_DISCRIMINA com teto folgado; vermelho real com
+      +0,3 dB), dublar 33 (borda do hash no fiscal), navegador 240/240,
+      validar_tudo --sem-lei conforme.
     execucoes: 0
 
   desfecho:
-    entregue: "a preencher no fechamento"
+    entregue: >
+      FASE 1 (maquinaria, este commit): dublar grava pcm_f32_sha256 no
+      audio.json (nenhum .opus tocado — redublagem local byte-identica
+      19/19); fiscal de redublagem cobra o campo; voz.lock ganha o bloco
+      tolerancia com o teto do codec (base CP-011 + margem 6);
+      ci/prova_por_classe.py v2 (bytes no PCM + codec sob teto + controle
+      do codec com numero); ci/equivalencia_descritores.py (descritores
+      por fala + 4 controles positivos + recusa de lock incompleto);
+      perfil guardioes-equivalencia; pins_do_lock --tetos-descritores;
+      dublador.yml com o passo de descritores no runner e pin 90ffac7
+      (pitch_f0/AS-DESC-008); suite.yml com o mesmo pin e o teste novo.
+      FALTA: medicao na frota (deltas AVX2), registro dos tetos de
+      descritores, prova em N rodadas verdes, fechamento e merges.
     saidas_para_o_dono:
       - >
         Execucao integral do plano: merges #12 e #13 conduzidos pelo

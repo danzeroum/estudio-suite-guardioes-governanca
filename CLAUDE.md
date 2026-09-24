@@ -29,19 +29,26 @@ e o CI inteiro lê versões do `voz.lock`
 da CPU (CP-011: `classe_simd` no lock, lida de flags medidas — nunca do nome do
 fabricante — e gravada como medido no `audio.json`).
 
-**A prova do job dublador é POR CLASSE (CP-011)**, e só acorda para filmes que
-declaram `audio: true` (lido do próprio `filme.js` — filme mudo não aciona o
-job nem entra nele). Runner da classe âncora exige **bytes**; outra classe
-exige durações por fala + **resíduo de nulidade abaixo do teto do lock** +
-`audio-suite compare` — e sem teto registrado no `voz.lock` vale a doutrina
-antiga: bytes em toda classe, vermelho honesto na classe divergente. Medido na
-frota (28 execuções, hash **por etapa**: PCM cru → prosódia → timbre → mix
-pré-opus → `.opus`): a divergência entre AVX-512 e AVX2 nasce no **PCM cru**
-(onnxruntime, 30/30 falas); entre famílias de CPU com `avx512f` visível, nasce
-**na codificação opus** com a entrada idêntica (f32 medido); Intel reproduz
-(6/6, duas gerações), AMD diverge (−81 dBFS só no codec; −38 dBFS no PCM —
-acima do piso de −60 dBFS, por isso a tolerância **não nasceu** e o gate segue
-vermelho na frota divergente, com causa medida — decisão de caminho na CP-011).
+**A prova do job dublador é POR CLASSE e POR ETAPA (CP-012)**, e só acorda
+para filmes que declaram `audio: true` (lido do próprio `filme.js` — filme
+mudo não aciona o job nem entra nele). A decisão do dono (24/09/2026) sobre a
+medição da CP-011 (28 execuções, hash **por etapa**: PCM cru → prosódia →
+timbre → mix pré-opus → `.opus`; a divergência AVX-512×AVX2 nasce no **PCM
+cru**, a das famílias com `avx512f` visível **na codificação opus** com a
+entrada f32 idêntica): **bytes no PCM mixado; codec por tolerância
+decodificada; AVX2 por equivalência de descritores com controle positivo**.
+Classe `avx512` (Intel e AMD): o **hash do PCM mixado** (`mix.pcm_f32_sha256`
+do `audio.json` — a entrada exata do codificador, que a frota entrega igual
+nas duas famílias) tem de bater, e o `.opus` decodificado fica sob o **teto
+do lock** (base medida −80,9 dBFS + margem 6 = −74,9, abaixo de −60) — o log
+diz "PCM idêntico; codec dentro do teto". Classe `avx2`: o PCM diverge no cru
+e a nulidade não é audibilidade — a validação é por **descritores por fala**
+(loudness, F0 mediana `pitch_f0`, centróide, duração) contra tetos do lock,
+derivados da frota, com **controle positivo** em toda execução (+0,5 dB,
++20 cents, fala trocada, 50 ms de corte têm de reprovar, nomeando o
+descritor; teto que não pega é `TETO_NAO_DISCRIMINA`). Sem o teto da classe,
+o job **recusa** ("lock incompleto") — nunca verde por omissão. `audio.json`
+sem o hash do PCM é dívida do fiscal de redublagem.
 
 **Prova de bytes é contra o HEAD, nunca cópia contra cópia**:
 `git diff --exit-code -- '*.opus'`. Uma "prova" que comparou arquivos

@@ -311,6 +311,19 @@ def fiscal_redublagem(fid):
         achados.append(
             f"os momentos do Dado mudaram sem redublar ({'; '.join(partes)}). "
             f"Rode: python3 -m estudio_suite dublar {fid}")
+
+    # CP-012: o hash do PCM mixado e CONTRATO do audio.json — a decisao do
+    # dono (24/09/2026) apoiou a prova de bytes NELE (a entrada exata do
+    # codificador, estavel Intel x AMD-avx512 na medicao da CP-011).
+    # Manifesto sem o campo e dublagem anterior a CP-012 — o fiscal acusa a
+    # divida: sem o hash, o job dublador nao tem canônico para comparar, e
+    # a prova de bytes fica sem testemunha. Resolve com o mesmo comando.
+    if not (gravado.get("mix") or {}).get("pcm_f32_sha256"):
+        achados.append(
+            f"audio.json sem mix.pcm_f32_sha256 — dublagem anterior a CP-012, "
+            f"sem o contrato do PCM mixado que a prova de bytes do job "
+            f"compara (a entrada exata do codificador). Rode: "
+            f"python3 -m estudio_suite dublar {fid}")
     return achados
 
 

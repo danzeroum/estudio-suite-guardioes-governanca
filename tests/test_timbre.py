@@ -94,7 +94,9 @@ def _dublagem(clipes, earcons=None):
     d = FILMES / FANTASMA / "audio"
     d.mkdir(parents=True, exist_ok=True)
     manifesto = {"filme": FANTASMA, "clipes": clipes,
-                 "ambiente": _voz.ancora()["ambiente"]}
+                 "ambiente": _voz.ancora()["ambiente"],
+                 # CP-012: dublagem "em dia" nasce com o contrato do PCM
+                 "mix": {"pcm_f32_sha256": "f" * 64}}
     if earcons is not None:
         manifesto["earcons"] = earcons
     (d / "audio.json").write_text(

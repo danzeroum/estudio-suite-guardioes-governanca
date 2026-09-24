@@ -24,7 +24,8 @@
   "taxa_hz": 48000,
   "canais": 1,
   "loudness_alvo_lufs": -16.0,
-  "true_peak_alvo_dbtp": -2.0
+  "true_peak_alvo_dbtp": -2.0,
+  "pcm_f32_sha256": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
  },
  "earcons": [
   {

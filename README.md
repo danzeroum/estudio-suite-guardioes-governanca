@@ -196,17 +196,22 @@ dez"). Não existe roteiro de áudio separado. Desde a CP-005, o **timbre animal
   −16 LUFS. Clipe que estoura o tempo da legenda **reprova**: nunca
   time-stretch, nunca reamostrar — encurta-se a legenda. No CI, o job `dublador`
   roda **só para filmes que declaram `audio: true`** (lido do próprio `filme.js` —
-  filme mudo não aciona) e aplica a **prova por classe de SIMD** (CP-011): na
-  classe da âncora, cada `.opus` regenerado tem de ser **byte a byte** o
-  commitado; nas demais, o veredito compara durações por fala e mede o
-  **resíduo de nulidade** nos dois pontos (mix pré-opus e `.opus` decodificado),
-  sempre com hash **por etapa** (PCM cru → prosódia → timbre → mix → `.opus`),
-  classe, máquina e números no artefato de identidade. Medido na frota:
-  Intel com AVX-512 reproduz os bytes (6/6, duas gerações de Xeon); AMD com
-  `avx512f` visível entrega o mesmo PCM e diverge só na codificação (−81 dBFS);
-  AMD sem `avx512f` diverge no PCM (−38 dBFS — audivel, acima do piso de
-  −60 dBFS da tolerância, que por isso **não existe**: vermelho com veredito e
-  números, não verde de loteria — a decisão de caminho está na CP-011).
+  filme mudo não aciona) e aplica a **prova por classe e por etapa de SIMD**
+  (CP-012, executando a decisão do dono de 24/09/2026 sobre a medição da
+  CP-011): classe `avx512` (Intel e AMD) exige o **hash do PCM mixado**
+  (`mix.pcm_f32_sha256` do `audio.json` — a entrada exata do codificador,
+  entregue igual pelas duas famílias na medição) e deixa o `.opus` sob
+  **tolerância decodificada** (teto do lock: base medida −80,9 dBFS + margem
+  6 = −74,9, abaixo do piso de −60) — o log diz "PCM idêntico; codec dentro
+  do teto"; classe `avx2`, onde o PCM diverge no cru, é validada por
+  **equivalência de descritores por fala** (loudness, F0 mediana `pitch_f0`,
+  centróide espectral, duração — `audio-suite` no runner) contra tetos do
+  lock derivados da frota, com **controle positivo** em toda execução: +0,5 dB,
+  +20 cents, fala trocada do mesmo guardião e 50 ms de corte têm de reprovar,
+  nomeando o descritor — teto que não pega é `TETO_NAO_DISCRIMINA`. Sem o
+  teto da classe no lock, o job **recusa** (lock incompleto) — nunca verde
+  por omissão. Hash **por etapa** (PCM cru → prosódia → timbre → mix →
+  `.opus`), classe, máquina e números seguem no artefato de identidade.
 - No player, o botão **Som nasce desligado**; sem trilha, ele nem aparece.
   `renderizar(t)` segue pura: o áudio é escravo do tempo, nunca dono dele.
 - O **fiscal de redublagem** reprova quem edita legenda sem redublar — mesmo
