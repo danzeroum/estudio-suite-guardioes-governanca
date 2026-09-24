@@ -127,9 +127,26 @@ proposta:
       7. Worklog, corpo dos PRs e resumo final. Pare.
 
   resultado_da_medicao:
-    quando: "a preencher (N da frota: abaixo; frota: fase 5)"
-    fracao_da_frota: "a preencher — ver n_da_frota abaixo"
-    n_da_frota: "a preencher — o calculo vive aqui e no teste que o reproduz"
+    quando: "2026-09-25 (N da frota, a partir dos artefatos das CPs 009/011/012); frota: fase 5"
+    fracao_da_frota: >
+      38/97 execucoes com avx512f VISIVEL (0,39175) — TODAS as que
+      mediram lscpu: CP-009 1/8, CP-011 10/28 e CP-012 27/61 (36 das
+      execucoes contadas pela CP-012 + as 25 copias dos 3 dispatches
+      CANCELADOS, que mediram lscpu antes do cancelamento — sorteio
+      real da frota, contam; os artefatos foram baixados e conferidos
+      copia a copia). SEM as canceladas: 29/72 (0,40278) — registrada
+      como alternativa; a decisao de incluir ou excluir NAO muda o N.
+      Registro maquina-legivel: harness/frota/execucoes.json (e dele
+      que o teste recalcula — o numero e reproduzivel, nao afirmado).
+    n_da_frota: >
+      N = 8: o menor N com P(nehuma copia AVX-512 no disparo) <= 2%.
+      Com p = 38/97: P(zero) = (59/97)^N — N=7 da 0,0308 (> 2%), N=8 da
+      0,01873 (<= 2%). Com a fracao alternativa 29/72: N=8 da 0,01618
+      — o mesmo N pelas duas contagens, com margem. O N mora no bloco
+      frota do voz.lock (amostragem: 8), lido pelo workflow via
+      ci/pins_do_lock.py --amostragem-n — o YAML nunca o digita. Lock
+      sem o bloco frota e lock INCOMPLETO (recusa nomeada, nunca um
+      numero chutado).
     tabela_frota: []
     execucoes: 0
 

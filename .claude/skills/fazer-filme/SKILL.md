@@ -58,9 +58,9 @@ funciona em qualquer host); dublar direto só funciona se o ambiente da máquina
 lock — e o próprio dublar confere e recusa na divergência (incluindo a classe de SIMD,
 lida de flags medidas e gravada no `audio.json`). Desde a CP-012 o `audio.json` também
 carrega o **hash do PCM mixado** (`mix.pcm_f32_sha256`) — o contrato que o job dublador
-prova por classe: `avx512` exige o hash bater com o codec sob teto decodificado; `avx2`
-é validada por descritores por fala com controle positivo. Sem o hash, o fiscal de
-redublagem aponta a dívida. As vozes e poses não se listam aqui:
+prova (CP-013): cópias **AVX-512 visíveis** exigem o hash bater com o codec sob teto
+decodificado; cópias **avx2 saem cedo como observação** (sem gate, sem build — a
+decisão do dono de 24/09/2026). Sem o hash, o fiscal de redublagem aponta a dívida. As vozes e poses não se listam aqui:
 `orientar` e `inventario` respondem.
 
 ## 4. Quando a história pede algo que não existe

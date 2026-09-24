@@ -18,14 +18,17 @@ O que ela decide, com numeros e no log, para CADA execucao:
   O log diz "PCM identico; codec dentro do teto X". PCM divergente na
   classe avx512 e VERMELHO nomeado — a frota medida entrega igual.
 
-  classe avx2  ->  EQUIVALENCIA POR DESCRITORES, por fala, no RUNNER
-  (ci/equivalencia_descritores.py, com a audio-suite): o PCM diverge
-  no cru (30/30 falas, CP-011) e o null test nao e a pergunta certa —
-  a nulidade nao e audibilidade. Esta prova (na imagem) publica o
-  estado do PCM ("PCM diferente (classe avx2)") e as DURACOES POR FALA
-  do manifesto, e entrega os WAVs decodificados para o passo do runner
-  medir loudness, F0 mediana (pitch_f0) e centroide contra os tetos do
-  lock — com CONTROLE POSITIVO provando que os tetos discriminam.
+  classe avx2  ->  CP-013: SAIDA CEDO — a copia avx2 nem chega aqui:
+  classifica (voz.py), publica classe e identidade, mede os
+  descritores da ANCORRA como observacao (ci/observacao_ancora.py,
+  sem gate, sem build) e termina NEUTRA. Este script segue sabendo
+  lidar com a classe (o ramo abaixo publica o estado do PCM e as
+  duracoes — heranca honesta da CP-012), mas no workflow da CP-013
+  ele roda NAS CÓPIAS AVX-512 — a prova decisiva da decisao (e) do
+  dono. Nenhum teto de descritor vira gate; os tetos de descritores
+  NAO EXISTEM no lock (a recusa antiga do passo de descritores foi
+  aposentada com ele: o passo saiu do workflow; o script e o
+  instrumento que o media segue no repositorio, testado).
 
   CONTROLE POSITIVO DO TETO DO CODEC (classe avx512): ruido injetado
   6 dB acima do teto no .opus regenerado (decodifica, injeta,
@@ -34,11 +37,12 @@ O que ela decide, com numeros e no log, para CADA execucao:
   TETO_NAO_DISCRIMINA — parada nomeada, nunca verde.
 
   LOCK INCOMPLETO: sem o teto do codec (tolerancia.residuo_max_dbfs),
-  ESTE passo recusa (saida 2, nomeando). Sem os tetos de descritores
-  (tolerancia.descritores_*), a recusa e do PASSO DO RUNNER — quem os
-  julga — depois de medir e publicar os deltas desta execucao: a fase
-  de medicao colhe os numeros, e verde por omissao nao existe em passo
-  nenhum.
+  ESTE passo recusa (saida 2, nomeando). CP-013: os tetos de
+  descritores da classe avx2 NAO entram no lock como gate (a decisao
+  (e) do dono retirou a avx2 do gate; a recusa antiga era do passo de
+  descritores, que saiu do workflow — verde por omissao segue nao
+  existindo: quem sai cedo declara classe e veredito, e o AGREGADOR
+  exige artefato legivel de TODA copia).
 
 Os DOIS pontos de residuo sao sempre medidos e publicados (diagnostico
 herdado da CP-011): mix pre-opus regenerado x commitado decodificado, e
@@ -368,12 +372,10 @@ def main() -> int:
                        "INCOMPLETO para a classe avx512 (CP-012): a prova "
                        "de bytes do PCM exige o teto do codec para julgar "
                        "a codificacao; recusa, nunca verde por omissao")
-    elif classe_runner != classe_ancora and len(tetos_desc) < len(CHAVES_DESCRITORES):
-        faltam = sorted(set(CHAVES_DESCRITORES) - set(tetos_desc))
-        print(f"   (lock incompleto para a avx2: faltam {', '.join(faltam)} — "
-              f"a RECUSA e do passo de descritores, que mede ESTA execucao "
-              f"antes de recusar; verde por omissao nao existe em passo "
-              f"nenhum)")
+    elif classe_runner != classe_ancora:
+        print("   (CP-013: a classe avx2 sai cedo no workflow — observacao "
+              "sem gate e sem build; este ramo e heranca honesta da CP-012, "
+              "os tetos de descritores NAO existem no lock e nenhum o pede)")
 
     relatorio, vermelho, instrumento = [], [], []
     wavs_para_compare = []

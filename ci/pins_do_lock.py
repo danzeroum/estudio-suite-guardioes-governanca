@@ -31,6 +31,13 @@ Comportamento:
                           quatro tetos; sem eles, saida 2 nomeando (o
                           passo mede e publica, o veredito nao fica
                           verde por omissao)
+  --amostragem-n         imprime o N de copias de cada disparo do job
+                          dublador (CP-013, bloco frota do lock) — o
+                          numero DERIVADO da fracao medida da frota
+                          (menor N com P(zero copia AVX-512) <= 2%),
+                          recalculavel de harness/frota/execucoes.json
+                          pelo teste; sem o bloco, saida 2 nomeando
+                          (lock incompleto — o workflow nunca chuta)
   --conferir python,numpy,scipy
                           mede o ambiente EFETIVO (o mesmo
                           ambiente_instalado() do dublar) e confere as
@@ -126,11 +133,12 @@ def conferir(chaves: list) -> int:
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     acoes = ("--so", "--python", "--threads", "--classe-simd",
-             "--teto-residuo", "--tetos-descritores", "--conferir")
+             "--teto-residuo", "--tetos-descritores", "--amostragem-n",
+             "--conferir")
     if not argv or argv[0] not in acoes:
         print("uso: pins_do_lock.py --so numpy,scipy | --python | --threads | "
               "--classe-simd | --teto-residuo | --tetos-descritores | "
-              "--conferir python,numpy,scipy", file=sys.stderr)
+              "--amostragem-n | --conferir python,numpy,scipy", file=sys.stderr)
         return 64
     flag = argv[0]
     if flag == "--python":
@@ -256,6 +264,41 @@ def main(argv=None) -> int:
                       f"ilegivel", file=sys.stderr)
                 return 2
         print(" ".join(valores))
+        return 0
+    if flag == "--amostragem-n":
+        # CP-013: o N da amostragem da frota vem do bloco `frota:` do lock —
+        # a UNICA morada do numero (derivado da fracao medida; o teste o
+        # recalcula de harness/frota/execucoes.json e confere contra o
+        # lock). Sem o bloco, saida 2 nomeando: o planejar do workflow nao
+        # monta matrix com numero chutado — recusa, nunca verde por omissao.
+        if len(argv) != 1:
+            print("ERRO: --amostragem-n nao recebe valor — o N vem do lock",
+                  file=sys.stderr)
+            return 64
+        fr = voz.frota()
+        if "amostragem" not in fr:
+            print("ERRO: voz.lock sem frota.amostragem — lock INCOMPLETO "
+                  "(CP-013): o job dublador nao sabe quantas copias a "
+                  "amostragem da frota exige (N derivado da fracao medida, "
+                  "teto de 2% de P(zero copia AVX-512)); recusa nomeada, "
+                  "nunca um N chutado", file=sys.stderr)
+            return 2
+        try:
+            n = int(str(fr["amostragem"]).strip())
+        except ValueError:
+            print(f"ERRO: a ancora de amostragem ({fr['amostragem']!r}) nao e "
+                  f"inteiro — lock ilegivel", file=sys.stderr)
+            return 2
+        if n < 1:
+            print(f"ERRO: ancora de amostragem {n} < 1 — lock ilegivel",
+                  file=sys.stderr)
+            return 2
+        if n > 12:
+            print(f"ERRO: ancora de amostragem {n} > 12 — a matrix do job "
+                  f"dublador nao comporta (limite do workflow); recalculou "
+                  f"a frota por CP com medicao nova?", file=sys.stderr)
+            return 2
+        print(n)
         return 0
     if len(argv) != 2:
         print("ERRO: " + flag + " exige a lista de chaves (ex. numpy,scipy)",

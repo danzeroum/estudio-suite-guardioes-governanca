@@ -16,6 +16,16 @@ CP-009: o quarto modo e o NUMERO DE THREADS (--threads), para o
 CP-009); valor digitado na chamada e recusado (o numero vem do lock);
 threads nao e pin pip (e a sessao do onnxruntime); lock SEM threads e
 pergunta sem resposta, saida 2 nomeando o lock incompleto.
+
+CP-013: o quinto modo e a AMOSTRAGEM DA FROTA (--amostragem-n): o N
+de copias de cada disparo, DERIVADO da fracao medida (o menor N com
+P(nenhuma copia AVX-512) <= 2%). O calculo e REPRODUZIDO aqui a
+partir do registro (harness/frota/execucoes.json — todas as execucoes
+com lscpu das CPs 009/011/012) e conferido contra o valor do lock: o
+numero e reproduzivel, nao afirmado. Lock sem o bloco frota e lock
+INCOMPLETO (saida 2 nomeando) — o workflow nunca chuta o tamanho da
+matrix. E o teste structura o mesmo contrato no dublador.yml: o N vem
+do lock, nunca digitado no YAML.
 """
 import importlib.util
 import io
@@ -118,6 +128,88 @@ def main():
                 f"(rc {rc}, {erro.getvalue().strip()[:80]!r})")
         finally:
             _voz.LOCK = _lock_real
+
+    # --- CP-013: a amostragem da frota — o N do lock --------------------
+    # O job dublador dispara N copias por disparo; o N vem do bloco frota
+    # do lock (derivado da fracao medida). A chamada aqui so pergunta.
+    from estudio_suite import voz as _voz_frota
+    r = _cli("--amostragem-n")
+    _n_lock = int(_voz_frota.frota()["amostragem"])
+    chk(r.returncode == 0 and r.stdout.strip() == str(_n_lock),
+        f"--amostragem-n -> {_n_lock} == frota.amostragem do lock "
+        f"(exit {r.returncode}, {r.stdout.strip()!r})")
+
+    # --amostragem-n com valor e recusado: o N vem do lock, de nenhum outro
+    # lugar — o workflow montar matrix com numero proprio e o defeito que
+    # a CP-013 fecha (o chute substituiria a medicao da frota)
+    r = _cli("--amostragem-n", "12")
+    chk(r.returncode == 64 and "nao recebe valor" in r.stderr,
+        f"--amostragem-n com valor e recusado (exit {r.returncode}, "
+        f"{r.stderr.strip()[:60]!r})")
+
+    # --- o calculo de N reproduz o valor do lock a partir do registro ---
+    # A aceite da CP-013: "o calculo de N reproduz o valor do lock a partir
+    # das execucoes registradas" — fracao medida, menor N com P(zero
+    # avx512) <= 2%, tudo lido de harness/frota/execucoes.json.
+    import json as _json
+    _frota = _json.loads((RAIZ / "harness" / "frota" / "execucoes.json")
+                         .read_text(encoding="utf-8"))["execucoes"]
+    _teto = float(_voz_frota.frota().get("p_zero_2pct", "0.02"))
+
+    def _n_minimo(regs):
+        p = sum(1 for x in regs if x["avx512f"]) / len(regs)
+        n = 1
+        while (1 - p) ** n > _teto:
+            n += 1
+        return n, p
+
+    _n_calc, _p = _n_minimo(_frota)
+    _fracao = _voz_frota.frota()["fracao_avx512f"]
+    chk(_n_calc == _n_lock,
+        f"o N recalculado do registro ({_n_calc}, p={_p:.5f} = "
+        f"{sum(1 for x in _frota if x['avx512f'])}/{len(_frota)}) == o do "
+        f"lock ({_n_lock}) — P(zero)={((1 - _p) ** _n_calc):.5f} <= {_teto}")
+    chk(_fracao == f"{sum(1 for x in _frota if x['avx512f'])}/{len(_frota)}",
+        f"a fracao do lock ({_fracao}) e a do registro "
+        f"({sum(1 for x in _frota if x['avx512f'])}/{len(_frota)})")
+    _sem_canceladas = [x for x in _frota if not x.get("cancelada")]
+    _n_alt, _ = _n_minimo(_sem_canceladas)
+    chk(_n_alt == _n_lock,
+        f"sem as 25 copias canceladas o N continua {_n_alt} == lock — a "
+        f"decisao de inclui-las nao move o numero ( registrado na CP-013)")
+    chk(len(_frota) >= 90,
+        f"o registro carrega a frota inteira ({len(_frota)} execucoes — "
+        f"CP-009 8 + CP-011 28 + CP-012 61, canceladas inclusas)")
+
+    # --- lock sem o bloco frota: pergunta sem resposta, falta nomeada -----
+    _lock_real2 = _voz_frota.LOCK
+    with _tf.TemporaryDirectory() as _tmp2:
+        sem_frota = Path(_tmp2) / "voz.lock"
+        sem_frota.write_text(
+            _lock_real2.read_text(encoding="utf-8").replace("frota:\n", "frota-removido:\n"),
+            encoding="utf-8")
+        _voz_frota.LOCK = sem_frota
+        try:
+            saida, erro = io.StringIO(), io.StringIO()
+            with redirect_stdout(saida), redirect_stderr(erro):
+                rc = pins_do_lock.main(["--amostragem-n"])
+            chk(rc == 2 and "frota" in erro.getvalue()
+                and "INCOMPLETO" in erro.getvalue(),
+                f"lock sem frota: saida 2 nomeando o lock incompleto "
+                f"(rc {rc}, {erro.getvalue().strip()[:80]!r})")
+        finally:
+            _voz_frota.LOCK = _lock_real2
+
+    # --- o dublador.yml nao digita o N: pergunta ao lock -----------------
+    wf_dub = (RAIZ / ".github" / "workflows" / "dublador.yml").read_text(
+        encoding="utf-8")
+    import re as _re2
+    chk("--amostragem-n" in wf_dub,
+        "o dublador.yml le o N do lock (pins_do_lock.py --amostragem-n)")
+    chk(not _re2.search(r"inputs\.rodadas|RODADAS", wf_dub)
+        and "inputs:\n      rodadas:" not in wf_dub,
+        "nenhum input/env de rodadas no dublador.yml — a matrix nasce do "
+        "lock (as 'rodadas' de DUBLAGEM internas, 1 e 2, seguem existindo)")
 
     # --- a conferencia do ambiente: conforme -----------------------------
     r = _cli("--conferir", "python,numpy,scipy")

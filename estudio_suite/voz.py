@@ -293,6 +293,27 @@ def tolerancia() -> dict:
     return _bloco_raso(LOCK.read_text(encoding="utf-8"), "tolerancia")
 
 
+def frota() -> dict:
+    """O bloco `frota:` do lock (CP-013) — a amostragem da prova da frota.
+
+    Raso, lido pelo mesmo parser dos outros blocos: amostragem (N),
+    fracao_avx512f, p_zero_2pct. O N e o numero de copias de cada
+    disparo do job dublador, DERIVADO da fracao medida (38/97) como o
+    menor N com P(nenhuma copia AVX-512) <= 2% — a decisao do dono
+    (24/09/2026, saida (e)): sem amostra decisiva e vermelho nomeado,
+    nunca verde por omissao, e o tamanho da amostra e calculo
+    registrado (harness/frota/execucoes.json), nao afirmado. AUSENTE
+    devolve {} — e quem precisa do N recusa nomeado (lock incompleto),
+    nunca chuta um numero.
+    """
+    if not LOCK.exists():
+        raise ErroDeDados(
+            "voz.lock nao existe. Sem ancora, nao ha dublagem: cada maquina "
+            "sintetizaria com o modelo que tivesse a mao, e o audio commitado "
+            "nao seria reproduzivel. Crie o lock ANTES de dublar.")
+    return _bloco_raso(LOCK.read_text(encoding="utf-8"), "frota")
+
+
 def _versao_pacote(nome: str) -> str:
     try:
         return importlib.metadata.version(nome)

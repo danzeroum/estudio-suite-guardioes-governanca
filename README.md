@@ -196,22 +196,28 @@ dez"). Não existe roteiro de áudio separado. Desde a CP-005, o **timbre animal
   −16 LUFS. Clipe que estoura o tempo da legenda **reprova**: nunca
   time-stretch, nunca reamostrar — encurta-se a legenda. No CI, o job `dublador`
   roda **só para filmes que declaram `audio: true`** (lido do próprio `filme.js` —
-  filme mudo não aciona) e aplica a **prova por classe e por etapa de SIMD**
-  (CP-012, executando a decisão do dono de 24/09/2026 sobre a medição da
-  CP-011): classe `avx512` (Intel e AMD) exige o **hash do PCM mixado**
-  (`mix.pcm_f32_sha256` do `audio.json` — a entrada exata do codificador,
-  entregue igual pelas duas famílias na medição) e deixa o `.opus` sob
-  **tolerância decodificada** (teto do lock: base medida −80,9 dBFS + margem
-  6 = −74,9, abaixo do piso de −60) — o log diz "PCM idêntico; codec dentro
-  do teto"; classe `avx2`, onde o PCM diverge no cru, é validada por
-  **equivalência de descritores por fala** (loudness, F0 mediana `pitch_f0`,
-  centróide espectral, duração — `audio-suite` no runner) contra tetos do
-  lock derivados da frota, com **controle positivo** em toda execução: +0,5 dB,
-  +20 cents, fala trocada do mesmo guardião e 50 ms de corte têm de reprovar,
-  nomeando o descritor — teto que não pega é `TETO_NAO_DISCRIMINA`. Sem o
-  teto da classe no lock, o job **recusa** (lock incompleto) — nunca verde
-  por omissão. Hash **por etapa** (PCM cru → prosódia → timbre → mix →
-  `.opus`), classe, máquina e números seguem no artefato de identidade.
+  filme mudo não aciona) e aplica a **prova por amostragem da frota**
+  (CP-013, executando a decisão do dono de 24/09/2026, saída (e): "a prova
+  decisiva é bytes do PCM mixado em cópia AVX-512 visível; AVX2 é observação;
+  sem amostra decisiva é vermelho nomeado"). O job dispara **N cópias** com
+  N do `voz.lock` (bloco `frota`, derivado da fração medida 38/97 — menor N
+  com P(zero cópia AVX-512) ≤ 2%; o teste recalcula de
+  `harness/frota/execucoes.json`). Cada cópia **classifica primeiro**: as
+  **AVX-512** fazem a prova completa da CP-012 — o **hash do PCM mixado**
+  (`mix.pcm_f32_sha256` do `audio.json`) tem de bater e o `.opus` decodificado
+  fica sob **tolerância decodificada** (teto do lock: base medida −80,9 dBFS +
+  margem 6 = −74,9, abaixo do piso de −60, com **controle positivo** que
+  reprova citando o número) — o log diz "PCM idêntico; codec dentro do teto";
+  as **AVX2 saem cedo**: publicam classe e identidade, medem os descritores
+  da **âncora** como **observação** (sem gate, sem build — o gate de
+  descritores morreu com o `TETO_NAO_DISCRIMINA` medido da CP-012: o controle
+  de +20 cents estava no nível do ruído da frota) e terminam **neutras**. O
+  **agregador** decide o run: verde com ≥1 cópia AVX-512 idêntica e zero
+  divergentes; `DIVERGENCIA_AVX512` nomeia a cópia; `SEM_AMOSTRA_DECISIVA`
+  (zero avx512) é vermelho nomeado — rerun; amostra ilegível reprova, nunca
+  neutra. Hash **por etapa** (PCM cru → prosódia → timbre → mix → `.opus`),
+  classe, máquina, números e veredito seguem no artefato de identidade de
+  cada cópia e no agregado do run.
 - No player, o botão **Som nasce desligado**; sem trilha, ele nem aparece.
   `renderizar(t)` segue pura: o áudio é escravo do tempo, nunca dono dele.
 - O **fiscal de redublagem** reprova quem edita legenda sem redublar — mesmo

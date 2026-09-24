@@ -103,3 +103,23 @@ tolerancia:
   base_dbfs: -80.9
   margem_db: 6
   residuo_max_dbfs: -74.9
+
+# CP-013 (decisao do dono 24/09/2026, saida (e)): a AMOSTRAGEM DA FROTA.
+# A prova decisiva e bytes do PCM mixado em copia AVX-512 visivel; a
+# fracao da frota com avx512f visivel foi MEDIDA em todas as execucoes
+# com lscpu das CPs 009, 011 e 012: 38/97 (0,39175) — o registro
+# maquina-legivel (copia, CPU, avx512f, run) mora em
+# harness/frota/execucoes.json, e o teste recalcula a fracao e o N
+# conferindo contra AQUI. N = 8: o menor N com P(nenhuma copia
+# AVX-512 no disparo) <= 2% — (59/97)^7 = 0,0308, (59/97)^8 =
+# 0,01873. Sem as 25 copias dos 3 dispatches cancelados (que mediram
+# lscpu antes do cancelamento), 29/72 daria o MESMO N=8. O workflow
+# le o N AQUI (ci/pins_do_lock.py --amostragem-n) e monta a matrix de
+# N copias — o numero nunca e digitado no YAML. Lock sem o bloco frota
+# e lock INCOMPLETO (CP-013): recusa nomeada, nunca um N chutado. O
+# objetivo da frota (>= 3 Intel e >= 3 AMD-avx512 identicas) e contado
+# pela CP nas execucoes, nao pelo workflow.
+frota:
+  amostragem: 8
+  fracao_avx512f: 38/97
+  p_zero_2pct: 0.02

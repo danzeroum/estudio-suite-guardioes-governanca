@@ -151,12 +151,24 @@ jobs:
       - name: A prova por classe de SIMD (CP-011/CP-012)
         run: python3 tests/test_prova_por_classe.py
 
-      # CP-012: a equivalência por descritores da classe avx2 — controles
-      # positivos provados nos dois sentidos (verde com tetos apertados;
-      # TETO_NAO_DISCRIMINA com teto folgado; lock incompleto recusa).
-      # Precisa da audio-suite (instalada acima, pinada) e do ffmpeg.
-      - name: A equivalência por descritores (CP-012)
+      # CP-012: a equivalência por descritores — o INSTRUMENTO que mediu a
+      # frota avx2 na CP-012 (extracao por fala, audio-suite, controles
+      # positivos como funcoes puras). Sob a CP-013 nenhum teto dele é
+      # gate (a avx2 saiu do gate por decisão do dono); o script segue
+      # testado porque a observação da âncora (ci/observacao_ancora.py)
+      # usa as MESMAS funções — o instrumento é um só. Precisa da
+      # audio-suite (instalada acima, pinada) e do ffmpeg.
+      - name: A equivalência por descritores (CP-012, instrumento)
         run: python3 tests/test_equivalencia_descritores.py
+
+      # CP-013: o AGREGADOR da prova por amostragem — veredito do run com
+      # artefatos sintéticos: {1 avx512 idêntica + 11 avx2} verde; zero
+      # avx512 SEM_AMOSTRA_DECISIVA; divergente nomeado; amostra ilegível
+      # reprova, nunca neutra; e o contrato estrutural do workflow (avx2
+      # sem build e sem gate, job obrigatório, veredito.json publicado,
+      # matrix do lock).
+      - name: O agregador da amostragem da frota (CP-013)
+        run: python3 tests/test_agregar_prova.py
 
       # CP-004/CP-007: o sexto portao, agora MEDINDO de verdade -- a
       # audio-suite esta instalada (isolada, pinada) e o job a prometeu no
