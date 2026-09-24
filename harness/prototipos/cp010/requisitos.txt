@@ -1,0 +1,14 @@
+# Ambiente ISOLADO do protótipo da CP-010 — nunca o do estúdio.
+# Pinos do ambiente de síntese do voz.lock (piper/onnxruntime/numpy/scipy):
+piper-tts==1.8.0
+onnxruntime==1.30.0
+numpy==2.1.3
+scipy==1.14.1
+# Leitura das âncoras e decodificação das portadoras (mp3 do amostras.lock):
+pyyaml
+soundfile
+# Técnica A (WORLD) — é a dependência que a CP-006 deixou "a ser aprovada";
+# aqui só no venv do protótipo:
+pyworld==0.3.5
+# O medidor: a audio-suite na branch do descritor pitch_f0 (S1, PR #44):
+audio-suite @ git+https://github.com/danzeroum/audio-suite.git@claude/compassionate-wright-qdga4q-f0

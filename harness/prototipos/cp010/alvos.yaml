@@ -1,0 +1,28 @@
+# Alvos de F0 por guardião (CP-010) — o ADJETIVO do rig dá a ORDEM; a
+# MEDIÇÃO dá a MAGNITUDE. Nada aqui é "de ouvido".
+#
+# Derivação do passo entre categorias adjacentes (medido pelo pitch_f0 da
+# audio-suite, S1, sobre a síntese do pt_BR-faber-medium em noise 0):
+#   σ_frase  = 0,44 st  desvio da mediana de F0 da MESMA voz entre 7 frases
+#                       (3 falantes × 7 frases; máx |desvio| 0,90 st)
+#   separar duas vozes em 2σ numa frase isolada: 2·√2·σ_frase = 1,24 st
+#   + erro da técnica, nos dois lados: WORLD 2 × 0,60 st (pior medido, +4 st)
+#                                     PSOLA 2 × 0,16 st
+#   => passo mínimo 1,24 + 1,20 = 2,44 st  ->  2,5 st
+#
+# Âncora: "medio" = a referência MEDIDA (mediana das medianas atuais, ~166 Hz)
+# — a voz mais usada (narrador) e a coruja ficam sem deslocamento algum.
+# Faixa total ±5 st: dentro do que o protótipo mediu com erro ≤ 16 cents
+# (PSOLA) e ≤ 60 cents (WORLD).
+categoria:
+  elefante: mais-grave      # rig: 'mais-grave'
+  aguia: medio-grave        # rig: 'medio-grave'
+  tartaruga: medio-grave    # rig: 'medio-grave'
+  coruja: medio             # rig: 'medio'
+  narrador: medio           # estudio_suite/fala.py NARRADOR: 'médio'
+  raposa: mais-agudo        # rig: 'mais-agudo' (registro titular)
+semitons:
+  mais-grave: -5.0
+  medio-grave: -2.5
+  medio: 0.0
+  mais-agudo: 2.5
