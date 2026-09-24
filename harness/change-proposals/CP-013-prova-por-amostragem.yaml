@@ -1,0 +1,293 @@
+# Mudanca proposta a partir de DECISAO DO DONO sobre EVIDENCIA medida.
+# Declarada antes de executada; fica como registro mesmo depois.
+#
+# A CP-012 fechou com TETO_NAO_DISCRIMINA ativa e quatro saidas (a-d)
+# devolvidas ao dono: todas as quatro AJUSTAM instrumento ou controle
+# DEPOIS de ver os dados (tirar o F0, engordar o controle, mudar a
+# estatistica por voz, excluir falas de instrumento instavel). O dono
+# escolheu um caminho que nao mexe em nenhum dos dois:
+#
+#   DECISAO DO DONO (24/09/2026), saida (e):
+#   "a prova decisiva e bytes do PCM mixado em copia AVX-512 visivel;
+#    AVX2 e observacao; sem amostra decisiva e vermelho nomeado"
+#
+# O que a decisao muda de verdade: a GATE da frota decide SO pela
+# identidade de bytes do PCM mixado em copias com avx512f visivel — o
+# ponto onde a CP-011 mediu Intel e AMD CONCORDANDO (4/4 amostras, s16 E
+# f32) e a CP-012 reconfirmou (2/2 Intel, 2/2 AMD-avx512, hash do
+# audio.json batendo, codec sob teto -74,9 com controle vivo). A classe
+# avx2, cuja validacao por descritores chocou no limite fisico do ruido
+# (o controle de +20 cents mede 2,02-2,87 Hz; o ruido da frota move o
+# F0 mediano em ~2,2 Hz por fala e 42,1 Hz na fala de instrumento
+# instavel), sai do gate inteira: vira OBSERVACAO publicada — sem teto,
+# sem build, sem fingir precisao que a frota mostrou que nao existe
+# (Andre Borges: separar verificacao de validacao; o gate so verifica,
+# onde a prova e exata). E a falta de amostra decisiva NAO e neutra:
+# vermelho nomeado SEM_AMOSTRA_DECISIVA, porque verde por omissao e o
+# defeito que esta suite nao comete desde a CP-008.
+#
+# Esta CP executa a decisao, prova na frota por AMOSTRAGEM (a fração
+# avx512f da frota medida decide o N) e depois conduz, pelo rito do
+# adendo, os merges #12 -> #13 -> #14.
+schema: estudio-suite/change-proposal@1
+
+proposta:
+  id: CP-013
+  titulo: "A prova por amostragem da frota: bytes do PCM mixado em cópias AVX-512 visíveis; AVX2 sai cedo como observação; falta de amostra decisiva é vermelho nomeado"
+  autor: agente/curador
+  criada_em: "2026-09-25T00:00:00Z"
+  estado: em-execucao
+
+  sinal:
+    tipo: decisao-do-dono-sobre-evidencia-medida
+    chave: "cp012-teto-nao-discrimina-resolvido-por-decisao-amostragem-da-frota"
+    evidencia: >
+      CP-012, 35 execucoes no head novo: classes avx512 com PCM mixado
+      IGUAL (hash f32 do audio.json; Intel 2/2 e AMD-avx512 2/2) e codec
+      sob o teto -74,9 dBFS reconfirmado (-80,9/-83,14 medidos; controle
+      do codec reprovando com numero, -68,63/-68,9). Classe avx2: o
+      controle positivo de +20 cents desloca a F0 mediana em 2,02-2,87 Hz
+      e o ruido da propria frota a move em ~2,2 Hz por fala (42,1 Hz na
+      fala 22, p10/elefante, timbre misto voz+trompa com p10-p90 de
+      132,85-478,42 Hz na PROPRIA ancora) — TETO_NAO_DISCRIMINA: nenhum
+      teto de F0 aceita a frota E pega o controle. As quatro saidas
+      registradas (a-d) ajustam instrumento ou controle; a decisao do
+      dono (e) nao ajusta nada: troca a pergunta do gate.
+    decisao_do_dono: >
+      24/09/2026, saida (e), registrada na abertura desta CP: "a prova
+      decisiva e bytes do PCM mixado em copia AVX-512 visivel; AVX2 e
+      observacao; sem amostra decisiva e vermelho nomeado". Resolve a
+      parada da CP-012 SEM tocar em doutrina alheia: nenhum .opus
+      commitado muda (o canônico continua sendo o HEAD); nenhum teto de
+      descritor entra no lock como gate (o bloco tolerancia segue com o
+      teto do codec, o UNICO null test medido e estreito); o job segue
+      obrigatorio, sem continue-on-error; e a validacao perceptual avx2
+      fica publicada como observacao — com os numeros e a pergunta
+      honesta (fragilidade do rastreador ou mudanca real de vozeamento?),
+      nao com um teto morto.
+
+  plano:
+    - >
+      1. N DERIVADO DA FROTA: com TODAS as execucoes com lscpu das CPs
+      009, 011 e 012 (as 8 da CP-009, as 28 da CP-011 e as 61 da CP-012
+      — incluindo as 25 dos 3 dispatches cancelados, que mediram lscpu
+      antes do cancelamento; artefatos baixados e conferidos), calcular
+      a fracao com avx512f visivel e escolher o menor N com
+      P(nenhuma copia AVX-512) <= 2%. N mora num lugar SO (voz.lock,
+      bloco frota) e e lido pelo workflow — nunca digitado no YAML.
+      Fracao, amostras e calculo registrados nesta CP.
+    - >
+      2. SAIDA CEDO: o primeiro passo de cada copia classifica pelo
+      classificador UNICO de voz.py. AVX2 -> publica classe e
+      identidade, mede os descritores da ANCORRA como observacao (sem
+      gate, sem build — a medicao da ancora nao exige build: o runner
+      decodifica o .opus commitado com libsndfile e o audio-suite mede
+      os segmentos WAV; a medicao do REGENERADO exigiria build e nao
+      roda: observacao nao paga o preco do build porque nao e gate) e
+      termina NEUTRA. AVX-512 -> build e prova completa da CP-012: PCM
+      identico (hash do audio.json) + codec sob teto + controle do
+      teto VIVO (ruido 6 dB acima reprova citando o numero).
+    - >
+      3. AGREGADOR: um job final le os artefatos de TODAS as copias.
+      Verde se houver >= 1 copia AVX-512 com PCM identico E ZERO copias
+      AVX-512 divergentes. Vermelho em qualquer divergencia AVX-512
+      (DIVERGENCIA_AVX512, com a copia NOMEADA e os numeros) ou em zero
+      copias AVX-512 (SEM_AMOSTRA_DECISIVA: o caminho de volta e o
+      rerun nomeado). Artefato de copia ausente ou corrompido, e copia
+      AVX-512 que nao provou (build falhou, prova nao rodou): "amostra
+      ilegivel" — reprova, nunca conta como neutra. O resumo do job
+      lista copia, CPU, classe, prova e veredito.
+    - >
+      4. OBSERVACAO REGISTRADA: os descritores continuam publicados —
+      os da ancora medidos em cada copia avx2 (observacao da frota), e
+      os deltas avx2 da CP-012 registrados (a frota avx2 move a altura
+      em ~+-20 cents por fala). Issue no audio-suite sobre o salto de
+      42,1 Hz de F0 na fala p10 (voz com timbre vocodado), com o
+      arquivo reproduzivel e a pergunta "fragilidade do rastreador ou
+      mudanca real de vozeamento?". Registro na CP-010 (SEM mudar o
+      estado dela — segue proposta) de que o caminho AVX2 varia a
+      altura em ~+-20 cents por fala: contexto para os passos de 2,5 st.
+    - >
+      5. PROVA NA FROTA: disparos do job ate somar >= 3 copias Intel e
+      >= 3 AMD-avx512 com PCM identico, com TETO DE 6 DISPAROS;
+      registrar tambem quantas vezes SEM_AMOSTRA_DECISIVA ocorreu (a
+      parada so dispara se repetir 3 disparos SEGUIDOS). Faltarem
+      amostras -> AMOSTRA_INSUFICIENTE:<classe>, sem merge.
+    - >
+      6. MERGES, pelo rito do adendo (CPs sem parada ativa, checks
+      verdes no head exato, atualizado com o main, sem --admin, sem
+      force-push, reversao com git revert -m 1 + MAIN_QUEBROU se o main
+      quebrar): #12, depois #13 (rebase; a CP-010 CONTINUA proposta —
+      tecnica e escuta sao decisao do dono), depois #14 SO com roteiro
+      e storyboard verdes com LEI_TOKEN e os artigos 38 e 10 conferidos
+      contra o lei.lock. Sem LEI_TOKEN: #14 pronto (rebase, README
+      sincronizado, secao do test_navegador provada pelo B aplicada,
+      controle negativo de novo) e AGUARDANDO_LEI.
+    - >
+      7. Worklog, corpo dos PRs e resumo final. Pare.
+
+  resultado_da_medicao:
+    quando: "a preencher (N da frota: abaixo; frota: fase 5)"
+    fracao_da_frota: "a preencher — ver n_da_frota abaixo"
+    n_da_frota: "a preencher — o calculo vive aqui e no teste que o reproduz"
+    tabela_frota: []
+    execucoes: 0
+
+  doutrina:
+    - >
+      Unica prova de merito: BYTES do PCM mixado em copia AVX-512
+      visivel. Nenhum teto de descritor vira gate — o bloqueco
+      tolerancia do voz.lock segue com o teto do codec (base -80,9 +
+      margem 6 = -74,9, abaixo de -60), que e o unico null test medido,
+      estreito e com controle vivo. Nenhum .opus commitado muda: o
+      canônico e o HEAD.
+    - >
+      O job continua OBRIGATORIO, sem continue-on-error: classificacao,
+      prova e agregacao publicam cada uma o proprio veredito (Andre
+      Borges), e SEM_AMOSTRA_DECISIVA e VERMELHO, nunca verde — a falta
+      de amostra decisiva e um estado medido e nomeado, nao um atalho.
+    - >
+      N, classe e teto do codec vem de UM lugar so: o voz.lock (blocos
+      frota, ambiente e tolerancia), lidos pelo mesmo parser de
+      estudio_suite/voz.py — o workflow nunca digita nenhum deles.
+    - >
+      A copia avx2 termina NEUTRA porque a classe dela nao decide nada
+      no gate — nao porque falhou calada: a classe, a identidade e a
+      observacao (medida ou falha NOMEADA da medida) sao publicadas no
+      artefato. Verde por omissao nao existe em passo nenhum; neutra
+      por classe declarada e estado medido, sim.
+    - >
+      Verificacao separada de validacao: o gate so VERIFICA bytes onde
+      a prova e exata (PCM mixado em avx512); a validacao perceptual
+      AVX2 fica como observacao publicada — sem fingir a precisao de 20
+      cents que a frota mostrou que o instrumento nao tem.
+
+  tecnica:
+    n_da_frota: >
+      harness/frota/execucoes.json registra TODAS as execucoes com lscpu
+      das CPs 009/011/012 (a copia de cada run, o CPU, avx512f medido) —
+      e deste arquivo que o TESTE recalcula a fracao e o N e confere
+      contra o valor do lock: o numero e reproduzivel a partir dos
+      dados registrados, nao afirmado. O N mora no bloco frota do
+      voz.lock (amostragem), lido por ci/pins_do_lock.py
+      --amostragem-n; o planejar do workflow monta a matrix a partir
+      dele. Lock sem o bloco frota e lock INCOMPLETO: recusa nomeada.
+    saida_cedo: >
+      .github/workflows/dublador.yml: o passo de identidade classifica
+      o runner (classificador unico de voz.py) ANTES de qualquer passo
+      caro; os passos de build/dublar/prova ganham a condicao de classe
+      avx512; a copia avx2 roda so a observacao (ci/observacao_ancora.py:
+      decodifica o .opus commitado da ancora com libsndfile — o mesmo
+      container OGG-Opus, medido — extrai cada fala pelo [em, em+dur]
+      do audio.json e mede os QUATRO descritores com o audio-suite
+      pinada, o MESMO instrumento da CP-012) e termina neutra: a falha
+      da observacao e publicada no artefato (status falhou:<causa>) e
+      NAO reprova a copia — observacao nao e gate; a classificacao
+      falhando, a copia reprova (classe e o veredito da copia).
+    agregador: >
+      ci/agregar_prova.py le o diretorio de artefatos (um subdir por
+      copia, o veredito.json de cada uma) e a lista de copias esperadas
+      (a matrix que o planejar declarou); decide: verde (>=1 avx512
+      identica, zero divergente, zero ilegivel), DIVERGENCIA_AVX512
+      (copia nomeada, com numeros), SEM_AMOSTRA_DECISIVA (zero avx512),
+      amostra ilegivel (ausente, corrompida, classe indeterminada ou
+      avx512 sem prova). O resumo vai para o GITHUB_STEP_SUMMARY:
+      copia, CPU, classe, prova, veredito — e o agregado.json vai para
+      o artefato do job.
+
+  escopo:
+    sprint_16: >
+      Esta CP; harness/frota/execucoes.json (novo — o registro das
+      execucoes com lscpu); voz.lock (bloco frota: amostragem N);
+      estudio_suite/voz.py (leitor do bloco frota);
+      ci/pins_do_lock.py (--amostragem-n); .github/workflows/dublador.yml
+      (matrix do lock, saida cedo por classe, job agregar, sem o passo
+      de descritores como gate); ci/observacao_ancora.py (novo);
+      ci/agregar_prova.py (novo); ci/prova_por_classe.py (comentarios:
+      a classe avx2 sai cedo na CP-013, a prova aqui e a das avx512);
+      tests/test_agregar_prova.py (novo);
+      tests/test_pins_do_lock.py (amostragem do lock);
+      tests/test_cp013_workflow.py (novo — contrato estrutural do
+      workflow: avx2 sem build e sem gate, job obrigatorio, N do lock);
+      .github/workflows/suite.yml (os testes novos como passos);
+      README.md, CLAUDE.md, .claude/skills/fazer-filme/SKILL.md onde
+      descrevem a prova (a decisao (e) muda o texto); corpo do PR #12.
+
+  impacto:
+    - "harness/frota/execucoes.json :: o registro que reproduz o N (novo)"
+    - "voz.lock :: bloco frota (amostragem: N; fracao medida) — lock e caminho protegido, CP declarada"
+    - "estudio_suite/voz.py :: leitor do bloco frota (uma fonte, o parser raso)"
+    - "ci/pins_do_lock.py :: --amostragem-n (o workflow pergunta, nunca digita)"
+    - ".github/workflows/dublador.yml :: matrix do lock, saida cedo, agregador"
+    - "ci/observacao_ancora.py :: a observacao da ancora na classe avx2 (novo)"
+    - "ci/agregar_prova.py :: o veredito da frota por amostragem (novo)"
+    - "ci/prova_por_classe.py :: comentarios da CP-013 (a prova segue a da CP-012)"
+    - "tests/test_*.py :: os contratos novos (agregador, amostragem, workflow)"
+
+  paradas_nomeadas:
+    DIVERGENCIA_AVX512:
+      status: "vigilancia ativa em toda copia avx512"
+      regra: >
+        PCM mixado divergente (ou codec acima do teto) em copia com
+        avx512f visivel: vermelho com a copia NOMEADA e os numeros — a
+        frota medida entrega o PCM igual; divergencia aqui e sintese
+        divergente, nao familia de CPU. Parada: nao merge enquanto uma
+        copia avx512 divergente nao for explicada.
+    SEM_AMOSTRA_DECISIVA:
+      status: "vermelho nomeado em toda execucao com zero copias avx512"
+      regra: >
+        Zero copias AVX-512 no run: o agregador reprova nomeando (o
+        rerun e o caminho de volta — o N do lock foi escolhido para
+        P(zero avx512) <= 2%). A parada so DISPARA se repetir em 3
+        disparos SEGUIDOS (a frota teria mudado sob os pes: recalcular
+        N por CP com medicao nova); caso contrario e o sorteio estatistico
+        que o proprio desenho previu — reroda.
+    AMOSTRA_INSUFICIENTE:
+      status: "vigilancia ativa na fase de frota"
+      regra: >
+        Classe sem as 3 amostras identicas exigidas (Intel e AMD-avx512)
+        em ate 6 disparos do job: AMOSTRA_INSUFICIENTE:<classe>, sem
+        merge — a frota e sorte, o teto estatistico nao.
+    TETO_NAO_DISCRIMINA:
+      status: "vigilancia ativa no controle do codec (CP-012, segue valendo)"
+      regra: >
+        O controle do teto do codec (ruido 6 dB acima do teto, com o
+        hash do PCM batendo) tem de REPROVAR citando o numero em toda
+        prova avx512. Controle que passa e parada nomeada — o teto que
+        nao enxerga mudanca real e tolerancia morta.
+    MAIN_QUEBROU:
+      status: "vigilancia ativa em cada merge"
+      regra: >
+        CI do main vermelho apos o merge: git revert -m 1 no main, job
+        reexecutado, parada registrada no PR. Nao se conserta o main
+        com commit novo antes de reverter.
+    AGUARDANDO_LEI:
+      status: "reservada ao #14"
+      regra: >
+        Sem LEI_TOKEN, roteiro e storyboard do filme 03 ficam INDECISO
+        (CP-002) e os artigos 38 e 10 nao sao conferiveis contra o
+        lei.lock: o PR fica pronto, sem merge, com a parada registrada.
+    REVISAO_NECESSARIA:
+      status: "reservada a decisoes fora deste plano"
+      regra: >
+        Qualquer decisao que o plano nao previu vira ponto de decisao
+        no PR — o agente nao escolhe por conta propria.
+
+  licoes:
+    (a preencher no fechamento)
+
+  risco:
+    nivel: medio
+    porque: >
+      O risco honesto e estatistico: a fracao medida (38/97 com avx512f
+      visivel, incluindo os dispatches cancelados que mediram lscpu)
+      da N=8 e P(zero avx512) ~= 1,9% por disparo — mas a frota e um
+      pool VIVO (a CP-011 ja viu o mesmo 9V74 aparecer com avx512f
+      oculto numa execucao e visivel noutra). Contencao: SEM_AMOSTRA_
+      DECISIVA e vermelho nomeado (nunca neutro), a parada so dispara
+      em 3 seguidos, e o N e recalculavel do registro (teste) no dia
+      em que a frota mudar. O segundo risco e a copia avx512 que nao
+      PROVA (infraestrutura): o agregador a trata como amostra ilegivel
+      — vermelho nomeado, rerun — nunca como neutra.
+
+  aval_humano_necessario: true   # decisao (e) ja tomada pelo dono (24/09/2026); execucao, medicao e merges desta CP

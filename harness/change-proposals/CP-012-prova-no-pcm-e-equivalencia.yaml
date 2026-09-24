@@ -42,7 +42,19 @@ proposta:
   # saídas medidas. A prova das classes avx512 (a decisão do dono) está
   # VERDE e medida na frota: PCM idêntico + codec sob teto + controle
   # reprovando, Intel e AMD.
-  estado: encerrada-com-parada
+  # ENCERRADA COM SUCESSORA: a DECISAO DO DONO (24/09/2026, saida (e)
+  # — "a prova decisiva e bytes do PCM mixado em copia AVX-512 visivel;
+  # AVX2 e observacao; sem amostra decisiva e vermelho nomeado") resolveu
+  # a parada TETO_NAO_DISCRIMINA SEM ajustar instrumento ou controle:
+  # nenhum teto de descritor entra no lock como gate, a classe avx2 sai
+  # do gate como observacao publicada e a pergunta do nivel de erro de
+  # pitch que a validacao avx2 teria de enxergar deixa de ser pergunta
+  # de GATE — os numeros medidos (o caminho avx2 varia a altura em
+  # ~10-25 cents por fala; 42,1 Hz na fala de instrumento instavel)
+  # seguem registrados aqui, na issue do audio-suite e na CP-010
+  # (contexto dos passos de 2,5 st), como observacao.
+  estado: encerrada-com-sucessora
+  sucessora: CP-013
 
   sinal:
     tipo: decisao-do-dono-sobre-evidencia-medida
