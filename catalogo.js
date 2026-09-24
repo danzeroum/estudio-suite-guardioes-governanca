@@ -38,6 +38,18 @@ window.ESTUDIO_CATALOGO=
    "local": [],
    "planos": 5,
    "titulo": "O teste do legítimo interesse"
+  },
+  {
+   "arts": [
+    10,
+    38
+   ],
+   "duracao": 35,
+   "id": "relatorio-impacto",
+   "legendas": 13,
+   "local": [],
+   "planos": 5,
+   "titulo": "O relatório de impacto"
   }
  ],
  "jogos": [
