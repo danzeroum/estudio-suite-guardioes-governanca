@@ -17,6 +17,14 @@ Comportamento:
                           para o --build-arg da imagem dubladora e o ENV
                           do job — o numero nunca e digitado em segundo
                           lugar
+  --classe-simd           imprime a classe de SIMD da ancora (CP-011)
+                          para o job decidir qual prova aplicar — a classe
+                          vem do lock, de nenhum outro lugar; lock sem a
+                          linha e lock INCOMPLETO (saida 2, nunca chute)
+  --teto-residuo          imprime o teto de residuo em dBFS (CP-011, bloco
+                          tolerancia do lock) — a tolerancia so existe
+                          com teto registrado; sem o bloco, saida 2
+                          nomeando (o job exige bytes em toda classe)
   --conferir python,numpy,scipy
                           mede o ambiente EFETIVO (o mesmo
                           ambiente_instalado() do dublar) e confere as
@@ -39,13 +47,15 @@ from estudio_suite import voz                    # noqa: E402
 
 # Chaves ancoradas que NAO sao pacote pip: python e runtime, espeak-ng
 # vem EMBUTIDO no wheel do piper (ancora por sha256 dos dados), ffmpeg e
-# libopus sao do apt, arquitetura e a CPU e threads e o numero que a
+# libopus sao do apt, arquitetura e a CPU, threads e o numero que a
 # SESSAO do onnxruntime tem de carregar (CP-009 — lido pelo dublar com
-# get_session_options, espelhado no ENV OMP/OpenBLAS/MKL da imagem).
+# get_session_options, espelhado no ENV OMP/OpenBLAS/MKL da imagem),
+# classe_simd e a classe de SIMD que o job compara com a do runner
+# (CP-011) e teto_residuo e o bloco tolerancia do lock (CP-011).
 # Pedir pin pip para elas seria imprimir um comando que nao existe -- o
 # erro nomeia a confusao.
 NAO_PIP = {"python", "espeak-ng", "ffmpeg", "libopus", "arquitetura",
-           "threads"}
+           "threads", "classe_simd", "teto_residuo"}
 
 
 def _lock() -> dict:
@@ -108,8 +118,11 @@ def conferir(chaves: list) -> int:
 
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    if not argv or argv[0] not in ("--so", "--python", "--threads", "--conferir"):
+    acoes = ("--so", "--python", "--threads", "--classe-simd",
+             "--teto-residuo", "--conferir")
+    if not argv or argv[0] not in acoes:
         print("uso: pins_do_lock.py --so numpy,scipy | --python | --threads | "
+              "--classe-simd | --teto-residuo | "
               "--conferir python,numpy,scipy", file=sys.stderr)
         return 64
     flag = argv[0]
@@ -150,6 +163,60 @@ def main(argv=None) -> int:
                   file=sys.stderr)
             return 2
         print(n)
+        return 0
+    if flag == "--classe-simd":
+        # CP-011: a classe da ancora vem DAQUI — o job compara a classe do
+        # runner (medida pelo MESMO classificador de estudio_suite/voz.py)
+        # contra este valor. Lock sem classe_simd e lock INCOMPLETO: a
+        # saida e 2 nomeando, nunca um chute.
+        if len(argv) != 1:
+            print("ERRO: --classe-simd nao recebe valor — a classe vem do lock",
+                  file=sys.stderr)
+            return 64
+        amb = _lock()
+        if "classe_simd" not in amb:
+            print("ERRO: voz.lock sem classe_simd no bloco ambiente -- lock "
+                  "INCOMPLETO (CP-011): o job dublador nao sabe qual classe "
+                  "exige bytes e qual exige tolerancia; recusa nomeada, nunca "
+                  "chute", file=sys.stderr)
+            return 2
+        classe = str(amb["classe_simd"]).strip()
+        if classe not in voz.CLASSES_SIMD:
+            print(f"ERRO: ancora de classe_simd {classe!r} fora das classes "
+                  f"conhecidas {voz.CLASSES_SIMD} — lock ilegivel",
+                  file=sys.stderr)
+            return 2
+        print(classe)
+        return 0
+    if flag == "--teto-residuo":
+        # CP-011: o teto da tolerancia vem do bloco `tolerancia:` do lock —
+        # a UNICA morada do numero. Sem o bloco, a saida e 2 nomeando: o
+        # job cai na doutrina antiga (bytes em toda classe), nunca numa
+        # tolerancia sem numero.
+        if len(argv) != 1:
+            print("ERRO: --teto-residuo nao recebe valor — o teto vem do lock",
+                  file=sys.stderr)
+            return 64
+        tol = voz.tolerancia()
+        if "residuo_max_dbfs" not in tol:
+            print("ERRO: voz.lock sem o bloco tolerancia.residuo_max_dbfs -- "
+                  "tolerancia SEM teto e afrouxar fiscal com palavra bonita: "
+                  "o job exige bytes em toda classe ate o teto ser MEDIDO na "
+                  "frota e registrado aqui por CP", file=sys.stderr)
+            return 2
+        try:
+            teto = float(str(tol["residuo_max_dbfs"]).strip())
+        except ValueError:
+            print(f"ERRO: o teto de residuo ({tol['residuo_max_dbfs']!r}) nao e "
+                  f"um numero em dBFS — lock ilegivel", file=sys.stderr)
+            return 2
+        if teto >= -60.0:
+            print(f"ERRO: o teto de residuo ({teto:g} dBFS) nao fica abaixo de "
+                  f"-60 dBFS — resíduo audivel e RESIDUO_AUDIVEL: tolerancia "
+                  f"alguma so existe abaixo do silencio de ouvido humano; "
+                  f"corrija o lock por CP com medicao", file=sys.stderr)
+            return 2
+        print(f"{teto:g}")
         return 0
     if len(argv) != 2:
         print("ERRO: " + flag + " exige a lista de chaves (ex. numpy,scipy)",

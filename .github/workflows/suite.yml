@@ -143,6 +143,14 @@ jobs:
       - name: A prosodia expressiva (CP-006)
         run: python3 tests/test_prosodia.py
 
+      # CP-011: a prova por classe de SIMD. O classificador (flags medidas,
+      # nunca fabricante), o residuo de nulidade com numero no veredito, o
+      # filtro por declaracao de audio e a borda do lock incompleto — tudo
+      # funcao pura ou dado sintetico, porque a sintese de verdade e da
+      # imagem dubladora; aqui se prova o GATE, que e o que o CI roda.
+      - name: A prova por classe de SIMD (CP-011)
+        run: python3 tests/test_prova_por_classe.py
+
       # CP-004/CP-007: o sexto portao, agora MEDINDO de verdade -- a
       # audio-suite esta instalada (isolada, pinada) e o job a prometeu no
       # env. O portao publica LUFS e true peak reais por filme; FINDING

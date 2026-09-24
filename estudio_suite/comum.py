@@ -100,6 +100,35 @@ def filmes_existentes():
                   if d.is_dir() and (d / f"{d.name}.filme.js").exists())
 
 
+def filmes_com_audio():
+    """Os filmes que DECLARAM audio, lidos do proprio filme.js (CP-011).
+
+    A declaracao `audio: true` mora no filme, nao em lista de nomes: uma
+    lista hardcoded no job dublador envelheceria no primeiro filme mudo
+    (um relatorio, um filme sem trilha) e acionaria dublagem de quem nao
+    fala. O job dublador so acorda para quem declara -- e um filme mudo
+    nao entra na lista nem aciona o job.
+    """
+    fora = []
+    for fid in filmes_existentes():
+        try:
+            d = dados_do_filme(fid)
+        except ErroDeDados as e:
+            fora.append((fid, str(e)))
+            continue
+        if d.get("audio"):
+            yield fid
+        else:
+            fora.append((fid, "nao declara audio"))
+    # A descoberta que FALHOU nao pode calar: filme ilegivel na pasta de
+    # filmes e divida apontada, nao filme ignorado em silencio.
+    if fora:
+        import sys
+        print(f"  (fora da lista de dublagem: "
+              + "; ".join(f"{fid}: {motivo}" for fid, motivo in fora)
+              + ")", file=sys.stderr)
+
+
 def jogos_existentes():
     return sorted(d.name for d in JOGOS.iterdir()
                   if d.is_dir() and (d / f"{d.name}.jogo.js").exists())

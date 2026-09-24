@@ -19,6 +19,18 @@ CP-004 ate o mix, a CP-005 acrescentando o estagio de timbre:
    A conferencia le DE VOLTA o numero efetivo da sessao e o grava no
    audio.json (ambiente.threads): o manifesto registra o MEDIDO, nao o
    pedido. Proibido monkeypatch global de onnxruntime em producao.
+   CP-011: a CLASSE DE SIMD entra pela mesma porta -- o lock declara
+   classe_simd (flags medidas, nunca fabricante), o dublar MEDE a classe
+   da maquina e grava o MEDIDO no audio.json (ambiente.classe_simd).
+   Divergencia de classe NAO e recusa de sintese (e hardware, e a prova
+   por classe precisa medir na classe divergente); a divida aparece no
+   fiscal de redublagem quando audio de classe divergente e COMMITADO.
+   E junto com a classe nasce o HASH POR ETAPA (CP-011): por fala, o
+   sha256 do PCM cru, do pos-prosodia e do pos-timbre; do mix, o hash
+   do PCM pre-opus e do .opus — em workspace/voz-etapas/ (nao
+   commitado), porque a prova de bytes do gate e contra o HEAD, e o
+   hash por etapa e o DIAGNOSTICO de onde a divergencia nasce, nao um
+   contrato do repositorio.
 3. Clipe que estoura o tempo da legenda REPROVA, apontando a legenda exata.
    Nao estica, nao reamostra para caber: encurta-se a legenda. (Converter a
    taxa 22050->48000 e mudanca de FORMATO, com duracao identica -- isso o
@@ -59,7 +71,7 @@ import unicodedata
 import wave
 from pathlib import Path
 
-from .comum import ErroDeDados, FILMES, RAIZ, dados_do_filme
+from .comum import ErroDeDados, FILMES, RAIZ, WORKSPACE, dados_do_filme
 from . import fala
 from . import prosodia as _pros
 from . import voz as _voz
@@ -277,7 +289,8 @@ def _gravar_wav(caminho: Path, pcm: bytes) -> None:
         w.writeframes(pcm)
 
 
-def mixar(clipes: list, duracao_filme: float, saida: Path, earcons=None) -> None:
+def mixar(clipes: list, duracao_filme: float, saida: Path, earcons=None,
+          pcm_saida: Path = None) -> None:
     """Clipes [(pcm, em_abs, dur)] (+ earcons [(wav, em_abs)]) -> um .opus.
 
     O ffmpeg faz a mixagem porque ja e dependencia declarada do ambiente; um
@@ -285,6 +298,13 @@ def mixar(clipes: list, duracao_filme: float, saida: Path, earcons=None) -> None
     ninguem. aresample muda o formato (22050->48000), nunca a duracao. Os
     earcons entram como entradas a mais com ganho FIXO de -10 dB -- sem
     earcons, o grafo e byte a byte o da CP-004 (a camada e aditiva).
+
+    CP-011: pcm_saida grava o MESMO grafo em WAV pcm_s16le (o mix PRE-OPUS,
+    para hash por etapa e resíduo). E uma SEGUNDA execucao do ffmpeg com o
+    MESMO filter_complex, as MESMAS entradas e os MESMOS flags de bitexact
+    -- e nao um segundo caminho de mix que pudesse divergir do mix de
+    verdade. O comando que gera o .opus permanece IDENTICO ao de sempre
+    (nenhum byte do .opus pode mudar por causa do diagnostico).
     """
     earcons = earcons or []
     with tempfile.TemporaryDirectory() as tmp:
@@ -322,6 +342,22 @@ def mixar(clipes: list, duracao_filme: float, saida: Path, earcons=None) -> None
         r = subprocess.run(cmd, capture_output=True, text=True)
         if r.returncode != 0:
             raise SystemExit(f"  ERRO: ffmpeg nao mixou:\n{r.stderr[-800:]}")
+        if pcm_saida is not None:
+            # CP-011: mesma mixagem, saida PCM -- so o codec muda. O PCM que
+            # alimenta o libopus e s16: gravar em pcm_s16le e fotografar o
+            # ponto exatamente ANTERIOR ao codec, onde o resíduo entre
+            # classes ainda nao carrega ruido de codificacao.
+            cmd_pcm = (["ffmpeg", "-y", "-nostdin", "-fflags", "+bitexact"] +
+                       entradas +
+                       ["-filter_complex", ";".join(filtros), "-map", "[aout]",
+                        "-ac", str(CANAIS), "-ar", str(TAXA),
+                        "-c:a", "pcm_s16le", "-f", "wav",
+                        "-fflags", "+bitexact", str(pcm_saida)])
+            r2 = subprocess.run(cmd_pcm, capture_output=True, text=True)
+            if r2.returncode != 0:
+                raise SystemExit(
+                    f"  ERRO: ffmpeg nao gravou o mix pre-opus (CP-011):\n"
+                    f"{r2.stderr[-800:]}")
 
 
 # ---- o comando ------------------------------------------------------------
@@ -388,6 +424,20 @@ def _clipes_por_plano(opus: Path, d: dict, dir_audio: Path, fid: str) -> list:
 
 def dublar(fid: str) -> int:
     d = dados_do_filme(fid)
+    # CP-011: o dublador so processa filme que DECLARA audio -- a
+    # declaracao mora no proprio filme.js (audio: true), nunca em lista de
+    # nomes. Dublar filme mudo criaria trilha SEM declaracao: exatamente a
+    # divida que o portao de sonorizacao aponta como "trilha sem
+    # declaracao" (vermelho, declaracao-divergente). O filme mudo continua
+    # valido por completo -- a camada de audio e aditiva; o que nao existe
+    # e dublar quem nao fala.
+    if not d.get("audio"):
+        raise ErroDeDados(
+            f"o filme {fid} nao declara audio: true no proprio filme.js — "
+            f"dublar um filme mudo criaria trilha sem declaracao (a divida "
+            f"que o portao de sonorizacao aponta como declaracao-divergente). "
+            f"Declare `audio: true` no filme ou deixe o filme mudo: o job "
+            f"dublador tambem so aciona quem declara (CP-011).")
     # CP-007: o ambiente e conferido ANTES de materializar o modelo -- nem
     # o workspace e tocado em ambiente divergente. O lock de pesos responde
     # "que modelo"; o de ambiente responde "com o que ele rodou": sem os
@@ -401,6 +451,13 @@ def dublar(fid: str) -> int:
     # GEMM do onnxruntime e as BLAS do timbre particionam no regime da
     # maquina, e o audio nasce divergente sem ninguem ter editado nada.
     threads = _voz.conferir_threads(a["ambiente"])
+    # CP-011: a classe de SIMD e conferida na MESMA porta. Lock sem
+    # classe_simd e lock INCOMPLETO — recusado, como lock sem threads e
+    # sem arquitetura. A classe MEDIDA divergente nao e recusa (e
+    # hardware: a prova por classe precisa medir na classe divergente);
+    # o MEDIDO e gravado no audio.json, e o fiscal de redublagem aponta
+    # o audio commitado de classe divergente.
+    classe = _voz.conferir_classe(a["ambiente"])
     base = _voz.materializar()
     onnx = base / f"{a['nome']}.onnx"
 
@@ -419,9 +476,11 @@ def dublar(fid: str) -> int:
     efetivo = _conferir_threads_da_sessao(voice, threads)
     # o audio.json registra o MEDIDO: as threads lidas da propria sessao
     # (== lock por construcao; a conferencia acima levantaria na
-    # divergencia). String, como todo valor do bloco ambiente do lock —
-    # o fiscal compara o dict inteiro.
-    amb = dict(amb, threads=str(efetivo))
+    # divergencia) e a CLASSE de SIMD medida na maquina (CP-011 — == lock
+    # na classe ancora; divergente, o fiscal de redublagem aponta quando
+    # o audio for commitado). Strings, como todo valor do bloco ambiente
+    # do lock — o fiscal compara o dict inteiro.
+    amb = dict(amb, threads=str(efetivo), classe_simd=str(classe))
 
     elenco = d.get("elenco", {})
     # O timbre materializa as portadoras SO se algum rig do filme declara
@@ -453,22 +512,38 @@ def dublar(fid: str) -> int:
                 f"earcon ancorado em amostras.lock -- o som do Dado e da suíte, "
                 f"e mora no lock.")
 
-    clipes, manifestos, excessos = [], [], []
+    clipes, manifestos, excessos, etapas = [], [], [], []
     cursor = 0.0
     for P in d["planos"]:
         for L in P.get("legendas") or []:
             texto, ritmo, rotulo, tim = quem_fala(P, L, elenco)
             expressao = _pros.expressao_da_fala(P, L, elenco)
             pcm, dur = sintetizar(voice, texto, _pros.ritmo_total(ritmo, expressao))
+            # CP-011: o hash por etapa fotografa a cadeia NO momento em
+            # que ela roda — pcm_cru (saida do piper/onnxruntime),
+            # pos_prosodia (pos ganho), pos_timbre (pos vocoder). A
+            # primeira etapa divergente entre classes e ONDE a
+            # divergencia nasce: medicao, nao hiptese.
+            pcm_cru = pcm
             # ordem fixa da cadeia (CP-006, snapshot em test_prosodia):
             # a voz nasce expressiva e SO ENTAO o animal entra por cima.
             pcm = _pros.aplicar_ganho(pcm,
                                       _pros.EXPRESSOES.get(expressao, {}).get("ganho_db", 0.0))
+            pcm_pos_prosodia = pcm
             if tim:
                 from . import timbre as _tim
                 pcm = _tim.aplicar(pcm, wavs_amostras[tim["portadora"]],
                                    mistura=float(tim["mistura"]),
                                    bandas=int(tim.get("bandas", 16) or 16))
+            etapas.append({
+                "plano": P["id"], "em": round(cursor + L["em"], 3),
+                "voz": rotulo,
+                "etapas": {
+                    "pcm_cru": hashlib.sha256(pcm_cru).hexdigest(),
+                    "pos_prosodia": hashlib.sha256(pcm_pos_prosodia).hexdigest(),
+                    "pos_timbre": hashlib.sha256(pcm).hexdigest(),
+                },
+            })
             em, ate = cursor + L["em"], cursor + L["ate"]
             orcamento = (L["ate"] - L["em"]) + TOLERANCIA_S
             if dur > orcamento:
@@ -513,8 +588,29 @@ def dublar(fid: str) -> int:
     opus = dir_audio / f"{fid}.opus"
     earcons_mix = [(arquivos_earcon[t], em) for _, em, t in earcons_agenda
                    if t in arquivos_earcon]
-    mixar(clipes, d["duracao"], opus, earcons=earcons_mix)
+    # CP-011: o mix PRE-OPUS e o hash de cada etapa vao para
+    # workspace/voz-etapas/ — NAO commitado. A prova de bytes do gate e
+    # contra o HEAD (o compromisso e o .opus commitado); o hash por etapa
+    # e o DIAGNOSTICO de onde a divergencia nasce, e o diagnostico nao e
+    # contrato — e evidencia que o job publica em artefato.
+    dir_etapas = WORKSPACE / "voz-etapas"
+    dir_etapas.mkdir(parents=True, exist_ok=True)
+    mix_wav = dir_etapas / f"{fid}.mix.wav"
+    mixar(clipes, d["duracao"], opus, earcons=earcons_mix, pcm_saida=mix_wav)
     quadrinhos = _clipes_por_plano(opus, d, dir_audio, fid)
+    (dir_etapas / f"{fid}.etapas.json").write_text(
+        json.dumps({
+            "filme": fid,
+            # o MEDIDO na maquina que rodou (a ancora explica o PORQUE;
+            # a frota mostra onde bate — André Borges: cada evidência
+            # carrega a máquina que a produziu)
+            "classe_simd": str(classe),
+            "threads": str(efetivo),
+            "clipes": etapas,
+            "mix_pcm": hashlib.sha256(mix_wav.read_bytes()).hexdigest(),
+            "opus": hashlib.sha256(opus.read_bytes()).hexdigest(),
+        }, ensure_ascii=False, indent=1) + "\n",
+        encoding="utf-8")
 
     manifesto = {
         "filme": fid,
@@ -563,7 +659,8 @@ def dublar(fid: str) -> int:
     print(f"  ambiente do lock conferido: python {amb['python']}, piper-tts "
           f"{amb['piper-tts']}, onnxruntime {amb['onnxruntime']}, "
           f"numpy {amb['numpy']}/scipy {amb['scipy']}, ffmpeg {amb['ffmpeg']}, "
-          f"threads {amb['threads']} (lidas da sessao)")
+          f"threads {amb['threads']} (lidas da sessao), classe_simd "
+          f"{amb['classe_simd']} (flags medidas){' — DIVERGE da ancora ' + a['ambiente']['classe_simd'] + ': a prova por classe decide' if amb['classe_simd'] != a['ambiente']['classe_simd'] else ''}")
     print(f"  loudness ancorado em {LOUDNESS_LUFS} LUFS / true peak "
           f"{TRUE_PEAK_DBTP} dBTP; manifesto em audio/audio.json")
     return 0

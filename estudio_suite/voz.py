@@ -39,6 +39,23 @@ ancora -- ausente ou divergente, o ambiente nao e o que o lock declara.
 A sessao em si e conferida pelo dublar, lendo DE VOLTA o numero EFETIVO
 da sessao construida com o valor do lock (dublar._conferir_threads_da_
 sessao): o valor lido e o que vale.
+
+CP-011: a CLASSE DE SIMD e a ultima variavel viva entre runners de
+mesma arquitetura e mesmas threads -- medido: com threads ancoradas e
+LIDAS em 8/8 execucoes, 7 divergiram em AMD EPYC (sem avx512f no lscpu)
+e 1 reproduziu em Intel Xeon 8370C (com AVX-512, sem AMX). A classe
+entra na mesma ancora como classe_simd, derivada de FLAGS MEDIDAS
+(lscpu, /proc/cpuinfo como fallback), nunca do nome do fabricante:
+"Intel" e "AMD" nao separam quem reproduz de quem diverge. O
+classificador mora AQUI (um lugar so) e e usado pelo dublar, pelo job
+e pelos testes. Lock sem classe_simd e lock INCOMPLETO (conferir_classe
+recusa). O dublar NAO recusa classe divergente: ele registra o MEDIDO
+no audio.json (ambiente.classe_simd, como ja faz com as threads) e os
+GATES decidem -- o fiscal de redublagem aponta dublagem commitada de
+classe divergente, e o job aplica a prova por classe (bytes na classe
+da ancora; tolerancia com teto medido nas demais). A tolerancia mora no
+bloco `tolerancia:` do lock (residuo_max_dbfs, margem, ponto, base):
+sem esse bloco, a doutrina e a antiga -- bytes em toda classe.
 """
 import ctypes
 import hashlib
@@ -114,6 +131,166 @@ PACOTES = ("piper-tts", "onnxruntime", "numpy", "scipy")
 # Um so numero no lock governa as tres variaveis: threads vem do lock, de
 # nenhum outro lugar.
 THREADS_ENV = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
+
+# ---- a classe de SIMD da CPU (CP-011) --------------------------------------
+# A chave da classe sao FLAGS MEDIDAS, nunca o nome do fabricante: "Intel"
+# e "AMD" nao separam quem reproduz de quem diverge -- o lscpu e que separa
+# (7/8 divergentes eram AMD sem avx512f LEGIVEL no lscpu do runner; o unico
+# verde era Intel com avx512f; o AMX nao e a chave: o 8370C nao tem e
+# reproduz). Se um dia um runner com avx512f divergir, a chave precisa de
+# MAIS UMA FLAG -- descoberta por medicao (diff das flags de quem passa x
+# quem falha), nunca por precaucao: CLASSE_MAL_DEFINIDA e o nome dessa
+# parada. As classes conhecidas:
+CLASSES_SIMD = ("avx512", "avx2")
+# avx512  <- avx512f presente (a classe da maquina que sintetizou o
+#            commitado -- confirmada por medicao; o Xeon 8370C que
+#            reproduz byte a byte tambem a declara)
+# avx2    <- avx2 sem avx512f (a maioria da frota ubuntu-latest hoje)
+
+def flags_do_lscpu_json(txt: str) -> set:
+    """O conjunto de flags do `lscpu --json` (o mesmo formato que o job publica).
+
+    O parser e deterministico de proposito: campo 'Flags' do JSON de saida,
+    sem grep em texto traduzido. Ilegivel devolve conjunto vazio -- quem
+    chama decide se recusa (a recusa e nomeada, nunca um chute).
+    """
+    import json
+    try:
+        d = json.loads(txt)
+        for e in d.get("lscpu", []):
+            if (e.get("field") or "").rstrip(":").strip() == "Flags":
+                return set((e.get("data") or "").split())
+    except Exception:
+        pass
+    return set()
+
+
+def flags_do_proc_cpuinfo(txt: str) -> set:
+    """O conjunto de flags da primeira linha 'flags' do /proc/cpuinfo.
+
+    O fallback do lscpu: a imagem dubladora e slim e pode nao carregar o
+    util-linux; /proc/cpuinfo e a MESMA fonte do kernel que o lscpu le,
+    disponivel em qualquer Linux. Os nomes das flags sao os mesmos.
+    """
+    for linha in txt.splitlines():
+        if linha.startswith("flags") and ":" in linha:
+            return set(linha.split(":", 1)[1].split())
+    return set()
+
+
+def flags_simd_medidas() -> set:
+    """As flags SIMD da CPU onde este processo roda, MEDIDAS na hora.
+
+    lscpu --json primeiro (a mesma medição que o job publica no artefato
+    de identidade); /proc/cpuinfo quando o lscpu nao existe ou nao fala
+    (a mesma fonte do kernel). As duas falarem e recusa nomeada: sem
+    flags nao existe classe, e sem classe a prova por classe nao existe
+    -- nunca palpite.
+    """
+    try:
+        r = subprocess.run(["lscpu", "--json"], capture_output=True,
+                           text=True, timeout=60)
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        r = None
+    if r is not None and r.returncode == 0:
+        flags = flags_do_lscpu_json(r.stdout)
+        if flags:
+            return flags
+    try:
+        txt = Path("/proc/cpuinfo").read_text(encoding="utf-8")
+    except OSError as e:
+        raise ErroDeDados(
+            f"nao consegui medir as flags de SIMD desta CPU (lscpu indisponivel "
+            f"e /proc/cpuinfo ilegivel: {e}). A classe_simd e parte da ancora "
+            f"de voz desde a CP-011: sem medi-la, nao ha prova por classe -- "
+            f"recusa nomeada, nunca palpite.") from None
+    flags = flags_do_proc_cpuinfo(txt)
+    if not flags:
+        raise ErroDeDados(
+            "/proc/cpuinfo sem linha de flags legivel nesta maquina -- a classe "
+            "de SIMD (CP-011) nao pode ser medida, e sem classe nao ha prova "
+            "por classe. Recusa nomeada; nunca palpite.")
+    return flags
+
+
+def classe_simd_de_flags(flags) -> str:
+    """A classe de SIMD de um conjunto de flags MEDIDAS (avx512 | avx2).
+
+    A chave e a presenca de avx512f (a flag que separou, na frota medida,
+    quem reproduz de quem diverge); sem ela, avx2. Sem nenhuma das duas,
+    recusa nomeada: 'classe indeterminada' com chute seria ancorar por
+    coincidencia -- o erro que esta ancora existe para fechar.
+    """
+    flags = set(flags or ())
+    if "avx512f" in flags:
+        return "avx512"
+    if "avx2" in flags:
+        return "avx2"
+    raise ErroDeDados(
+        f"as flags de SIMD medidas nao definem classe nenhuma ({sorted(flags)[:12]}... "
+        f"sem avx512f e sem avx2): classe indeterminada e RECUSA nomeada (CP-011) "
+        f"-- assumir uma classe seria palpite, e palpite nao ancora nada.")
+
+
+def classe_simd_medida() -> str:
+    """A classe de SIMD desta máquina, medida agora (flags -> classificador)."""
+    return classe_simd_de_flags(flags_simd_medidas())
+
+
+def conferir_classe(ancora: dict) -> str:
+    """A classe do lock contra a MEDIDA nesta máquina — e devolve a medida.
+
+    Lock SEM classe_simd e lock INCOMPLETO: recusado antes de qualquer
+    sintese, como lock sem threads e lock sem arquitetura — assumir a
+    classe da máquina que roda seria ancorar por coincidência. Valor de
+    classe fora das conhecidas e lock ilegível, também recusado.
+
+    A classe MEDIDA DIVERGENTE da âncora NÃO é recusa aqui — e decisão de
+    projeto registrada na CP-011: a divergência não é corrigível com
+    pacote ou ENV (é o hardware), o dublar registra o MEDIDO no
+    audio.json (ambiente.classe_simd, como faz com as threads efetivas)
+    e quem DECIDE é o gate: o fiscal de redublagem aponta dublagem
+    commitada de classe divergente, e o job dublador aplica a prova por
+    classe (bytes na classe âncora; tolerância com teto medido nas
+    demais). Sintetizar na classe divergente é exatamente o que a prova
+    de tolerância precisa MEDIR.
+    """
+    if "classe_simd" not in ancora:
+        raise ErroDeDados(
+            "voz.lock sem classe_simd no bloco ambiente (CP-011) — lock "
+            "INCOMPLETO: com as threads fechadas, a última variável viva "
+            "entre runners é a classe de SIMD, que decide quais kernels o "
+            "onnxruntime despacha (7/8 execuções divergiram em AMD sem "
+            "avx512f; 1/8 reproduziu em Intel com avx512f — medido, CP-009). "
+            "Assumir "
+            "a classe da máquina que roda seria ancorar por coincidência. "
+            "Ancore por change-proposal, como qualquer âncora.")
+    declarada = str(ancora["classe_simd"]).strip()
+    if declarada not in CLASSES_SIMD:
+        raise ErroDeDados(
+            f"a ancora de classe_simd do voz.lock ({declarada!r}) não é uma "
+            f"classe conhecida ({', '.join(CLASSES_SIMD)}) — lock ilegível e "
+            f"recusado antes de qualquer síntese; corrija o lock por "
+            f"change-proposal.")
+    return classe_simd_medida()
+
+
+def tolerancia() -> dict:
+    """O bloco `tolerancia:` do lock (CP-011) — o teto da prova por classe.
+
+    Raso, lido pelo mesmo parser dos outros blocos: residuo_max_dbfs,
+    margem_db, ponto, base. AUSENTE devolve {} — e a ausência é
+    significado, não esquecimento: sem teto medido e registrado, a
+    doutrina é a antiga (bytes em TODA classe, vermelho honesto na
+    classe divergente); tolerância sem número é afrouxar fiscal com
+    palavra bonita, e não existe aqui.
+    """
+    if not LOCK.exists():
+        raise ErroDeDados(
+            "voz.lock nao existe. Sem ancora, nao ha dublagem: cada maquina "
+            "sintetizaria com o modelo que tivesse a mao, e o audio commitado "
+            "nao seria reproduzivel. Crie o lock ANTES de dublar.")
+    return _bloco_raso(LOCK.read_text(encoding="utf-8"), "tolerancia")
 
 
 def _versao_pacote(nome: str) -> str:
@@ -300,10 +477,17 @@ def conferir_ambiente(esperado: dict) -> dict:
     o dublar constroi com o valor do lock (dublar le de volta o numero
     EFETIVO e compara de novo); a face externa dela no ambiente (OMP/
     OpenBLAS/MKL) tem conferencia propria em conferir_threads, na entrada.
+    Excecao igual e proposital (CP-011): `classe_simd` tambem nao entra —
+    classe de SIMD nao e propriedade instalada, e o hardware da maquina:
+    o dublar a MEDE (flags) e grava o medido no audio.json, e o fiscal
+    de redublagem compara o gravado contra o lock quando o audio e
+    commitado. Divergencia de classe no ambiente de quem RODA nao e
+    recusa de sintese (a prova por classe precisa medir na classe
+    divergente); divergencia no audio COMMITADO e divida apontada.
     """
     instalado = ambiente_instalado()
     divergencias = []
-    for pacote in sorted((set(esperado) | set(instalado)) - {"threads"}):
+    for pacote in sorted((set(esperado) | set(instalado)) - {"threads", "classe_simd"}):
         esp, inst = esperado.get(pacote), instalado.get(pacote)
         if esp == inst:
             continue

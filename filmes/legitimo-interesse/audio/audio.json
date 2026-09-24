@@ -16,7 +16,8 @@
   "ffmpeg": "7.1.5-0+deb13u1",
   "libopus": "1.5.2",
   "arquitetura": "x86_64",
-  "threads": "2"
+  "threads": "2",
+  "classe_simd": "avx512"
  },
  "mix": {
   "arquivo": "legitimo-interesse.opus",

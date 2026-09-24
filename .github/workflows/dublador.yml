@@ -5,7 +5,8 @@ name: Dublador
 # suite.yml, os fiscais calariam em PR que nao toca audio, e o gate roda
 # em TODO PR. Aqui so acorda quem mexe no que assina os bytes do audio:
 # o lock (modelo e ambiente), as amostras (portadoras do timbre), a
-# cadeia de sintese, a propria imagem, ou a legenda de algum filme.
+# cadeia de sintese, a propria imagem, a prova ou a legenda de algum
+# filme.
 #
 # O que ele prova: que a imagem que materializa o voz.lock reproduce
 # BYTE A BYTE o audio commitado -- no runner Ubuntu, que nao e Debian 13,
@@ -14,19 +15,30 @@ name: Dublador
 # com o commitado). Um byte que difere reprova o job e publica o diff de
 # duracoes como artefato -- ONDE divergiu, nao so que divergiu.
 #
-# CP-009: a prova agora IDENTIFICA A MAQUINA. O gate ja oscilou em 3
-# runs com codigo identico (dois atratores estaveis) porque o default de
-# threads do onnxruntime segue os nucleos da maquina: verde sem lscpu
-# seria sorte, nao prova. Antes de dublar, o job publica no log E num
-# artefato JSON a identidade do runner -- lscpu (modelo, nucleos fisicos,
-# flags SIMD), nproc, o limite do cgroup e as THREADS EFETIVAS da sessao
-# (lidas de dentro da imagem, pelo mesmo caminho do dublar). A ancora
-# de threads (voz.lock) explica o PORQUE; a frota mostra que bate.
+# CP-009: a prova IDENTIFICA A MAQUINA. O gate ja oscilou em 3 runs com
+# codigo identico porque o default de threads do onnxruntime seguia os
+# nucleos da maquina: threads entrou no lock, a sessao nasce com o valor
+# da ancora e e LIDA DE VOLTA. A instrumentacao (lscpu, cgroup, threads
+# efetivas) publica no log E em artefato quem rodou cada veredito.
 #
-# workflow_dispatch ganhou `rodadas`: N copias INDEPENDENTES do job (a
-# matrix) -- a prova de portabilidade em N maquinas de uma vez. Padrao 1
-# em PR; a CP-009 provou com 5 + 2 reruns avulsos. Reprovacao manual a
-# qualquer hora, sem PR.
+# CP-011: a prova e POR CLASSE DE SIMD. Com threads ancoradas e lidas em
+# 8/8 execucoes, a frota bifurcou por CLASSE (7/8 AMD sem avx512f
+# divergiram; 1/8 Intel com AVX-512 reproduziu): exigir bytes "em
+# qualquer runner" era loteria, nao prova. Agora: runner da classe da
+# ancora exige BYTES; outra classe exige TOLERANCIA MEDIDA (duracoes por
+# fala + residuo de nulidade sob teto do voz.lock + audio-suite compare
+# sem regressao). O teto vem do bloco `tolerancia:` do lock -- SEM ele,
+# a doutrina e a antiga: bytes em toda classe, vermelho honesto na
+# divergente com os numeros publicados (e com os residuos medidos nos
+# DOIS pontos, para o teto um dia nascer da medicao). O log e o artefato
+# dizem SEMPRE qual prova rodou, com que classe e com que numeros --
+# verificacao (bytes) e validacao (tolerancia) nunca se confundem.
+#
+# CP-011: o FILTRO POR DECLARACAO. O job so processa filmes que DECLARAM
+# audio (audio: true no proprio filme.js, lido de la -- nunca de lista de
+# nomes). E so e acionado por eles: PR que so toca filme mudo (ex. um
+# relatorio) nao acorda o job caro -- o planejar confere os caminhos
+# mudados contra a lista dos que declaram.
 
 on:
   workflow_dispatch:
@@ -46,6 +58,8 @@ on:
       - 'estudio_suite/timbre.py'
       - 'estudio_suite/comum.py'
       - 'ferramentas/dublador/**'
+      - 'ci/pins_do_lock.py'
+      - 'ci/prova_por_classe.py'
       - '.github/workflows/dublador.yml'
       - 'filmes/*/*.filme.js'
 
@@ -54,13 +68,24 @@ jobs:
   # workflow_dispatch, `rodadas` copias. fail-fast desligado de proposito:
   # numa frota heterogenea, cancelar as outras copias na primeira falha
   # destruiria exatamente a evidencia que o diagnostico precisa (quem
-  # passou x quem falhou). O job segue OBRIGATORIO: sem continue-on-error,
-  # sem tolerancia -- copia reprovada reprova o run inteiro.
+  # passou x quem falhou). O job segue OBRIGATORIO: sem continue-on-error
+  # -- copia reprovada reprova o run inteiro.
+  #
+  # CP-011: aqui tambem nasce o FILTRO POR DECLARACAO -- a lista de
+  # filmes que declaram audio (do proprio filme.js) e a decisao de rodar
+  # (PR de filme mudo nao aciona o job caro).
   planejar:
     runs-on: ubuntu-latest
     outputs:
       copias: ${{ steps.copias.outputs.lista }}
+      filmes: ${{ steps.filtro.outputs.filmes }}
+      rodar: ${{ steps.filtro.outputs.rodar }}
+      motivo: ${{ steps.filtro.outputs.motivo }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # o diff de caminhos do PR precisa da base
+
       - id: copias
         env:
           RODADAS: ${{ inputs.rodadas }}
@@ -79,14 +104,84 @@ jobs:
           echo "lista=$lista]" >> "$GITHUB_OUTPUT"
           echo "copias: $lista] (rodadas pedidas: ${RODADAS:-1, padrao de PR})"
 
+      # CP-011: quem declara audio, lido do PROPRIO filme (nunca lista de
+      # nomes); e se este PR acorda o job caro. Acordam o job: mudanca em
+      # caminho que assina bytes (lock, amostras, cadeia, imagem, prova) OU
+      # no filme.js de filme que DECLARA audio. Um filme mudo nao aciona.
+      - id: filtro
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENTO: ${{ github.event_name }}
+        run: |
+          python3 - <<'EOF' | tee /tmp/planejar.log
+          import os, subprocess, sys
+          sys.path.insert(0, ".")
+          from estudio_suite.comum import dados_do_filme, filmes_existentes
+
+          com_audio = []
+          for fid in filmes_existentes():
+              try:
+                  if dados_do_filme(fid).get("audio"):
+                      com_audio.append(fid)
+              except Exception:
+                  pass          # ilegivel ja foi apontado no stderr da leitura
+          print(f"filmes={' '.join(com_audio)}")
+
+          if os.environ.get("EVENTO") != "pull_request":
+              print("rodar=true")
+              print("motivo=dispatch manual — prova em: " + (", ".join(com_audio) or "nenhum filme declara audio"))
+          else:
+              base, head = os.environ["BASE_SHA"], os.environ["HEAD_SHA"]
+              muda = subprocess.run(
+                  ["git", "diff", "--name-only", f"{base}...{head}"],
+                  capture_output=True, text=True).stdout.split()
+              assina = any(
+                  p in ("voz.lock", "amostras.lock",
+                        "ci/pins_do_lock.py", "ci/prova_por_classe.py",
+                        ".github/workflows/dublador.yml")
+                  or p.startswith(("estudio_suite/", "ferramentas/dublador/"))
+                  for p in muda)
+              com_audio_tocado = False
+              for p in muda:
+                  partes = p.split("/")
+                  if (len(partes) == 3 and partes[0] == "filmes"
+                          and partes[2].endswith(".filme.js")):
+                      try:
+                          if dados_do_filme(partes[1]).get("audio"):
+                              com_audio_tocado = True
+                      except Exception:
+                          pass
+              rodar = assina or com_audio_tocado
+              print(f"rodar={'true' if rodar else 'false'}")
+              motivo = []
+              if assina:
+                  motivo.append("caminho que assina bytes de audio mudou")
+              if com_audio_tocado:
+                  motivo.append("filme.js de filme que declara audio mudou")
+              if not motivo:
+                  motivo.append("PR sem mudanca que assina audio e sem filme "
+                                "com audio — filme mudo NAO aciona o job (CP-011)")
+              print("motivo=" + "; ".join(motivo))
+          EOF
+          while IFS= read -r linha; do
+            case "$linha" in
+              filmes=*)  echo "${linha}"   >> "$GITHUB_OUTPUT" ;;
+              rodar=*)   echo "${linha}"   >> "$GITHUB_OUTPUT" ;;
+              motivo=*)  echo "${linha}"   >> "$GITHUB_OUTPUT" ;;
+            esac
+          done < <(grep -E '^(filmes|rodar|motivo)=' /tmp/planejar.log)
+          echo "== filtro (CP-011): $(grep '^motivo=' /tmp/planejar.log | cut -d= -f2-)"
+
   dublador:
     needs: planejar
+    if: needs.planejar.outputs.rodar == 'true'
     strategy:
       fail-fast: false
       matrix:
         copia: ${{ fromJSON(needs.planejar.outputs.copias) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
 
@@ -112,14 +207,14 @@ jobs:
           key: amostras-${{ env.AMOSTRAS_LOCK_SHA }}
 
       # CP-009: a IDENTIDADE DA MAQUINA, medida e publicada ANTES de
-      # dublar — no log e num artefato JSON. Um gate que alterna vermelho
-      # e verde com a maquina que o roda so pode ser diagnosticado se a
-      # maquina for identificada: modelo de CPU, nucleos fisicos, flags
-      # SIMD (o onnxruntime despacha kernels por elas), nproc e o limite
-      # de CPU do cgroup (a frota do GitHub anuncia 4 vCPU — o cgroup
-      # confere o que o runner EFETIVAMENTE deixa usar). lscpu --json:
-      # o parser e deterministico, o grep em campo traduzido nao seria.
-      - name: A identidade da máquina (lscpu, nproc, cgroup)
+      # dublar — no log e num artefato JSON. lscpu --json: o parser e
+      # deterministico, o grep em campo traduzido nao seria.
+      # CP-011: a CLASSE DO RUNNER nasce AQUI, pelo MESMO classificador
+      # do dublar (estudio_suite/voz.py — um lugar so), lendo as MESMAS
+      # flags; a classe da ANCOR vem do lock (pins_do_lock --classe-simd),
+      # e o TETO de residuo tambem (ou a ausencia nomeada dele — sem
+      # teto, a prova cai na doutrina antiga: bytes em toda classe).
+      - name: A identidade da máquina (lscpu, classe, ancora, teto)
         run: |
           lscpu --json > /tmp/lscpu.json
           python3 - <<'EOF' | tee /tmp/identidade-maquina.env
@@ -151,10 +246,23 @@ jobs:
           echo "COPIA=${{ matrix.copia }}" >> "$GITHUB_ENV"
           echo "RUN_ID=${{ github.run_id }}" >> "$GITHUB_ENV"
           echo "ATTEMPT=${{ github.run_attempt }}" >> "$GITHUB_ENV"
-          echo "== identidade do runner (CP-009):"
+          # CP-011: a classe do runner, PELO CLASSIFICADOR UNICO — o mesmo
+          # codigo que o dublar usa dentro da imagem e os testes testam.
+          CLASSE_DO_RUNNER=$(python3 -c "
+          import sys; sys.path.insert(0, '.')
+          from estudio_suite import voz
+          print(voz.classe_simd_medida())")
+          echo "CLASSE_DO_RUNNER=$CLASSE_DO_RUNNER" | tee -a "$GITHUB_ENV"
+          CLASSE_ANCORA=$(python3 ci/pins_do_lock.py --classe-simd)
+          echo "CLASSE_ANCORA=$CLASSE_ANCORA" | tee -a "$GITHUB_ENV"
+          TETO_RESIDUO=$(python3 ci/pins_do_lock.py --teto-residuo 2>/dev/null || true)
+          echo "TETO_RESIDUO=${TETO_RESIDUO:-}" >> "$GITHUB_ENV"
+          echo "== identidade do runner (CP-009/CP-011):"
           cat /tmp/identidade-maquina.env
           echo "  nproc:         $NPROC"
           echo "  cgroup cpu:    $CGROUP_CPU"
+          echo "  classe SIMD:   $CLASSE_DO_RUNNER (ancora: $CLASSE_ANCORA)"
+          echo "  teto residuo:  ${TETO_RESIDUO:-NAO REGISTRADO — prova de bytes em toda classe}"
 
       # buildx com cache de camadas do GitHub Actions: a base por digest e
       # os pins do lock mudam raramente; o build efetivo costuma ser so
@@ -209,8 +317,8 @@ jobs:
 
       # O compromisso: os .opus commitados. As dublagens regeneram POR
       # CIMA (o dublar escreve no repositorio montado) -- por isso a copia
-      # e os sha256 ANTES da primeira rodada. Os hashes lidos aqui sao a
-      # prova contra a qual tudo vai ser comparado.
+      # (e os sha256, e desde a CP-011 tambem o audio.json, referencia das
+      # DURACOES POR FALA) acontece ANTES da primeira rodada.
       - name: Os sha256 do que esta commitado
         run: |
           mkdir -p /tmp/commitado
@@ -219,62 +327,136 @@ jobs:
             cp "$f" "/tmp/commitado/$f"
             sha256sum "$f"
           done | tee /tmp/commitado.sha256
+          find filmes -path '*/audio/audio.json' | sort | while read -r f; do
+            cp "$f" "/tmp/commitado/$f"
+          done
 
-      # Duas rodadas: a 1 prova determinismo da imagem (2 filmes), a 2
-      # prova que a determinacao e estavel; e as duas contra o commitado
-      # provam PORTABILIDADE. O ESTUDIO_VOZ_CACHE aponta o modelo para o
-      # cache restaurado -- sem ele, cada rodada baixaria 60+ MB de novo.
-      - name: Dublar os dois filmes (rodada 1)
+      # Duas rodadas: a 1 prova determinismo da imagem, a 2 prova que a
+      # determinacao e estavel. CP-011: os filmes vem do PLANEJAR — os
+      # que DECLARAM audio, lidos do proprio filme.js — nunca de nomes
+      # escritos aqui; e cada rodada arquiva o hash POR ETAPA que o
+      # dublar publica em workspace/voz-etapas/ (diagnostico de ONDE a
+      # divergencia nasce, nao contrato do repositorio).
+      - name: Dublar quem declara audio (rodada 1)
         env:
           ESTUDIO_VOZ_CACHE: ${{ github.workspace }}/workspace/voz
         run: |
-          ferramentas/dublador/dublar.sh jornada-dado
-          ferramentas/dublador/dublar.sh legitimo-interesse
+          for fid in ${{ needs.planejar.outputs.filmes }}; do
+            ferramentas/dublador/dublar.sh "$fid"
+          done
           find filmes -path '*/audio/*.opus' | sort | xargs sha256sum > /tmp/rodada1.sha256
+          mkdir -p /tmp/etapas-rodada1
+          cp workspace/voz-etapas/*.etapas.json /tmp/etapas-rodada1/ 2>/dev/null || true
 
-      - name: Dublar os dois filmes (rodada 2)
+      - name: Dublar quem declara audio (rodada 2)
         env:
           ESTUDIO_VOZ_CACHE: ${{ github.workspace }}/workspace/voz
         run: |
-          ferramentas/dublador/dublar.sh jornada-dado
-          ferramentas/dublador/dublar.sh legitimo-interesse
+          for fid in ${{ needs.planejar.outputs.filmes }}; do
+            ferramentas/dublador/dublar.sh "$fid"
+          done
           find filmes -path '*/audio/*.opus' | sort | xargs sha256sum > /tmp/rodada2.sha256
+          mkdir -p /tmp/etapas-rodada2
+          cp workspace/voz-etapas/*.etapas.json /tmp/etapas-rodada2/ 2>/dev/null || true
 
-      # A prova em si. diff sai 1 na primeira diferenca e o job reprova --
-      # nao ha tolerancia por antecipacao (CP-008): se a imagem nao
-      # reproduz, e IMAGEM_NAO_REPRODUZ registrado na CP, nao diff verde.
-      - name: A comparacao byte a byte
+      # O determinismo interno vale para TODA classe (a mesma maquina tem
+      # de devolver os mesmos bytes duas vezes — o que a imagem garante).
+      # A comparacao contra o commitado mudou de casa: agora e a PROVA POR
+      # CLASSE (abaixo) que decide se exige bytes ou tolerancia.
+      - name: O determinismo interno da imagem (rodada 1 == rodada 2)
         run: |
           echo "== rodada 1 == rodada 2 (o determinismo da imagem)"
           diff -u /tmp/rodada1.sha256 /tmp/rodada2.sha256
-          echo "== rodada 2 == commitado (a portabilidade da ancora)"
-          diff -u /tmp/commitado.sha256 /tmp/rodada2.sha256
-          echo "== os sha256 comparados:"
-          cat /tmp/rodada2.sha256
+          echo "== hash por etapa: rodada 1 == rodada 2 (diagnostico)"
+          if diff -rq /tmp/etapas-rodada1 /tmp/etapas-rodada2; then
+            echo "   etapas identicas entre rodadas (pcm_cru/pos_prosodia/pos_timbre/mix/opus)"
+          else
+            echo "   ATENCAO: etapas divergem entre rodadas com .opus iguais — diagnostico"
+          fi
 
-      # CP-009: o artefato de identidade — SEMPRE (verde ou vermelho).
-      # Verde sem identidade seria sorte sem prova; vermelho sem
-      # identidade seria diagnostico perdido (André Borges: cada
-      # divergencia carrega a maquina que a produziu).
-      - name: O artefato de identidade (run, CPU, threads, veredito)
+      # CP-011: A PROVA POR CLASSE. Roda DENTRO da imagem (numpy, ffmpeg,
+      # repositorio montado, o MESMO classificador do dublar): bytes na
+      # classe da ancora; duracoes por fala + residuo sob teto na classe
+      # divergente COM teto registrado; bytes (doutrina antiga) na classe
+      # divergente SEM teto — vermelho honesto com todos os numeros. Os
+      # residuos nos DOIS pontos (mix pre-opus e opus decodificado) sao
+      # sempre publicados: e deles que o teto um dia nasce.
+      - name: A prova por classe (dentro da imagem)
+        run: |
+          mkdir -p /tmp/prova
+          docker run --rm --platform linux/amd64 \
+            -v "$PWD":/app -v /tmp/commitado:/commitado -v /tmp/prova:/prova -w /app \
+            estudio-dublador:voz-lock \
+            python3 ci/prova_por_classe.py --commitado /commitado --saida /prova \
+            | tee /tmp/prova/prova.log
+
+      # CP-011: a terceira condicao da tolerancia — o compare da
+      # audio-suite (CLI externa, isolada por pipx, pinada por SHA, como
+      # no suite.yml) sobre os WAVs que a prova decodificou. So existe
+      # na classe divergente COM teto: na classe da ancora a prova e
+      # BYTES (mais forte), e o log diz exatamente isso.
+      - name: O compare da audio-suite (na tolerância, no runner)
+        if: env.CLASSE_DO_RUNNER != env.CLASSE_ANCORA && env.TETO_RESIDUO != ''
+        run: |
+          pipx install "git+https://github.com/danzeroum/audio-suite@296226eb803adbe380f1473c25c5a22ebb857029"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          python3 - <<'EOF' | tee /tmp/prova/compare.txt
+          import json, os, subprocess, sys
+          prova = json.load(open('/tmp/prova/prova.json'))
+          wavs = prova.get('wavs_para_compare', [])
+          regressao = []
+          for i in range(0, len(wavs), 2):
+              a, b = wavs[i], wavs[i+1]
+              fid = os.path.basename(a).replace('-commitado.wav', '')
+              r = subprocess.run(
+                  ['audio-suite', 'compare', a, b,
+                   '--profile', 'harness/perfis/guardioes-narracao.yaml',
+                   '--fail-on-regression'],
+                  capture_output=True, text=True, timeout=600)
+              saida = r.stdout.strip()
+              try:
+                  d = json.loads(saida)
+                  det = (f"regression_detected={d.get('regression_detected')}"
+                         f" deltas={d.get('deltas')}")
+              except Exception:
+                  det = saida[:200]
+              print(f"  {fid}: audio-suite compare {det} [exit {r.returncode}]")
+              if r.returncode != 0:
+                  regressao.append(fid)
+          if regressao:
+              print(f"\n  REGRESSAO na tolerancia: {', '.join(regressao)}", file=sys.stderr)
+              sys.exit(1)
+          print("  compare sem regressao em todos os filmes que declaram audio")
+          EOF
+
+      # CP-009/CP-011: o artefato de identidade — SEMPRE (verde ou
+      # vermelho). Verde sem identidade seria sorte sem prova; vermelho
+      # sem identidade seria diagnostico perdido (André Borges: cada
+      # veredito carrega maquina, classe, prova aplicada e numeros).
+      # Carrega tambem o hash POR ETAPA de cada rodada e o prova.json
+      # com os residuos medidos nos dois pontos.
+      - name: O artefato de identidade (run, CPU, classe, prova, números)
         if: always()
         run: |
           mkdir -p /tmp/identidade
           THREADS_GRAVADAS=$(python3 -c "
+          import json, glob
+          alvo = sorted(glob.glob('filmes/*/audio/audio.json'))
+          print(json.load(open(alvo[0]))['ambiente'].get('threads', 'ausente') if alvo else 'sem filme')" 2>/dev/null || echo "ilegivel")
+          if [ -f /tmp/prova/prova.json ]; then
+            VEREDITO_PROVA=$(python3 -c "
           import json
-          d = json.load(open('filmes/jornada-dado/audio/audio.json'))
-          print(d['ambiente'].get('threads', 'ausente'))" 2>/dev/null || echo "ilegivel")
-          if [ -f /tmp/rodada1.sha256 ] && [ -f /tmp/rodada2.sha256 ] \
-             && [ -f /tmp/commitado.sha256 ] \
-             && diff -q /tmp/commitado.sha256 /tmp/rodada2.sha256 >/dev/null 2>&1 \
-             && diff -q /tmp/rodada1.sha256 /tmp/rodada2.sha256 >/dev/null 2>&1; then
-            VEREDITO="reproduzido"
-          elif [ -f /tmp/rodada2.sha256 ]; then
-            VEREDITO="DIVERGENTE"
+          print(json.load(open('/tmp/prova/prova.json')).get('veredito', '?'))")
           else
-            VEREDITO="NAO COMPLETOU"
+            VEREDITO_PROVA="NAO RODOU"
           fi
-          export THREADS_GRAVADAS VEREDITO
+          if [ -f /tmp/rodada1.sha256 ] && [ -f /tmp/rodada2.sha256 ] \
+             && diff -q /tmp/rodada1.sha256 /tmp/rodada2.sha256 >/dev/null 2>&1; then
+            DETERMINISMO="estavel"
+          else
+            DETERMINISMO="DIVERGENTE"
+          fi
+          export THREADS_GRAVADAS VEREDITO_PROVA DETERMINISMO
           python3 - <<'EOF' > /tmp/identidade/identidade.json
           import json, os
           dados = {
@@ -298,11 +480,24 @@ jobs:
               "gravadas_no_audio_json": os.environ.get("THREADS_GRAVADAS", "nao lidas"),
               "omp_da_imagem": os.environ.get("OMP_NUM_THREADS", "nao medido"),
             },
-            "veredito": os.environ.get("VEREDITO", "desconhecido"),
+            "classe_simd": {
+              "do_runner": os.environ.get("CLASSE_DO_RUNNER", "nao medida"),
+              "da_ancora": os.environ.get("CLASSE_ANCORA", "nao lida"),
+              "teto_residuo_dbfs": os.environ.get("TETO_RESIDUO") or "NAO REGISTRADO",
+            },
+            "prova": {
+              "determinismo_interno": os.environ.get("DETERMINISMO"),
+              "veredito_da_prova_por_classe": os.environ.get("VEREDITO_PROVA"),
+            },
           }
           print(json.dumps(dados, indent=1, ensure_ascii=False))
           EOF
           cat /tmp/identidade/identidade.json
+          cp -r /tmp/etapas-rodada1 /tmp/identidade/ 2>/dev/null || true
+          cp -r /tmp/etapas-rodada2 /tmp/identidade/ 2>/dev/null || true
+          cp /tmp/prova/prova.json /tmp/prova/prova.log /tmp/prova/compare.txt /tmp/identidade/ 2>/dev/null || true
+          echo "== hash por etapa (rodada 2):"
+          cat /tmp/etapas-rodada2/*.etapas.json 2>/dev/null | head -40 || echo "  (sem etapas)"
 
       # Onde divergiu, quando diverge: duracoes do commitado contra as
       # regeneradas, medidas pelo ffprobe DA PROPRIA IMAGEM (a ancora e
@@ -328,8 +523,8 @@ jobs:
           path: /tmp/identidade/
 
       - name: Publicar a identidade (verde tambem)
-        if: success()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: identidade-${{ matrix.copia }}-run${{ github.run_id }}
-          path: /tmp/identidade/identidade.json
+          path: /tmp/identidade/
