@@ -17,6 +17,14 @@
 # lscpu seria sorte, nao prova: a ancora explica o porque, a frota mostra
 # que bate.
 #
+# DESFECHO (2026-09-24): a ancora chegou na sessao em TODAS as 8 execucoes
+# (gate + 7 rodadas) — e a frota respondeu com CLASSE_DE_CPU_DIVERGE:
+# 7/8 divergiram em AMD EPYC (sem AVX-512), 1/8 reproduziu em Intel Xeon
+# 8370C (com AVX-512). A variavel threads esta FECHADA e medida; a ultima
+# variavel viva e a classe de CPU, e o caminho e decisao humana (tres
+# saidas registradas em paradas_nomeadas.CLASSE_DE_CPU_DIVERGE.registro,
+# nenhuma implementada). Ver resultado_da_prova.
+#
 # O VALOR mudou durante a execucao -- de 1 para 2 -- e a mudanca e o ponto
 # de decisao central desta CP, registrado abaixo (decisao_de_valor): o
 # prompt ancorava 1 com base numa frase curta que era regime-insensivel; a
@@ -121,6 +129,34 @@ proposta:
       e confirmou -- "threads: 2 e a ancora correta, e a minha
       recomendacao de threads: 1 estava errada".
     status: "VALIDADO PELO DONO (antes do push desta CP); decisao no corpo do PR #12"
+
+  resultado_da_prova:
+    quando: "2026-09-24, head c525cf1, branch do PR #12"
+    execucoes: 8
+    tabela:
+      - {run: 35961992748, copia: gate-1, cpu: "AMD EPYC 7763", avx512f: false, amx: false, fisicos: 2, nproc: 4, threads_ancora: 2, threads_efetivas: 2, veredito: DIVERGENTE}
+      - {run: 35962368216, copia: copia-1, cpu: "AMD EPYC 9V74", avx512f: false, amx: false, fisicos: 2, nproc: 4, threads_ancora: 2, threads_efetivas: 2, veredito: DIVERGENTE}
+      - {run: 35962368216, copia: copia-2, cpu: "AMD EPYC 7763", avx512f: false, amx: false, fisicos: 2, nproc: 4, threads_ancora: 2, threads_efetivas: 2, veredito: DIVERGENTE}
+      - {run: 35962368216, copia: copia-3, cpu: "Intel Xeon Platinum 8370C", avx512f: true, amx: false, fisicos: 2, nproc: 4, threads_ancora: 2, threads_efetivas: 2, veredito: reproduzido}
+      - {run: 35962368216, copia: copia-4, cpu: "AMD EPYC 7763", avx512f: false, amx: false, fisicos: 2, nproc: 4, threads_ancora: 2, threads_efetivas: 2, veredito: DIVERGENTE}
+      - {run: 35962368216, copia: copia-5, cpu: "AMD EPYC 7763", avx512f: false, amx: false, fisicos: 2, nproc: 4, threads_ancora: 2, threads_efetivas: 2, veredito: DIVERGENTE}
+      - {run: 35962643263, copia: rerun-1, cpu: "AMD EPYC 7763", avx512f: false, amx: false, fisicos: 2, nproc: 4, threads_ancora: 2, threads_efetivas: 2, veredito: DIVERGENTE}
+      - {run: 35962861639, copia: rerun-2, cpu: "AMD EPYC 7763", avx512f: false, amx: false, fisicos: 2, nproc: 4, threads_ancora: 2, threads_efetivas: 2, veredito: DIVERGENTE}
+    leitura: >
+      Sete das oito execucoes divergiram — TODAS em AMD EPYC (classe sem
+      AVX-512 legivel no lscpu do runner); a unica que reproduziu os 19
+      .opus byte a byte e a Intel Xeon 8370C, com AVX-512 — a mesma
+      familia da maquina que sintetizou (Xeon com AVX-512 e AMX; o AMX
+      nao e necessario: o 8370C nao tem e reproduz). Em TODAS as oito a
+      ancora chegou na sessao (ancora=2, efetivas=2 lidas de dentro da
+      imagem, OMP=2): o gate de threads FECHOU a variavel threads — a
+      instrumentacao e o que faz a conclusao ser medida, nao chute.
+      Duracoes identicas em todos os clipes divergentes: so os bytes
+      mudam. A portabilidade NAO foi provada na frota ubuntu-latest: a
+      ultima variavel viva e a CLASSE DE CPU, que decide quais kernels
+      SIMD o onnxruntime despacha (MLAS seleciona por fabricante/flags;
+      a ordem das somas parciais em float muda com o kernel).
+    conclusao: CLASSE_DE_CPU_DIVERGE
 
   doutrina:                    # herdada; nada aqui e negociavel
     - >
@@ -243,11 +279,25 @@ proposta:
         tres vezes contra o HEAD — a ultima em maquina nova da mesma
         classe, na sessao de fechamento).
     CLASSE_DE_CPU_DIVERGE:
+      status: "DISPAROU na prova em N — ver resultado_da_prova: 7/8 divergentes (todas AMD EPYC, sem AVX-512 no lscpu), 1/8 reproduzido (Intel Xeon 8370C, com AVX-512); threads ancoradas e LIDAS em todas"
       regra: >
         Se alguma das 7 execucoes divergir com threads: 2: registra o lscpu
         de quem passou x quem falhou e as saidas possiveis (runner com CPU
         declarada, redublagem na imagem, tolerancia via audio-suite
         compare), SEM implementar nenhuma -- decisao humana.
+      registro: >
+        REGISTRADO: a tabela completa (8 execucoes: run, CPU, flags SIMD,
+        nucleos, nproc, threads ancora/efetivas, veredito) mora em
+        resultado_da_prova e no corpo do PR #12; os artefatos
+        identidade-*.json e diff-de-duracoes-*.zip de cada run carregam o
+        lscpu de quem passou x quem falhou. Saidas possiveis, NENHUMA
+        implementada: (a) runner de classe declarada — self-hosted ou
+        larger-runner com Intel AVX-512, e o gate volta a ser provavel;
+        (b) redublagem completa dentro da imagem em maquina da classe da
+        ancora — muda TODOS os 19 .opus, CP propria com revisao humana do
+        diff; (c) tolerancia de reproducao via audio-suite compare (faixa
+        medida, nao byte) — muda a doutrina, so o humano. O merge do PR
+        #12 segue decisao humana, como a CP-008 registrou.
 
   licoes:
     amostra: >

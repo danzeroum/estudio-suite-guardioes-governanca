@@ -105,6 +105,19 @@ proposta:
       Sapphire Rapids). Enquanto threads e CPU nao forem ANCORAS, o job
       dublador e uma loteria: verde num run nao prova o proximo. Fechar
       essa porta e o conteudo da CP-009 proposta abaixo.
+    desfecho_cp009: >
+      2026-09-24, CP-009 executada: threads ANCORADA em voz.lock
+      (threads: 2, mudanca de 1 para 2 medida nas 42 falas reais e
+      validada pelo dono), sessao construida com o valor do lock e LIDA
+      DE VOLTA, ENV da imagem pelo build-arg, job instrumentado com
+      lscpu/cgroup/threads efetivas. A ancora chegou na sessao em TODAS
+      as 8 execucoes (gate do push + 7 rodadas) -- e a frota respondeu
+      CLASSE_DE_CPU_DIVERGE: 7/8 divergiram em AMD EPYC (sem AVX-512 no
+      lscpu), 1/8 reproduziu em Intel Xeon 8370C (com AVX-512), duracoes
+      identicas em todos. A hipotese residual acima se confirmou na
+      forma medida: threads fechou UMA porta; a classe de CPU e a
+      variavel que sobra, e as tres saidas seguem decisao humana --
+      tabela e registro completos na CP-009 (resultado_da_prova).
     caminhos_para_o_humano:    # a regra desta CP: o agente PARE, o humano decide
       - >
         CP-009 "threads no lock": acrescentar threads: 2 (o que a maquina
