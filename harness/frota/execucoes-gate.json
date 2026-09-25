@@ -1,0 +1,413 @@
+{
+ "$schema": "estudio-suite/frota-gate@1",
+ "descricao": "Execuções do GATE da prova por amostragem (CP-014, passo 5): uma entrada por TENTATIVA de run do workflow Dublador no design CP-013+ (matrix de N cópias do lock + agregador), desde o 932b78f — a primeira execução da maquinaria nova. Dele o ci/independencia.py e o teste recalculam a taxa de SEM_AMOSTRA e a correlação intra-execução — o número é reproduzível a partir do registro, nunca afirmado.",
+ "como_cresce": "O agregador publica a entrada de cada run no agregado.json (campo registro); o curador a acrescenta AQUI por PR de manutenção — commit automático no main, jamais. Runs do gate em branches de PR entram quando do próximo PR de manutenção (a PRópria execução do PR é registrada pelo próximo da fila).",
+ "execucoes": [
+  {
+   "cp": "CP-013",
+   "run": "36073473213",
+   "tentativa": 1,
+   "head": "932b78f",
+   "evento": "pull_request",
+   "quando": "2026-09-24T23:35:14Z",
+   "n": 8,
+   "copias": {
+    "copia-1": "avx2",
+    "copia-2": "avx2",
+    "copia-3": "avx2",
+    "copia-4": "avx512",
+    "copia-5": "avx2",
+    "copia-6": "avx2",
+    "copia-7": "avx2",
+    "copia-8": "avx2"
+   },
+   "cpus": {
+    "copia-1": "AMD EPYC 9V74 80-Core Processor",
+    "copia-2": "AMD EPYC 7763 64-Core Processor",
+    "copia-3": "AMD EPYC 7763 64-Core Processor",
+    "copia-4": "AMD EPYC 9V45 96-Core Processor",
+    "copia-5": "AMD EPYC 9V74 80-Core Processor",
+    "copia-6": "AMD EPYC 7763 64-Core Processor",
+    "copia-7": "AMD EPYC 7763 64-Core Processor",
+    "copia-8": "AMD EPYC 9V74 80-Core Processor"
+   },
+   "avx512": 1,
+   "sem_amostra_decisiva": false,
+   "fonte": "artefato agregado-frota-run36073473213 (tentativa mais recente do run; medido pela API)"
+  },
+  {
+   "cp": "CP-013",
+   "run": "36073880318",
+   "tentativa": 1,
+   "head": "932b78f",
+   "evento": "workflow_dispatch",
+   "quando": "2026-09-24T23:40:13Z",
+   "n": 8,
+   "copias": {
+    "copia-1": "avx2",
+    "copia-2": "avx2",
+    "copia-3": "avx2",
+    "copia-4": "avx2",
+    "copia-5": "avx2",
+    "copia-6": "avx2",
+    "copia-7": "avx2",
+    "copia-8": "avx512"
+   },
+   "cpus": {
+    "copia-1": "AMD EPYC 9V74 80-Core Processor",
+    "copia-2": "AMD EPYC 7763 64-Core Processor",
+    "copia-3": "AMD EPYC 7763 64-Core Processor",
+    "copia-4": "AMD EPYC 9V74 80-Core Processor",
+    "copia-5": "AMD EPYC 9V74 80-Core Processor",
+    "copia-6": "AMD EPYC 7763 64-Core Processor",
+    "copia-7": "AMD EPYC 7763 64-Core Processor",
+    "copia-8": "AMD EPYC 9V74 80-Core Processor"
+   },
+   "avx512": 1,
+   "sem_amostra_decisiva": false,
+   "fonte": "artefato agregado-frota-run36073880318 (tentativa mais recente do run; medido pela API)"
+  },
+  {
+   "cp": "CP-013",
+   "run": "36074203245",
+   "tentativa": 1,
+   "head": "932b78f",
+   "evento": "workflow_dispatch",
+   "quando": "2026-09-24T23:44:12Z",
+   "n": 8,
+   "copias": {
+    "copia-1": "avx2",
+    "copia-2": "avx2",
+    "copia-3": "avx2",
+    "copia-4": "avx2",
+    "copia-5": "avx512",
+    "copia-6": "avx512",
+    "copia-7": "avx2",
+    "copia-8": "avx512"
+   },
+   "cpus": {
+    "copia-1": "AMD EPYC 7763 64-Core Processor",
+    "copia-2": "AMD EPYC 9V74 80-Core Processor",
+    "copia-3": "AMD EPYC 7763 64-Core Processor",
+    "copia-4": "AMD EPYC 7763 64-Core Processor",
+    "copia-5": "AMD EPYC 9V45 96-Core Processor",
+    "copia-6": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "copia-7": "AMD EPYC 7763 64-Core Processor",
+    "copia-8": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz"
+   },
+   "avx512": 3,
+   "sem_amostra_decisiva": false,
+   "fonte": "artefato agregado-frota-run36074203245 (tentativa mais recente do run; medido pela API)"
+  },
+  {
+   "cp": "CP-013",
+   "run": "36074560890",
+   "tentativa": 1,
+   "head": "932b78f",
+   "evento": "workflow_dispatch",
+   "quando": "2026-09-24T23:48:32Z",
+   "n": 8,
+   "copias": {
+    "copia-1": "avx2",
+    "copia-2": "avx2",
+    "copia-3": "avx2",
+    "copia-4": "avx2",
+    "copia-5": "avx2",
+    "copia-6": "avx512",
+    "copia-7": "avx512",
+    "copia-8": "avx2"
+   },
+   "cpus": {
+    "copia-1": "AMD EPYC 7763 64-Core Processor",
+    "copia-2": "AMD EPYC 7763 64-Core Processor",
+    "copia-3": "AMD EPYC 7763 64-Core Processor",
+    "copia-4": "AMD EPYC 7763 64-Core Processor",
+    "copia-5": "AMD EPYC 9V74 80-Core Processor",
+    "copia-6": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "copia-7": "AMD EPYC 9V74 80-Core Processor",
+    "copia-8": "AMD EPYC 7763 64-Core Processor"
+   },
+   "avx512": 2,
+   "sem_amostra_decisiva": false,
+   "fonte": "artefato agregado-frota-run36074560890 (tentativa mais recente do run; medido pela API)"
+  },
+  {
+   "cp": "CP-013",
+   "run": "36075158875",
+   "tentativa": 1,
+   "head": "1f423b1",
+   "evento": "pull_request",
+   "quando": "2026-09-24T23:56:04Z",
+   "n": 8,
+   "copias": {
+    "copia-1": "avx512",
+    "copia-2": "avx512",
+    "copia-3": "avx2",
+    "copia-4": "avx2",
+    "copia-5": "avx2",
+    "copia-6": "avx2",
+    "copia-7": "avx512",
+    "copia-8": "avx512"
+   },
+   "cpus": {
+    "copia-1": "AMD EPYC 9V74 80-Core Processor",
+    "copia-2": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "copia-3": "AMD EPYC 7763 64-Core Processor",
+    "copia-4": "AMD EPYC 7763 64-Core Processor",
+    "copia-5": "AMD EPYC 7763 64-Core Processor",
+    "copia-6": "AMD EPYC 7763 64-Core Processor",
+    "copia-7": "AMD EPYC 9V74 80-Core Processor",
+    "copia-8": "INTEL(R) XEON(R) PLATINUM 8573C"
+   },
+   "avx512": 4,
+   "sem_amostra_decisiva": false,
+   "fonte": "artefato agregado-frota-run36075158875 (tentativa mais recente do run; medido pela API)"
+  },
+  {
+   "cp": "CP-013",
+   "run": "36075600630",
+   "tentativa": 1,
+   "head": "a20377e",
+   "evento": "pull_request",
+   "quando": "2026-09-25T00:01:47Z",
+   "n": 8,
+   "copias": {
+    "copia-1": "avx2",
+    "copia-2": "avx2",
+    "copia-3": "avx2",
+    "copia-4": "avx2",
+    "copia-5": "avx2",
+    "copia-6": "avx2",
+    "copia-7": "avx2",
+    "copia-8": "avx2"
+   },
+   "cpus": {},
+   "avx512": 0,
+   "sem_amostra_decisiva": true,
+   "fonte": "registro-cp013 (b4e59fb) e PR #12: a tentativa 1 sorteou 8/8 cópias avx2 e o agregador reprovou SEM_AMOSTRA_DECISIVA; o rerun (tentativa 2, abaixo) devolveu o verde — run_attempt=2 medido na API; os artefatos da tentativa 1 foram substituídos pelo rerun, por isso a fonte é o registro, não o zip"
+  },
+  {
+   "cp": "CP-013",
+   "run": "36075600630",
+   "tentativa": 2,
+   "head": "a20377e",
+   "evento": "pull_request",
+   "quando": "2026-09-25T00:01:47Z",
+   "n": 8,
+   "copias": {
+    "copia-1": "avx2",
+    "copia-2": "avx2",
+    "copia-3": "avx2",
+    "copia-4": "avx2",
+    "copia-5": "avx2",
+    "copia-6": "avx2",
+    "copia-7": "avx512",
+    "copia-8": "avx2"
+   },
+   "cpus": {
+    "copia-1": "AMD EPYC 7763 64-Core Processor",
+    "copia-2": "AMD EPYC 7763 64-Core Processor",
+    "copia-3": "AMD EPYC 7763 64-Core Processor",
+    "copia-4": "AMD EPYC 7763 64-Core Processor",
+    "copia-5": "AMD EPYC 7763 64-Core Processor",
+    "copia-6": "AMD EPYC 9V74 80-Core Processor",
+    "copia-7": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "copia-8": "AMD EPYC 9V74 80-Core Processor"
+   },
+   "avx512": 1,
+   "sem_amostra_decisiva": false,
+   "fonte": "artefato agregado-frota-run36075600630 (tentativa mais recente do run; medido pela API)"
+  },
+  {
+   "cp": "CP-013",
+   "run": "36076338788",
+   "tentativa": 1,
+   "head": "a20377e",
+   "evento": "workflow_dispatch",
+   "quando": "2026-09-25T00:10:54Z",
+   "n": 8,
+   "copias": {
+    "copia-1": "avx512",
+    "copia-2": "avx2",
+    "copia-3": "avx2",
+    "copia-4": "avx2",
+    "copia-5": "avx2",
+    "copia-6": "avx512",
+    "copia-7": "avx2",
+    "copia-8": "avx2"
+   },
+   "cpus": {
+    "copia-1": "Intel(R) Xeon(R) 6973P-C",
+    "copia-2": "AMD EPYC 7763 64-Core Processor",
+    "copia-3": "AMD EPYC 9V74 80-Core Processor",
+    "copia-4": "AMD EPYC 7763 64-Core Processor",
+    "copia-5": "AMD EPYC 7763 64-Core Processor",
+    "copia-6": "AMD EPYC 9V45 96-Core Processor",
+    "copia-7": "AMD EPYC 7763 64-Core Processor",
+    "copia-8": "AMD EPYC 7763 64-Core Processor"
+   },
+   "avx512": 2,
+   "sem_amostra_decisiva": false,
+   "fonte": "artefato agregado-frota-run36076338788 (tentativa mais recente do run; medido pela API)"
+  },
+  {
+   "cp": "CP-013",
+   "run": "36076621350",
+   "tentativa": 1,
+   "head": "a20377e",
+   "evento": "workflow_dispatch",
+   "quando": "2026-09-25T00:14:30Z",
+   "n": 8,
+   "copias": {
+    "copia-1": "avx2",
+    "copia-2": "avx2",
+    "copia-3": "avx2",
+    "copia-4": "avx2",
+    "copia-5": "avx512",
+    "copia-6": "avx2",
+    "copia-7": "avx2",
+    "copia-8": "avx2"
+   },
+   "cpus": {
+    "copia-1": "AMD EPYC 9V74 80-Core Processor",
+    "copia-2": "AMD EPYC 7763 64-Core Processor",
+    "copia-3": "AMD EPYC 9V74 80-Core Processor",
+    "copia-4": "AMD EPYC 9V74 80-Core Processor",
+    "copia-5": "AMD EPYC 9V74 80-Core Processor",
+    "copia-6": "AMD EPYC 7763 64-Core Processor",
+    "copia-7": "AMD EPYC 9V74 80-Core Processor",
+    "copia-8": "AMD EPYC 7763 64-Core Processor"
+   },
+   "avx512": 1,
+   "sem_amostra_decisiva": false,
+   "fonte": "artefato agregado-frota-run36076621350 (tentativa mais recente do run; medido pela API)"
+  },
+  {
+   "cp": "CP-013",
+   "run": "36076889018",
+   "tentativa": 1,
+   "head": "a20377e",
+   "evento": "workflow_dispatch",
+   "quando": "2026-09-25T00:17:58Z",
+   "n": 8,
+   "copias": {
+    "copia-1": "avx512",
+    "copia-2": "avx2",
+    "copia-3": "avx512",
+    "copia-4": "avx2",
+    "copia-5": "avx2",
+    "copia-6": "avx512",
+    "copia-7": "avx512",
+    "copia-8": "avx2"
+   },
+   "cpus": {
+    "copia-1": "AMD EPYC 9V74 80-Core Processor",
+    "copia-2": "AMD EPYC 7763 64-Core Processor",
+    "copia-3": "AMD EPYC 9V74 80-Core Processor",
+    "copia-4": "AMD EPYC 7763 64-Core Processor",
+    "copia-5": "AMD EPYC 7763 64-Core Processor",
+    "copia-6": "Intel(R) Xeon(R) 6973P-C",
+    "copia-7": "AMD EPYC 9V45 96-Core Processor",
+    "copia-8": "AMD EPYC 7763 64-Core Processor"
+   },
+   "avx512": 4,
+   "sem_amostra_decisiva": false,
+   "fonte": "artefato agregado-frota-run36076889018 (tentativa mais recente do run; medido pela API)"
+  },
+  {
+   "cp": "CP-013",
+   "run": "36077384114",
+   "tentativa": 1,
+   "head": "79d14ab",
+   "evento": "pull_request",
+   "quando": "2026-09-25T00:24:24Z",
+   "n": 8,
+   "copias": {
+    "copia-1": "avx2",
+    "copia-2": "avx2",
+    "copia-3": "avx2",
+    "copia-4": "avx512",
+    "copia-5": "avx512",
+    "copia-6": "avx512",
+    "copia-7": "avx512",
+    "copia-8": "avx2"
+   },
+   "cpus": {
+    "copia-1": "AMD EPYC 9V74 80-Core Processor",
+    "copia-2": "AMD EPYC 7763 64-Core Processor",
+    "copia-3": "AMD EPYC 7763 64-Core Processor",
+    "copia-4": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "copia-5": "Intel(R) Xeon(R) 6973P-C",
+    "copia-6": "Intel(R) Xeon(R) 6973P-C",
+    "copia-7": "AMD EPYC 9V45 96-Core Processor",
+    "copia-8": "AMD EPYC 7763 64-Core Processor"
+   },
+   "avx512": 4,
+   "sem_amostra_decisiva": false,
+   "fonte": "artefato agregado-frota-run36077384114 (tentativa mais recente do run; medido pela API)"
+  }
+ ],
+ "calculo": {
+  "execucoes": {
+   "contagens": [
+    1,
+    1,
+    3,
+    2,
+    4,
+    0,
+    1,
+    2,
+    1,
+    4,
+    4
+   ],
+   "n_execucoes": 11,
+   "copias_por_execucao": [
+    8
+   ],
+   "total_avx512": 23,
+   "total_copias": 88,
+   "sem_amostra": 1,
+   "media_avx512_por_execucao": 2.091,
+   "variancia_observada": 2.091
+  },
+  "taxa_sem_amostra": {
+   "valor": 0.09091,
+   "k": 1,
+   "n": 11,
+   "ic_wilson_95": [
+    0.01623,
+    0.37736
+   ],
+   "ic_clopper_pearson_95": [
+    0.0023,
+    0.41278
+   ]
+  },
+  "correlacao_intra_execucao": {
+   "referencia": "binomial(N=8, p=0.39175)",
+   "variancia_binomial": 1.906,
+   "variancia_observada": 2.091,
+   "razao_variancia": 1.097,
+   "estatistica_quiquad_dispersao": 10.969,
+   "graus_de_liberdade": 10,
+   "p_valor_dispersao": 0.36,
+   "leitura_dispersao": "sem sobredispersão detectada — as cópias de um mesmo run comportam-se como sorteios independentes",
+   "media_esperada": 3.134,
+   "media_observada": 2.091,
+   "componente_quiquad_media": 6.278,
+   "fracao_avx512_observada": 0.26136,
+   "fracao_do_lock": 0.39175,
+   "p_cauda_binomial_total": 0.00717
+  },
+  "veredito": {
+   "nao_independente_dispara": false,
+   "regra": "taxa > 2% E o limite inferior do IC de 95% (Wilson e Clopper-Pearson) acima de 2%",
+   "n_do_lock": 8,
+   "n_recalculado_da_taxa_observada": 13,
+   "aumento_percentual_n": 62.5,
+   "nota": "NAO_INDEPENDENTE NÃO dispara com estes dados — a taxa pontual está acima de 2% mas o IC cruza o limiar (limite inferior de Wilson 1.62% e de Clopper-Pearson 0.23%, ambos <= 2%): com 11 execuções o poder é baixo; registrar e vigiar, não concluir. A vigilância operacional segue sendo a da CP-013: 3 disparos SEGUIDOS de SEM_AMOSTRA recalculam o N por CP com medição nova"
+  }
+ }
+}

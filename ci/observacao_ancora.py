@@ -1,6 +1,20 @@
 #!/usr/bin/env python3
 """A observação da âncora na classe avx2 (CP-013) — roda NO RUNNER.
 
+CP-014 (25/09/2026): ESTE SCRIPT SAIU DO GATE. A diretiva do dono —
+"medir o mesmo arquivo em toda cópia não traz informação" — tirou a
+medição da âncora do workflow dublador inteira: a cópia avx2 do gate
+sai cedo SEM audio-suite e SEM medir a âncora (33 cópias já tinham
+medido valores idênticos entre si e iguais à medição local — a âncora
+é independente de classe; a medição repetida não informava nada). A
+observação de VERDADE, que INFORMA, compara o regenerado contra a
+âncora, fala a fala, com build — e é o DISPATCH MANUAL `observar_avx2`
+(.github/workflows/observar-avx2.yml, ci/observar_avx2.py). Este script
+segue no repositório como INSTRUMENTO TESTADO (é dele que o
+ci/observar_avx2.py importa o decodificador OGG-Opus via libsndfile, e
+são dele as funções de medição da âncora isolada para qualquer uso
+futuro ad-hoc) — instrumento é um só, código não se copia.
+
 A decisão do dono (24/09/2026, saída (e)): "a prova decisiva é bytes do
 PCM mixado em cópia AVX-512 visível; AVX2 é observação; sem amostra
 decisiva é vermelho nomeado". A classe avx2 SAI DO GATE inteira — a

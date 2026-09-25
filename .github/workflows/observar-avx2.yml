@@ -1,0 +1,347 @@
+name: Observar AVX2
+
+# CP-014 (25/09/2026, diretiva do dono): a observação AVX2 de verdade é
+# um DISPATCH MANUAL. No gate (dublador.yml), a cópia avx2 sai cedo SEM
+# audio-suite e SEM medir a âncora — "medir o mesmo arquivo em toda
+# cópia não traz informação" (a âncora é uma só, independente de
+# classe; 33 cópias mediram valores idênticos na CP-013). A observação
+# que INFORMA compara o REGENERADO contra a âncora, fala a fala — e
+# isso exige build (piper só existe na imagem). Este workflow é onde o
+# preço do build é pago: DE PROPÓSITO, quando ALGUÉM pede, nunca em
+# todo PR.
+#
+# Como a frota se sorteia (ninguém escolhe o runner): a matrix nasce do
+# N do LOCK (o mesmo bloco frota, lido por ci/pins_do_lock.py
+# --amostragem-n — o número mora num lugar só). Cada cópia classifica
+# primeiro, pelo MESMO classificador único de estudio_suite/voz.py:
+#
+#   avx512 -> sai cedo: nada a observar (a observação é exclusiva da
+#             classe avx2; publica um marcador mínimo e termina verde)
+#   avx2   -> build da imagem que materializa o lock, dublagem (rodada
+#             única — observação não prova determinismo), e os DELTAS
+#             POR FALA do regenerado contra a âncora: duração, loudness,
+#             F0 via pitch_f0 (com o delta em cents) e centróide — os
+#             MESMOS quatro descritores da CP-012, o MESMO instrumento
+#             (audio-suite pinada por SHA, perfil
+#             harness/perfis/guardioes-equivalencia.yaml + energia
+#             numpy), medidos pelo ci/observar_avx2.py no runner com o
+#             PYTHON DO VENV da própria audio-suite.
+#
+# RÓTULO: "observação, sem gate" — nada aqui reprova, bloqueia ou
+# valida merge nenhum (a decisão (e) da CP-013 segue intocada: o gate é
+# SÓ bytes do PCM em cópia AVX-512). O que é vermelho honesto: o run em
+# que NENHUMA cópia avx2 caiu no sorteio (SEM_COPIA_AVX2_NO_SORTEIO — o
+# caminho de volta é disparar de novo), cópia sem artefato (ilegível),
+# e a medição que não consegue rodar NENHUM filme (a observação pedida
+# que não observa). Falha de filme individual é status publicado — a
+# observação parcial segue publicada.
+on:
+  workflow_dispatch: {}
+  pull_request:
+    paths:
+      - '.github/workflows/observar-avx2.yml'
+      - 'ci/observar_avx2.py'
+
+jobs:
+  # A mesma matrix do gate — do LOCK, nunca digitada aqui. Sem input de
+  # rodadas: um input que sobrescrevesse o N seria a segunda morada do
+  # número.
+  amostra:
+    runs-on: ubuntu-latest
+    outputs:
+      copias: ${{ steps.copias.outputs.lista }}
+      filmes: ${{ steps.filmes.outputs.lista }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: copias
+        shell: bash
+        run: |
+          # CP-014: o N vem do lock (bloco frota) — a mesma fonte do
+          # gate. O pin falha (exit 2, lock INCOMPLETO nomeado) se o
+          # bloco sumir.
+          N=$(python3 ci/pins_do_lock.py --amostragem-n)
+          lista="["
+          i=1
+          while [ "$i" -le "$N" ]; do
+            [ "$i" -gt 1 ] && lista="$lista,"
+            lista="$lista\"copia-$i\""
+            i=$((i+1))
+          done
+          echo "lista=$lista]" >> "$GITHUB_OUTPUT"
+          echo "copias: $lista] (N do lock: $N — CP-014)"
+
+      - id: filmes
+        shell: bash
+        run: |
+          python3 - <<'EOF' | tee /tmp/filmes.log
+          import sys
+          sys.path.insert(0, ".")
+          from estudio_suite.comum import filmes_com_audio
+          print("lista=" + " ".join(filmes_com_audio()))
+          EOF
+          while IFS= read -r linha; do
+            case "$linha" in
+              lista=*) echo "${linha}" >> "$GITHUB_OUTPUT" ;;
+            esac
+          done < <(grep '^lista=' /tmp/filmes.log)
+
+  observar:
+    needs: amostra
+    if: github.event_name == 'workflow_dispatch'
+    strategy:
+      fail-fast: false
+      matrix:
+        copia: ${{ fromJSON(needs.amostra.outputs.copias) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      # A identidade da máquina — o MESMO primeiro passo do gate: lscpu,
+      # a classe pelo classificador ÚNICO, e o COPIA/RUN_ID no ambiente.
+      - name: A identidade da máquina (lscpu, classe)
+        shell: bash
+        run: |
+          lscpu --json > /tmp/lscpu.json
+          mkdir -p /tmp/identidade /tmp/obs-copia
+          python3 - <<'EOF' | tee /tmp/identidade-maquina.env
+          import json
+          d = json.load(open('/tmp/lscpu.json'))
+          campos = {e['field'].rstrip(':').strip(): (e['data'] or '').strip()
+                    for e in d['lscpu']}
+          print(f"CPU_MODELO={campos.get('Model name', 'ilegivel')}")
+          flags = set(campos.get('Flags', '').split())
+          print(f"AVX2={int('avx2' in flags)}")
+          print(f"AVX512F={int('avx512f' in flags)}")
+          open('/tmp/obs-copia/flags-completas.txt', 'w').write(
+              campos.get('Model name', '?') + '\n'
+              + ' '.join(sorted(flags)) + '\n')
+          EOF
+          cat /tmp/identidade-maquina.env >> "$GITHUB_ENV"
+          echo "COPIA=${{ matrix.copia }}" >> "$GITHUB_ENV"
+          echo "RUN_ID=${{ github.run_id }}" >> "$GITHUB_ENV"
+          echo "ATTEMPT=${{ github.run_attempt }}" >> "$GITHUB_ENV"
+          CLASSE_DO_RUNNER=$(python3 -c "
+          import sys; sys.path.insert(0, '.')
+          from estudio_suite import voz
+          print(voz.classe_simd_medida())")
+          echo "CLASSE_DO_RUNNER=$CLASSE_DO_RUNNER" | tee -a "$GITHUB_ENV"
+          echo "== cópia ${{ matrix.copia }} classificou: $CLASSE_DO_RUNNER"
+
+      # A cópia avx512 não tem nada a observar: a observação é exclusiva
+      # da classe avx2 (a prova da avx512 é o gate, e ela já roda lá).
+      # Publica o marcador mínimo para o resumo contar — sem build, sem
+      # audio-suite, segundos de runner.
+      - name: A saída cedo da classe avx512 (nada a observar)
+        if: env.CLASSE_DO_RUNNER == 'avx512'
+        shell: bash
+        run: |
+          python3 - <<'EOF'
+          import json, os
+          doc = {
+            "copia": os.environ.get("COPIA"),
+            "classe": "avx512",
+            "veredito": "saida-cedo",
+            "detalhe": ("classe avx512: nada a observar aqui — a observação "
+                        "é exclusiva da classe avx2; a prova desta classe "
+                        "é o gate (dublador.yml)"),
+          }
+          with open("/tmp/obs-copia/saida-cedo.json", "w",
+                    encoding="utf-8") as f:
+              json.dump(doc, f, ensure_ascii=False, indent=1)
+          print(json.dumps(doc, ensure_ascii=False, indent=1))
+          EOF
+          echo "== SAÍDA CEDO: cópia ${COPIA} é avx512 — nada a observar"
+
+      # ---- daqui para baixo, só a classe avx2 — a observação de verdade --
+      # O cache do modelo vale para a classe que builda aqui: chaveado
+      # pelo sha256 do lock (o mesmo critério do gate).
+      - name: As chaves de cache são os sha256 dos locks
+        if: env.CLASSE_DO_RUNNER == 'avx2'
+        run: |
+          echo "VOZ_LOCK_SHA=$(sha256sum voz.lock | cut -d' ' -f1)" >> "$GITHUB_ENV"
+          echo "AMOSTRAS_LOCK_SHA=$(sha256sum amostras.lock | cut -d' ' -f1)" >> "$GITHUB_ENV"
+
+      - name: O cache do modelo de voz (workspace/voz)
+        if: env.CLASSE_DO_RUNNER == 'avx2'
+        uses: actions/cache@v4
+        with:
+          path: workspace/voz
+          key: voz-modelo-${{ env.VOZ_LOCK_SHA }}
+
+      - name: O cache das portadoras e earcons (workspace/amostras)
+        if: env.CLASSE_DO_RUNNER == 'avx2'
+        uses: actions/cache@v4
+        with:
+          path: workspace/amostras
+          key: amostras-${{ env.AMOSTRAS_LOCK_SHA }}
+
+      # A âncora commitada, COPIADA ANTES da dublagem — o lado de
+      # referência dos deltas (o dublar regenera POR CIMA).
+      - name: A âncora commitada (copiada antes da dublagem)
+        if: env.CLASSE_DO_RUNNER == 'avx2'
+        shell: bash
+        run: |
+          mkdir -p /tmp/commitado
+          find filmes -path '*/audio/*.opus' | sort | while read -r f; do
+            mkdir -p "/tmp/commitado/$(dirname "$f")"
+            cp "$f" "/tmp/commitado/$f"
+            sha256sum "$f"
+          done | tee /tmp/commitado.sha256
+          find filmes -path '*/audio/audio.json' | sort | while read -r f; do
+            mkdir -p "/tmp/commitado/$(dirname "$f")"
+            cp "$f" "/tmp/commitado/$f"
+          done
+
+      # O build DE PROPÓSITO: a observação paga o preço porque é pedida.
+      # A imagem é a que materializa o lock — build-arg de threads do
+      # mesmo lugar, cache de camadas do GitHub Actions.
+      - name: O builder com cache de camadas
+        if: env.CLASSE_DO_RUNNER == 'avx2'
+        run: docker buildx create --name observador --driver docker-container --use
+
+      - name: A imagem que materializa o lock
+        if: env.CLASSE_DO_RUNNER == 'avx2'
+        run: |
+          THREADS_DO_LOCK=$(python3 ci/pins_do_lock.py --threads)
+          echo "== threads da ancora (voz.lock): $THREADS_DO_LOCK"
+          docker buildx build \
+            --platform linux/amd64 \
+            --build-arg THREADS_DO_LOCK="$THREADS_DO_LOCK" \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            --load \
+            -t estudio-dublador:voz-lock \
+            -f ferramentas/dublador/Dockerfile .
+
+      # Rodada ÚNICA — a observação não prova determinismo (isso é do
+      # gate); ela compara o regenerado com a âncora, fala a fala.
+      - name: Sintetizar quem declara audio (rodada única)
+        if: env.CLASSE_DO_RUNNER == 'avx2'
+        env:
+          ESTUDIO_VOZ_CACHE: ${{ github.workspace }}/workspace/voz
+        run: |
+          for fid in ${{ needs.amostra.outputs.filmes }}; do
+            ferramentas/dublador/dublar.sh "$fid"
+          done
+          find filmes -path '*/audio/*.opus' | sort | xargs sha256sum \
+            > /tmp/obs-copia/regenerado.sha256
+
+      # A medição: o PYTHON DO VENV da audio-suite pinada (numpy, scipy
+      # e soundfile da própria ferramenta — um pin governa o instrumento
+      # inteiro) e os caminhos perguntados ao PRÓPRIO pipx (o padrão
+      # medido na CP-013: casas diferentes em runner e máquina local).
+      - name: Os deltas por fala (regenerado x âncora — observação, sem gate)
+        if: env.CLASSE_DO_RUNNER == 'avx2'
+        shell: bash
+        run: |
+          set -o pipefail
+          if ( pipx install "git+https://github.com/danzeroum/audio-suite@90ffac796d7615e798b5bb7e17e48726be7fa686" \
+               && BIN_AS=$(pipx environment --value PIPX_BIN_DIR 2>/dev/null \
+                            || echo "$HOME/.local/bin") \
+               && export PATH="$BIN_AS:$PATH" \
+               && VENV_AS=$(pipx environment --value PIPX_LOCAL_VENVS 2>/dev/null \
+                            || echo "$HOME/.local/pipx/venvs") \
+               && PY_AS="$VENV_AS/audio-suite/bin/python" \
+               && [ -x "$PY_AS" ] \
+               && echo "interpretador da observação: $PY_AS (venv da audio-suite pinada)" \
+               && "$PY_AS" ci/observar_avx2.py \
+                    --commitado /tmp/commitado \
+                    --saida /tmp/obs-copia ) 2>&1 | tee /tmp/obs-copia/observacao.log; then
+            echo "observação publicada (rotulada 'observação, sem gate')"
+          else
+            echo "A OBSERVAÇÃO FALHOU na cópia ${COPIA} — vermelho honesto:"
+            echo "a observação pedida que não observa; o log está acima"
+            exit 1
+          fi
+
+      - name: Publicar a observação da cópia (verde também)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: observacao-avx2-${{ matrix.copia }}-run${{ github.run_id }}
+          path: /tmp/obs-copia/
+
+  # O resumo do DISPATCH — quem observou, quem saiu cedo, e o vermelho
+  # nomeado quando o sorteio não trouxe NENHUMA cópia avx2 (o caminho
+  # de volta é disparar de novo — o mesmo desenho nomeado do gate).
+  resumo:
+    needs: [amostra, observar]
+    if: always() && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Baixar as observações de todas as cópias
+        uses: actions/download-artifact@v4
+        with:
+          pattern: observacao-avx2-*
+          path: /tmp/obs
+
+      - name: O resumo da observação (CP-014)
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 - <<'EOF' | tee /tmp/resumo.txt
+          import json, sys
+          from pathlib import Path
+
+          raiz = Path("/tmp/obs")
+          observadas, cedo, sem_artefato = [], [], []
+          deltas_max = {}
+          for sub in sorted(p for p in raiz.iterdir() if p.is_dir()) if raiz.exists() else []:
+              obs = sub / "observacao-avx2.json"
+              sc = sub / "saida-cedo.json"
+              if obs.exists():
+                  d = json.loads(obs.read_text(encoding="utf-8"))
+                  copia = d.get("copia", sub.name)
+                  observadas.append(copia)
+                  print(f"   {copia}: {d.get('classe')} — status {d.get('status')}"
+                        f" — {len(d.get('filmes', []))} filme(s)")
+                  for f in d.get("filmes", []):
+                      for k, v in (f.get("delta_maximo") or {}).items():
+                          if v is not None:
+                              deltas_max.setdefault(k, []).append(v)
+              elif sc.exists():
+                  d = json.loads(sc.read_text(encoding="utf-8"))
+                  cedo.append(d.get("copia", sub.name))
+              else:
+                  sem_artefato.append(sub.name)
+
+          esperadas = json.loads('''${{ needs.amostra.outputs.copias }}''')
+          print()
+          print(f"== RESUMO DA OBSERVAÇÃO AVX2 (CP-014 — dispatch manual)")
+          print(f"   cópias esperadas: {len(esperadas)} (N do lock)")
+          print(f"   observadas (avx2): {len(observadas)}"
+                f" — {', '.join(observadas) or '—'}")
+          print(f"   saída cedo (avx512): {len(cedo)}"
+                f" — {', '.join(cedo) or '—'}")
+          if sem_artefato:
+              print(f"   SEM ARTEFATO: {', '.join(sem_artefato)} — ilegível")
+          for k in sorted(deltas_max):
+              vals = deltas_max[k]
+              print(f"   delta máximo de {k}: max {max(vals)} "
+                    f"através de {len(vals)} cópia(s) observadas")
+          if len(observadas) == 0:
+              print()
+              print("VERMELHO nomeado: SEM_COPIA_AVX2_NO_SORTEIO — nenhuma cópia "
+                    "avx2 caiu no sorteio; o caminho de volta é DISPARAR DE NOVO "
+                    "(a frota sorteia, o N do lock dá a probabilidade)")
+              sys.exit(1)
+          if sem_artefato:
+              print()
+              print("VERMELHO nomeado: cópia esperada SEM ARTEFATO — ilegível")
+              sys.exit(1)
+          print()
+          print("   rótulo: 'observação, sem gate' — nada disto reprova merge")
+          print("   nenhum (o gate segue sendo bytes do PCM em AVX-512)")
+          EOF
+
+      - name: Publicar o resumo
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resumo-observacao-avx2-run${{ github.run_id }}
+          path: /tmp/resumo.txt

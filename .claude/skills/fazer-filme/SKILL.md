@@ -59,8 +59,9 @@ lock — e o próprio dublar confere e recusa na divergência (incluindo a class
 lida de flags medidas e gravada no `audio.json`). Desde a CP-012 o `audio.json` também
 carrega o **hash do PCM mixado** (`mix.pcm_f32_sha256`) — o contrato que o job dublador
 prova (CP-013): cópias **AVX-512 visíveis** exigem o hash bater com o codec sob teto
-decodificado; cópias **avx2 saem cedo como observação** (sem gate, sem build — a
-decisão do dono de 24/09/2026). Sem o hash, o fiscal de redublagem aponta a dívida. As vozes e poses não se listam aqui:
+decodificado; cópias **avx2 saem cedo** (sem gate, sem build, sem medir a âncora —
+a decisão do dono de 24/09/2026; a observação de verdade é o dispatch manual
+`observar_avx2`, "observação, sem gate"). Sem o hash, o fiscal de redublagem aponta a dívida. As vozes e poses não se listam aqui:
 `orientar` e `inventario` respondem.
 
 ## 4. Quando a história pede algo que não existe

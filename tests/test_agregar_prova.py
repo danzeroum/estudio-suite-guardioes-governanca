@@ -96,6 +96,21 @@ def main():
         and "copia-12" in r.stdout and "observacao" in r.stdout,
         "o resumo lista cópia, CPU, classe, prova e veredito de TODAS")
 
+    # --- o REGISTRO no agregado.json (CP-014, passo 5) ------------------
+    reg = ag.get("registro")
+    chk(isinstance(reg, dict) and reg.get("n") == 12
+        and reg.get("avx512") == 1 and reg.get("sem_amostra_decisiva") is False,
+        "o agregado.json leva a entrada de registro: n, classes por cópia, "
+        "avx512 e SEM_AMOSTRA=nao (CP-014 — para o PR de manutenção)")
+    chk(reg.get("copias", {}).get("copia-12") == "avx512"
+        and reg.get("copias", {}).get("copia-1") == "avx2",
+        "o registro declara a classe de cada cópia esperada")
+    chk("PR de manutenção" in reg.get("fonte", ""),
+        "a fonte do registro declara: cresce por PR de manutenção, sem "
+        "commit automático no main")
+    chk("registro" in r.stdout, "o agregador anuncia a entrada de registro "
+        "no stdout (o curador sabe onde buscar)")
+
     # --- a aceite, caso 2: {0 AVX-512} -> SEM_AMOSTRA_DECISIVA ------------
     d = caso("c2")
     docs = [copia_veredito(f"copia-{i}", "avx2", "observacao")
@@ -193,17 +208,29 @@ def main():
             "if: env.CLASSE_DO_RUNNER == 'avx512'")
         chk(cond == 1,
             f"'{passo}' roda SÓ na classe avx512 (cópia avx2 sem build)")
-    trecho_obs = wf[wf.index("A observação da âncora"):]
-    chk("if: env.CLASSE_DO_RUNNER == 'avx2'" in trecho_obs[:trecho_obs.index("pipx")],
-        "a observação roda SÓ na classe avx2 (sem build, sem gate)")
+    # CP-014: a cópia avx2 sai cedo SEM audio-suite e SEM medir a âncora —
+    # o passo é declaração, não instrumento
+    trecho_saida = wf[wf.index("A saída cedo da classe avx2"):]
+    trecho_saida = trecho_saida[:trecho_saida.index(
+        "# CP-013: daqui para baixo")]
+    chk("if: env.CLASSE_DO_RUNNER == 'avx2'" in trecho_saida,
+        "a saída cedo roda SÓ na classe avx2 (sem build, sem gate)")
+    chk("pipx" not in trecho_saida and "observacao_ancora" not in trecho_saida,
+        "a saída cedo NÃO instala audio-suite nem mede a âncora (CP-014: "
+        "medir o mesmo arquivo em toda cópia não traz informação)")
+    chk("pipx install" not in wf,
+        "o gate não instala audio-suite em passo NENHUM — o instrumento "
+        "de observação saiu do gate inteiro; a observação de verdade é o "
+        "dispatch manual observar_avx2")
     import re as _re3
     chk(not _re3.search(r"^\s*continue-on-error:", wf, _re3.M),
         "o job dublador segue OBRIGATÓRIO: nenhum continue-on-error em passo "
         "nenhum — a tolerância da observação é um if/else que PUBLICA o "
         "status, não um continue-on-error que esconderia a falha")
-    chk("- name: O veredito da cópia (CP-013)" in wf
-        and "veredito.json" in wf,
-        "a cópia publica o veredito.json (o contrato do agregador) sempre")
+    chk("- name: O veredito e a identidade da cópia (CP-013; rótulos CP-014)" in wf
+        and "ci/veredito_da_copia.py" in wf and "veredito.json" in wf,
+        "a cópia publica o veredito.json (o contrato do agregador) sempre, "
+        "pelo ci/veredito_da_copia.py com rótulos únicos")
     chk("- name: O agregador da prova por amostragem (CP-013)" in wf
         and "download-artifact" in wf and "--conferir-n" in wf,
         "o job agregar baixa todos os artefatos e confere o N contra o lock")
