@@ -166,6 +166,54 @@ proposta:
       main, `git revert -m 1` + MAIN_QUEBROU se o main quebrar. O #14 não
       é tocado (segue AGUARDANDO_LEI). Worklog e pare.
 
+  resultado_da_medicao:
+    quando: "2026-09-25 (diagnóstico do registro de 14 execuções, ANTES de mudar código — passo 2 do plano)"
+    diagnostico_na_cp:
+      pergunta: >
+        A fração AVX-512 caiu de 38/97 (lock) para 30/112 (era CP-013/014).
+        Com p=0,268, P(zero em 8) ≈ 8,2% e o esperado em 14 execuções é
+        ≈1,15 SEM_AMOSTRA. Observadas: 2, sem sobredispersão. O excesso se
+        explica pela DERIVA da fração, ou por dependência entre cópias?
+      numeros_do_registro:
+        fracao_do_lock: "38/97 = 0,39175"
+        fracao_da_era_cp013_014: "30/112 = 0,26786"
+        p_zero_em_8_com_fracao_da_era: 0.08256
+        esperado_sem_amostra_em_14_com_fracao_da_era: 1.156
+        observado_sem_amostra_em_14: 2
+        esperado_sem_amostra_em_14_com_fracao_do_lock: 0.262
+        p_x_maior_ou_igual_2_binomial_14_0_08256: 0.3237
+        dispersao_vs_fracao_do_lock: "qui-quadrado 15,59 em 13 g.l., p=0,27 (o registrado na CP-014)"
+        homogeneidade_vs_fracao_da_era: "qui-quadrado 18,94 em 13 g.l., p≈0,12"
+        cauda_binomial_da_fracao_total: "P(X <= 30 | Bin(112, 38/97)) = 0,0041"
+      veredito_do_diagnostico: >
+        CONFIRMO: o excesso se explica pela DERIVA da fração e não por
+        dependência entre cópias. A conta em três partes: (1) SOB O
+        MODELO DO LOCK (p=38/97, P(zero em 8)=1,87%) o esperado em 14
+        disparos era 0,26 SEM_AMOSTRA — as 2 observadas seriam um excesso
+        de ~8x, suspeito de dependência; (2) SOB A FRAÇÃO MEDIDA DA ERA
+        (p=30/112=0,2679, P(zero em 8)=8,26%) o esperado era 1,16 e as 2
+        observadas são rotina de binomial — P(X>=2 | Bin(14, 8,26%)) =
+        32,4%: nada de anômalo; (3) a CORRELAÇÃO INTRA-EXECUÇÃO segue
+        limpa nos dois referenciais: dispersão 15,59 em 13 g.l. p=0,27
+        contra a binomial do lock, e homogeneidade 18,94 em 13 g.l.
+        p≈0,12 contra a fração da era — nenhum dos dois rejeita sorteios
+        independentes no run. E a média é o próprio achado persistente:
+        30/112 contra 38/97 tem cauda binomial 0,0041 — o POOL MUDOU, o
+        sorteio não. NAO_INDEPENDENTE: NÃO dispara (e nem chega perto:
+        a regra dos DOIS ICs segue como na CP-014 — o Wilson sozinho
+        dispararia com 2/14, o Clopper-Pearson cruza por 0,22 pontos).
+        A conclusão operacional é a da decisão do dono: recalcular o N da
+        fração VIVA (janela móvel), não perseguir dependência que os
+        dados não mostram.
+      consequencia_no_n: >
+        Com a fração da janela (as 15 execuções do registro após incluir
+        a pendente do head final da CP-014: 32/120 = 0,2667), o menor N
+        com P(zero) <= 2% é 13: P(zero) em 12 = 2,42% > 2%; em 13 =
+        1,77% <= 2%. É o mesmo N condicional que a CP-014 calculou e
+        proibiu-se de aplicar sozinha (+62,5% > 50%): aqui ele entra por
+        PR de manutenção — este PR, com a decisão do dono citada no 1º
+        commit — e a partir dele o próprio teste recalcula e fiscaliza.
+
   doutrina:
     - >
       O gate continua sendo SÓ bytes do PCM mixado em cópia AVX-512
