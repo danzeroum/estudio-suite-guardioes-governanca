@@ -55,7 +55,12 @@ proposta:
   titulo: "Fechamento da CP-013 no main; #14 só com o filme; observação AVX2 vira dispatch manual; rótulos únicos no identidade.json; independência das cópias monitorada"
   autor: agente/curador
   criada_em: "2026-09-25T02:00:00Z"
-  estado: em-execucao
+  # CONCLUIDA (25/09/2026): todas as pontas da diretiva medidas e
+  # entregues; o PR #15 mergeou com o main VERDE. A parada que segue
+  # ativa é a da CP-013 (AGUARDANDO_LEI, reservada ao #14) — não é
+  # desta CP; nenhuma parada nomeada daqui disparou (NAO_INDEPENDENTE
+  # não disparou: o IC cruza 2%; ver resultado_da_medicao).
+  estado: concluida
 
   sinal:
     tipo: diretiva-do-dono
@@ -126,6 +131,166 @@ proposta:
       head exato, atualizado com o main, sem --admin, sem force-push no
       main, reversão com git revert -m 1 + MAIN_QUEBROU se o main
       quebrar). O #14 segue AGUARDANDO_LEI. Worklog e pare.
+
+  resultado_da_medicao:
+    quando: "2026-09-25 (gate no head do PR, dispatch manual, registro das 11 execuções da era CP-013)"
+    fechamento_no_main:
+      cherry_pick: >
+        b4e59fb (o único commit só de CP-013/frota no #14 — confere arquivo
+        a arquivo: toca apenas este yaml de registro) foi cherry-pickado
+        para a branch nova (802720f) e mergeia com o PR #15: a CP-013 fica
+        CONCLUIDA no main com a tabela da frota (8 cópias AVX-512
+        idênticas no head final — 3 Intel de duas gerações + 5 AMD-avx512,
+        zero divergentes, controle do codec reprovando com número em
+        todas) e a ocorrência de SEM_AMOSTRA_DECISIVA (1x; o rerun
+        devolveu o verde). O estado dela segue encerrada-com-parada
+        AGUARDANDO_LEI — a parada é do #14, que continua aberto esperando
+        LEI_TOKEN.
+    quatorze_limpo:
+      diff_medido: >
+        Após o rebase (reset para 1c8f839 + force-with-lease SÓ na branch
+        do #14; o main não viu force nenhum), `git diff --name-only
+        origin/main...` do #14 lista exatamente: filmes/relatorio-impacto/
+        ** (roteiro, storyboard, referências baseline, filme.js,
+        relatorio.json), a seção terceiro_filme do tests/test_navegador.py
+        (252/252 e o controle negativo 251/1 do B), o catalogo.js, o
+        README derivado (a linha prevista no DERIVADO:catalogo), os
+        filmes/{jornada-dado,legitimo-interesse}/relatorio.json
+        sincronizados e as evidências do navegador em harness/runs/. Nada
+        além do filme. CI no head 1c8f839: Suite verde + Dublador verde
+        (rodar=false — filme mudo não acorda o job caro, medido nos runs
+        36090834286/36090834376).
+    gate_avx2_sem_instrumento:
+      medido: >
+        O Dublador no head do PR #15 (run 36090778482): 3 cópias AVX-512
+        idênticas (verde), 5 cópias avx2 com veredito "observacao" e prova
+        "observacao-dispatch-manual" — e NENHUMA instalação de audio-suite
+        no gate (o passo de saída cedo é só declaração; o teste estrutural
+        reprova 'pipx install' no dublador.yml inteiro). O veredito.json e
+        o identidade.json de cada cópia nascem do
+        ci/veredito_da_copia.py: na cópia avx2, os 5 campos de síntese são
+        exatamente "nao_aplicavel:classe_avx2"; nenhum texto com "ou"
+        (ROTULO_AMBIGUO reprova a geração — provado no teste com o defeito
+        real da CP-013).
+    observacao_real:
+      dispatch: "run 36090788416 (workflow_dispatch, head 5eca95a, 25/09/2026)"
+      sorteio: >
+        Matrix de 8 do lock: 4 cópias avx2 OBSERVARAM (copia-2/5/6 em AMD
+        EPYC 7763, copia-4 em AMD EPYC 9V74 — modelos DIFERENTES), 4 saíram
+        cedo como avx512 (9V45 x3, Intel 6973P-C) com marcador mínimo.
+      o_que_foi_medido: >
+        Cada cópia avx2 buildou de propósito (a imagem do lock), sintetizou
+        os 2 filmes em rodada única e mediu, fala a fala, os QUATRO
+        descritores do REGENERADO contra a ÂNCORA commitada (o MESMO
+        instrumento da CP-012): 30 falas em jornada-dado + 12 em
+        legitimo-interesse por cópia, status ok nas 4.
+      deltas_por_fala: >
+        As 4 cópias — CPUs AMD de dois modelos — devolveram deltas
+        IDÊNTICOS fala a fala: a divergência da classe avx2 contra a
+        âncora é DETERMINÍSTICA na classe, não ruído por máquina (achado
+        que a CP-011 já apontava e o dispatch agora publica com número).
+        Medianas de |delta| por fala: F0 1,44 cents (jornada) e 1,19 cents
+        (legítimo); loudness 0,01-0,02 LU; duração 0,0-0,1 ms; centróide
+        2,6-5,9 Hz. Máximos: duração 2,1 ms; loudness 0,08 LU; centróide
+        14,23 Hz; F0 42,1 Hz = 288,7 cents — a fala 22/p10/elefante, o
+        timbre misto voz+trompa que a issue danzeroum/audio-suite#46 pergunta
+        (fragilidade do rastreador, mudança real de vozeamento, os dois?):
+        o máximo de F0 É a fala de instrumento instável, exatamente como a
+        CP-012 registrou. Tudo rotulado "observação, sem gate" — nada
+        reprova, nada valida; o gate segue sendo bytes do PCM em AVX-512.
+    independencia:
+      registro: >
+        harness/frota/execucoes-gate.json leva as 11 execuções medidas da
+        era CP-013 (10 runs com artefato agregado-frota baixado e lido +
+        a tentativa 1 do run 36075600630, a SEM_AMOSTRA real, com a fonte
+        declarada: os artefatos daquela tentativa foram substituídos pelo
+        rerun; run_attempt=2 medido na API). O bloco calculo é RECALCULADO
+        por ci/independencia.py e reconferido pelo teste — número
+        reproduzível, nunca afirmado.
+      taxa_e_ic: >
+        Taxa de SEM_AMOSTRA: 1/11 = 9,09% — acima de 2% no ponto, MAS o IC
+        de 95% cruza o limiar: Wilson [1,62%; 37,74%] e Clopper-Pearson
+        [0,23%; 41,28%], limites inferiores ABAIXO de 2%. NAO_INDEPENDENTE
+        NÃO DISPARA (a regra da diretiva exige o IC acima de 2%): com 11
+        execuções o poder é baixo — registrar e vigiar, não concluir. A
+        vigilância operacional segue a da CP-013: 3 disparos SEGUIDOS de
+        SEM_AMOSTRA recalculam o N por CP com medição nova.
+      correlacao_intra_execucao: >
+        Cópias AVX-512 por execução comparadas à binomial(N=8, p=38/97):
+        variância observada 2,09 x binomial 1,91 (razão 1,10) —
+        qui-quadrado de dispersão 10,97 em 10 g.l., p=0,36: SEM
+        SOBREDISPERSÃO, as cópias de um mesmo run são sorteios
+        independentes (a independência que o N pressupõe foi conferida, não
+        assumida). A MÉDIA é outro assunto: 23/88 cópias com avx512f =
+        26,1% na era CP-013, contra 38/97 = 39,2% do lock (cauda binomial
+        0,0072) — a fração da frota MEDIDA nesta era ficou abaixo da
+        fração do registro das CPs 009/011/012; pool vivo. Se a tendência
+        se confirmar, o N sai de 8 para 13 (+62,5%) — acima dos 50%:
+        aplicação unilateral proibida, proposta por CP quando o dado
+        sustentar.
+      registro_em_producao: >
+        O agregador publica a entrada de registro no agregado.json de todo
+        run (medido no run 36090778482: run/tentativa/head/evento/quando/
+        copias/avx512/sem_amostra); o curador a acrescenta ao registro por
+        PR de manutenção — commit automático no main, JAMAIS. Nota medida:
+        no evento pull_request o GITHUB_SHA é o commit de MERGE, não o
+        head do PR — o head do registro é o SHA testado (o merge commit),
+        e o curador registra o head do PR na entrada quando acrescenta.
+
+  desfecho:
+    entregue: >
+      (1) O FECHAMENTO DA CP-013 NO MAIN: cherry-pick do b4e59fb no PR #15
+      — a tabela da frota e a ocorrência de SEM_AMOSTRA_DECISIVA moram
+      onde os registros moram; a CP-013 segue encerrada-com-parada
+      AGUARDANDO_LEI (do #14). (2) O #14 SÓ COM O FILME: rebase com
+      force-with-lease na branch dele (nunca no main), diff conferido —
+      só filme, derivados e evidências; corpo e comentário do PR #14
+      atualizados com o estado novo; segue rascunho de propósito.
+      (3) A CÓPIA AVX2 DO GATE TERMINA SEM AUDIO-SUITE: a saída cedo é
+      declaração (o instrumento saiu do gate inteiro; teste estrutural
+      reprova 'pipx install' no dublador.yml), e a observação real existe
+      como dispatch manual observar_avx2 com UMA EXECUÇÃO REGISTRADA
+      (run 36090788416: 4 cópias avx2 medidas, deltas por fala
+      publicados, "observação, sem gate"). (4) O identidade.json SEM
+      CAMPO AMBIGUO: rótulos únicos medido:/falhou:/nao_aplicavel:, os
+      campos de síntese da avx2 exatamente nao_aplicavel:classe_avx2, e
+      texto com "ou" reprova a geração (73 verificações no teste).
+      (5) A TAXA DE SEM_AMOSTRA E A CORRELAÇÃO CALCULADAS E REGISTRADAS:
+      1/11 = 9,09% com IC95 cruzando 2% (não dispara), dispersão sem
+      sobredispersão (p=0,36), fração 26,1% vs 39,2% do lock — tudo no
+      registro versionado, recalculável, crescendo por PR de manutenção.
+      (6) O merge do PR #15 pelo rito do adendo: checks verdes no head
+      exato, sem --admin, sem force-push no main, main VERDE depois.
+      Nenhum .opus mudou; nenhum arquivo de filme entrou na CP.
+    parada_final: >
+      NENHUMA desta CP (concluida). A parada ativa do repositorio segue
+      sendo a da CP-013 — AGUARDANDO_LEI, reservada ao #14: sem LEI_TOKEN,
+      roteiro e storyboard do filme 03 ficam INDECISOS (CP-002) e os
+      artigos 38 e 10 não são conferíveis contra o lei.lock. O caminho de
+      volta (registrado no #14): LEI_TOKEN -> conferir os artigos ->
+      corrigir o que divergir -> assinar a revisão -> CI verde -> merge.
+
+  licoes:
+    a_divergencia_avx2_e_deterministica: >
+      As 4 cópias avx2 do dispatch (AMD 7763 x3, 9V74 x1) devolveram
+      deltas IDÊNTICOS fala a fala contra a âncora — a divergência da
+      classe é determinística, não sorteio por máquina. A observação sem
+      gate publicou o número que o gate de bytes nunca precisou perguntar:
+      verificação (bytes em AVX-512) e validação (descritores em AVX2) seguem
+      separadas, e o dado de validação fica público sem fingir precisão
+      de gate.
+    o_maximo_e_a_fala_de_instrumento: >
+      O máximo de |delta F0| (42,1 Hz / 288,7 cents) É a fala
+      22/p10/elefante — o timbre misto voz+trompa da issue #46 do
+      audio-suite. A observação de 2 filmes com 42 falas acha o MESMO
+      pico que a CP-012 achou: o instrumento se declara instável naquela
+      fala, e é por isso que nenhum teto de F0 entrou no lock.
+    validacao_local_nao_e_evidencia: >
+      A validação local (sem audio-suite) rebaixou os relatorio.json
+      derivados para "indeciso / audio-suite ausente" — o commit revertido
+      na hora: o estado medido pelo CI é o que fica; a máquina sem
+      instrumento não publica evidência. E o run do navegador gerado pelo
+      teste local era ruído, não evidência — revertido junto.
 
   doutrina:
     - >
