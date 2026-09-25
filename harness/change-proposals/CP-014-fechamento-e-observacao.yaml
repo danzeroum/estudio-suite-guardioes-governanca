@@ -1,0 +1,217 @@
+# Mudanca proposta a partir de DIRETIVA DO DONO sobre EVIDENCIA medida.
+# Declarada antes de executada; fica como registro mesmo depois.
+#
+# A CP-013 fechou com a frota COMPROVADA e a parada AGUARDANDO_LEI — mas o
+# FECHAMENTO dela (a tabela da frota, a ocorrência de SEM_AMOSTRA_DECISIVA)
+# commitou na branch do #14 (b4e59fb), onde só deveriam morar os commits do
+# filme. O dono viu o estado e mandou arrumar a casa:
+#
+#   DIRETIVA DO DONO (25/09/2026):
+#   "CP-014: levar ao main o fechamento da CP-013 que ficou na branch do
+#    #14; tirar do #14 tudo que não é do filme; corrigir a observação AVX2
+#    e os rótulos do identidade.json; monitorar a independência das cópias."
+#
+# O que a diretiva corrige, cada ponta com o porquê medido:
+#
+#   (1) O FECHAMENTO PERTENCE AO MAIN. A CP-013 encerrou-com-parada — o
+#   registro do encerramento é da CP, não do PR do filme que espera a lei.
+#   O cherry-pick do fechamento para uma branch nova (esta) leva ao main
+#   a tabela da frota e a ocorrência de SEM_AMOSTRA_DECISIVA; o #14 perde
+#   o commit e volta a conter SÓ o filme.
+#
+#   (2) A OBSERVAÇÃO DA ÂNCORA NO GATE NÃO INFORMA. Toda cópia avx2 media
+#   O MESMO ARQUIVO commitado — a âncora é uma só, independente de classe
+#   (a CP-011 isolou isso; 33 cópias mediram valores idênticos entre si e
+#   iguais à medição local). Medir o mesmo arquivo em toda cópia não traz
+#   informação: a observação sai do gate inteira. A cópia avx2 no gate
+#   passa a sair cedo SEM instalar audio-suite e SEM medir a âncora — só
+#   classifica, publica identidade e veredito, e termina neutra. A
+#   observação de verdade — a que INFORMA — compara o REGENERADO contra a
+#   âncora, fala a fala, e isso exige build: vira dispatch MANUAL
+#   (observar_avx2), disparado quando se quer olhar, nunca em todo PR.
+#
+#   (3) RÓTULOS ÚNICOS. O identidade.json da CP-013 carregava estados
+#   ambíguos: "copia avx2 (sem build, CP-013) ou DIVERGENTE" (texto com
+#   "ou" — dois estados numa string), "NAO RODOU", "nao medida", "NAO
+#   REGISTRADO". Cada campo passa a ter UM estado nomeado: "medido:<valor>",
+#   "falhou:<motivo>" ou "nao_aplicavel:<motivo>" — e o artefato avx2
+#   declara os campos de síntese como "nao_aplicavel:classe_avx2". Campo
+#   com "ou" reprova na geração: rótulo ambíguo não publica.
+#
+#   (4) INDEPENDÊNCIA DAS CÓPIAS. O N=8 do lock nasceu de P(zero AVX-512)
+#   <= 2% com a fração 38/97 — MAS a frota é um pool vivo e as 11
+#   execuções reais do gate da CP-013 têm de ser conferidas contra o
+#   próprio modelo: taxa observada de SEM_AMOSTRA com IC de 95%, e a
+#   correlação intra-execução (cópias AVX-512 por execução comparadas à
+#   binomial com p = 38/97). Taxa acima de 2% COM o IC acima de 2% =
+#   NAO_INDEPENDENTE: registrar e propor novo N a partir da taxa observada
+#   — sem aplicar sozinho se o N subir mais de 50%. O registro é
+#   versionado em harness/frota/, atualizado por PR de manutenção; nada
+#   de commit automático no main.
+schema: estudio-suite/change-proposal@1
+
+proposta:
+  id: CP-014
+  titulo: "Fechamento da CP-013 no main; #14 só com o filme; observação AVX2 vira dispatch manual; rótulos únicos no identidade.json; independência das cópias monitorada"
+  autor: agente/curador
+  criada_em: "2026-09-25T02:00:00Z"
+  estado: em-execucao
+
+  sinal:
+    tipo: diretiva-do-dono
+    chave: "cp014-fechamento-no-main-14-limpo-observacao-por-dispatch"
+    evidencia: >
+      O estado medido ao assumir: main em d81d97b (merges #12 e #13, verde);
+      branch do #14 com 4 commits após o main — 3 de filme (f9d030b,
+      bcb1639, 1c8f839: roteiro, storyboard, referências, test_navegador
+      252/252, controle negativo 251/1) e 1 de fechamento da CP-013 (b4e59fb:
+      só o yaml da CP, com a tabela da frota e a SEM_AMOSTRA_DECISIVA que
+      ocorreu 1x e foi devolvida pelo rerun). PR #14 aberto em rascunho
+      (AGUARDANDO_LEI, mergeable_state limpo). Runs do Dublador na branch
+      do #14: zero artefatos (rodar=false — filme mudo não acorda o job
+      caro; medido pela API). No gate, toda cópia avx2 instalava a
+      audio-suite e media a âncora commitada (33 medições idênticas no
+      head final da CP-013 — a âncora não varia com a classe; a medição
+      repetida não informava nada).
+    decisao_do_dono: >
+      25/09/2026, na abertura desta CP: "CP-014: levar ao main o
+      fechamento da CP-013 que ficou na branch do #14; tirar do #14 tudo
+      que não é do filme; corrigir a observação AVX2 e os rótulos do
+      identidade.json; monitorar a independência das cópias." E o porquê
+      da observação sair do gate, na própria diretiva: "medir o mesmo
+      arquivo em toda cópia não traz informação".
+
+  plano:
+    - >
+      1. FECHAMENTO NO MAIN: branch nova a partir do main (a primeira
+      coisa dela é ESTA CP em em-execucao); cherry-pick dos commits de
+      fechamento da CP-013 que estão no #14 (b4e59fb e quaisquer outros
+      só de CP-013/frota — conferido arquivo a arquivo: só o b4e59fb
+      qualifica, ele toca apenas o yaml da CP-013). A CP-013 fica
+      concluida no main, com a tabela da frota e a ocorrência de
+      SEM_AMOSTRA_DECISIVA.
+    - >
+      2. #14 LIMPO: rebase do #14 removendo esses commits (force-with-lease
+      SÓ na branch do #14, nunca no main). O `git diff --name-only
+      origin/main...` do #14 lista só filmes/relatorio-impacto/**, a
+      seção do test_navegador, o README derivado, o catálogo e as
+      evidências do filme. Corpo e comentário do PR #14 atualizados com
+      o estado novo; o PR segue rascunho de propósito (AGUARDANDO_LEI).
+    - >
+      3. OBSERVAÇÃO AVX2: a cópia avx2 no gate sai cedo SEM instalar
+      audio-suite e SEM medir a âncora commitada. Dispatch manual
+      `observar_avx2`: matrix do lock, cópias avx512 saem cedo (nada a
+      observar), cópias avx2 fazem o build DE PROPÓSITO (observação paga
+      o preço porque é pedida, não porque todo PR a cobra), sintetizam e
+      publicam os DELTAS POR FALA — duração, loudness, F0 via pitch_f0,
+      centróide — do regenerado contra a âncora, rotulados "observação,
+      sem gate". Uma execução real dele registrada nesta CP.
+    - >
+      4. RÓTULOS: no identidade.json, cada campo de medição tem um estado
+      único e nomeado — "nao_aplicavel:classe_avx2", "medido:<valor>" ou
+      "falhou:<motivo>" — nada de texto com "ou". A geração reprova
+      rótulo ambíguo. Teste: artefato AVX2 com todos os campos de
+      síntese em nao_aplicavel; campo com "ou" reprova.
+    - >
+      5. INDEPENDÊNCIA: o agregador acrescenta cada execução (classe por
+      cópia, SEM_AMOSTRA sim/não) ao agregado.json como entrada pronta
+      para o registro; o registro versionado mora em
+      harness/frota/execucoes-gate.json e cresce por PR de manutenção —
+      sem commit automático no main. Taxa observada de SEM_AMOSTRA e
+      correlação intra-execuição calculadas do registro (a fração do
+      lock 38/97 é a referência da binomial); a regra da parada é a da
+      diretiva: taxa acima de 2% com IC de 95% acima de 2%.
+    - >
+      6. Rito de merge do adendo para o PR desta CP (checks verdes no
+      head exato, atualizado com o main, sem --admin, sem force-push no
+      main, reversão com git revert -m 1 + MAIN_QUEBROU se o main
+      quebrar). O #14 segue AGUARDANDO_LEI. Worklog e pare.
+
+  doutrina:
+    - >
+      O gate continua sendo SÓ bytes do PCM mixado em cópia AVX-512
+      visível (decisão (e) da CP-013, intocada); nenhum .opus commitado
+      muda; nenhum teto de descritor entra no lock. A observação AVX2 é
+      PÚBLICA mas paga o preço de build só quando pedida — dispatch
+      manual, rotulado "observação, sem gate".
+    - >
+      Estado nomeado é o único estado: campo de medição no identidade.json
+      é "medido:<valor>", "falhou:<motivo>" ou "nao_aplicavel:<motivo>" —
+      nunca texto com "ou", nunca "NAO RODOU" sem causa. Verde por omissão
+      não existe; AMBÍGUO por preguiça também não.
+    - >
+      A independência das cópias é uma hipótese MEDIDA, não assumida: o N
+      do lock vale enquanto a frota real se comportar como o modelo
+      (binomial, p da fração registrada). O registro das execuções é
+      versionado e reproduzível — o número da taxa e da correlação é
+      recalculável do registro, nunca afirmado.
+    - >
+      O #14 não recebe nada além do filme; esta CP não toca
+      filmes/relatorio-impacto/**. O force-with-lease é só no rebasing
+      das branches de trabalho; o main nunca vê force.
+
+  paradas_nomeadas:
+    NAO_INDEPENDENTE:
+      status: "vigilância ativa no cálculo de independência"
+      regra: >
+        Taxa observada de SEM_AMOSTRA acima de 2% com IC de 95% acima de
+        2% (limite inferior acima de 2%): registrar, recalcular N a partir
+        da taxa observada e propor — sem aplicar sozinho se o N subir mais
+        de 50%. Correlação intra-execução sobredispersa (variância das
+        cópias AVX-512 por execução acima da binomial) é o mesmo achado
+        por outro número: as cópias de um mesmo run não são sorteios
+        independentes, e o N perfeito por run não salva o risco por run.
+    MAIN_QUEBROU:
+      status: "vigilância ativa em cada merge"
+      regra: >
+        CI do main vermelho após o merge: git revert -m 1 no main, job
+        reexecutado, parada registrada no PR. Não se conserta o main com
+        commit novo antes de reverter.
+    REVISAO_NECESSARIA:
+      status: "reservada a decisões fora deste plano"
+      regra: >
+        Qualquer decisão que o plano não previu vira ponto de decisão no
+        PR — o agente não escolhe por conta própria.
+
+  escopo:
+    sprint_17: >
+      Esta CP; cherry-pick do fechamento da CP-013 (b4e59fb);
+      .github/workflows/dublador.yml (a cópia avx2 sai cedo SEM
+      audio-suite; veredito e identidade gerados por
+      ci/veredito_da_copia.py com rótulos únicos);
+      .github/workflows/observar-avx2.yml (novo — dispatch manual);
+      ci/veredito_da_copia.py (novo); ci/observar_avx2.py (novo — deltas
+      por fala do regenerado contra a âncora); ci/observacao_ancora.py
+      (nota de CP-014: saiu do gate; segue como instrumento testado);
+      ci/agregar_prova.py (emite a entrada de registro no agregado.json);
+      harness/frota/execucoes-gate.json (novo — o registro das execuções
+      do gate); ci/independencia.py (novo — taxa, IC, correlação);
+      tests/test_veredito_da_copia.py (novo); tests/test_independencia.py
+      (novo); tests/test_agregar_prova.py (contrato estrutural novo);
+      .github/workflows/suite.yml (os testes novos); corpo do PR desta CP
+      e do #14.
+
+  impacto:
+    - "harness/change-proposals/CP-013-prova-por-amostragem.yaml :: o fechamento (b4e59fb) chega ao main pelo cherry-pick — o registro da frota comprovada passa a morar onde os registros moram"
+    - ".github/workflows/dublador.yml :: a cópia avx2 sai cedo sem audio-suite; veredito/identidade com rótulos únicos via ci/veredito_da_copia.py"
+    - ".github/workflows/observar-avx2.yml :: o dispatch manual da observação (novo)"
+    - "ci/veredito_da_copia.py :: veredito.json + identidade.json com estado único nomeado (novo)"
+    - "ci/observar_avx2.py :: deltas por fala regenerado x âncora, sem gate (novo)"
+    - "ci/agregar_prova.py :: a entrada de registro no agregado.json"
+    - "harness/frota/execucoes-gate.json :: o registro versionado das execuções do gate (novo)"
+    - "ci/independencia.py :: a aritmética da independência, reproduzível (novo)"
+    - "tests/test_*.py :: os contratos novos (rótulos, independência) e o estrutural do agregar atualizado"
+
+  risco:
+    nivel: medio
+    porque: >
+      O risco honesto é o mesmo da CP-013 (pool vivo): 11 execuções são
+      poucas para um IC estreito — a conclusão sobre independência pode
+      ficar em "não rejeita" em vez de "confirma", e é isso que será
+      registrado (sem inflar o que o dado não sustenta). O segundo risco
+      é operacional: o dispatch de observação builda de propósito numa
+      classe que o gate abandonou — o custo é pago quando pedido; o
+      rótulo "observação, sem gate" é o contrato de que nada dali
+      bloqueia merge nenhum.
+
+  aval_humano_necessario: true   # diretiva do dono (25/09/2026) — execução, medição e merges desta CP
