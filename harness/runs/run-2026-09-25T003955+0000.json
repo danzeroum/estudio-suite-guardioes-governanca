@@ -1,0 +1,20 @@
+{
+ "achados": [],
+ "falhas": 0,
+ "ok": 252,
+ "por_alvo": {
+  "jornada-dado": {
+   "achados": [],
+   "ok": 14
+  },
+  "legitimo-interesse": {
+   "achados": [],
+   "ok": 6
+  },
+  "relatorio-impacto": {
+   "achados": [],
+   "ok": 12
+  }
+ },
+ "quando": "2026-09-25T00:39:55+00:00"
+}

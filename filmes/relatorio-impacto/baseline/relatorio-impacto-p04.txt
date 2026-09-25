@@ -1,0 +1,21 @@
+cenario: arquivo
+rotulo: O que ele responde
+camera: translate(640 360) scale(1) translate(-640 -360)
+rig ctrl | t=translate(300 620) scale(-1.012 1.012) translate(-100 -320) | op=0
+    braco-r | t=translate(134 162) rotate(-46) translate(-134 -162) | op=-
+    cabeca | t=translate(100 136) rotate(-5) translate(-100 -136) | op=-
+    palpebra-l | t=translate(76 74) translate(-76 -64) | op=-
+    palpebra-r | t=translate(124 74) translate(-124 -64) | op=-
+    sobrancelha-l | t=translate(76 60) rotate(18) translate(-76 -58) | op=-
+    sobrancelha-r | t=translate(124 60) rotate(-18) translate(-124 -58) | op=-
+    boca | t=translate(100 104) scale(1 0.7) translate(-100 -104) | op=-
+rig mem | t=translate(330 620) scale(1.1 1.1) translate(-100 -320) | op=1
+    braco-r | t=translate(159 174) rotate(-44) translate(-159 -174) | op=-
+    cabeca | t=translate(100 134) rotate(-4) translate(-100 -134) | op=-
+rig op | t=translate(640 620) scale(0.84 0.84) translate(-100 -320) | op=0
+rig alarme | t=translate(760 250) scale(0.9 0.9) translate(-100 -320) | op=0
+    corpo | t=translate(100 228) translate(-100 -232) | op=-
+    luz | t=translate(100 226) scale(1.3 1.3) translate(-100 -226) | op=0.9
+rig form | t=translate(760 560) scale(1.2 1.2) translate(-100 -320) | op=1
+rig selo | t=translate(760 360) scale(0.9 0.9) translate(-100 -320) | op=1
+rig dado | t=translate(1060 430) scale(0.7 0.7) translate(-100 -320) | op=1
