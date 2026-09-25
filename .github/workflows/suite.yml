@@ -20,7 +20,13 @@ jobs:
       # valendo. Tirar a audio-suite do job derruba o build -- de proposito.
       ESTUDIO_EXIGIR_AUDIO_SUITE: "1"
     steps:
+      # CP-016: fetch-depth 0 — o teste do determinismo prova NO DIFF que
+      # esta branch não toca gate/lock/audio.json, e o diff contra o main
+      # precisa da base no histórico (o mesmo motivo do planejar do
+      # Dublador); com depth 1 nem o pai do merge ref resolve
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # CP-008: O LOCK MANDA NO CI. Nenhuma versao de python/numpy/scipy e
       # digitada aqui -- o workflow pergunta ao voz.lock pelo mesmo parser do
