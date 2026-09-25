@@ -70,7 +70,7 @@ proposta:
   titulo: "N pela janela móvel da frota; segunda onda automática quando a primeira não tiver AVX-512; rerun humano deixa de ser o caminho de volta; registro cresce de verdade; CP-016 (âncora avx2) nasce em proposta"
   autor: agente/curador
   criada_em: "2026-09-25T05:30:00Z"
-  estado: em-execucao
+  estado: concluida
 
   # PASSO 0 (credencial) — registro, NAO parada:
   pendencia_do_dono:
@@ -167,7 +167,7 @@ proposta:
       é tocado (segue AGUARDANDO_LEI). Worklog e pare.
 
   resultado_da_medicao:
-    quando: "2026-09-25 (diagnóstico do registro de 14 execuções, ANTES de mudar código — passo 2 do plano)"
+    quando: "2026-09-25 — diagnóstico com o registro de 14 (ANTES de mudar código, passo 2) + o fechamento medido com o registro FINAL de 17 (diagnóstico, maquinaria, runs reais e N vivo)"
     diagnostico_na_cp:
       pergunta: >
         A fração AVX-512 caiu de 38/97 (lock) para 30/112 (era CP-013/014).
@@ -213,6 +213,144 @@ proposta:
         proibiu-se de aplicar sozinha (+62,5% > 50%): aqui ele entra por
         PR de manutenção — este PR, com a decisão do dono citada no 1º
         commit — e a partir dele o próprio teste recalcula e fiscaliza.
+
+    fechamento_medido:
+      runs_reais_das_ondas:
+        run_36101683572: >
+          Head consertado 1ad8870: o Dublador montou a matrix de N=13
+          cópias do lock novo, o ROTEADOR leu a onda 1 (13 vereditos
+          baixados), decidiu "não acorda" (a onda tinha 6 AVX-512 — não
+          é sorteio sem decisiva), a saída segunda_onda=false chegou ao
+          agregador (ondas declaradas: 1) e o veredito final foi VERDE —
+          6 cópias AVX-512 com PCM idêntico, 7 avx2 neutras, zero
+          ilegíveis, --conferir-n com 13 == lock. A onda 2 foi PULADA
+          pela condição certa: o desenho das duas ondas rodou inteiro,
+          ponta a ponta, em produção — a segunda onda em si está provada
+          FORÇADA EM TESTE (test_agregar_prova: onda 1 {8 avx2} + onda 2
+          {1 AVX-512 idêntica} -> verde; duas ondas vazias ->
+          SEM_AMOSTRA_DECISIVA; onda 2 divergente -> DIVERGENCIA nomeando
+          onda e cópia; test_rotear_segunda_onda: o sorteio limpo ACORDA,
+          todo o resto não) — pegá-la ao vivo por sorteio custaria ~58
+          disparos (P=1,7%), e o desenho não se prova esperando sorte.
+        run_36101113176_e_o_tee: >
+          Head 1db804b (a maquinaria no primeiro disparo): o AGREGADOR
+          deu VERDE (5 AVX-512 idênticas de 13 cópias), o roteador
+          DECIDIU certo e publicou o rotear.json — e o PASSO morreu
+          vermelho por um tee que abria /tmp/rotear/rotear.log antes de
+          o script criar o diretório (corrida de pipeline; pipefail).
+          A correção é mkdir ANTES do pipeline (o mesmo padrão que o
+          agregar já tinha), com teste estrutural reprova-a-se-voltar.
+          A ocorrência ENTROU no registro (com a fonte declarando o
+          incidente): excluir o run vermelho-por-log para "guardar" o
+          verde teria sido escolher o dado confortável.
+      o_n_vivo:
+        licao_medida: >
+          A JANELA É VIVA DESDE O PRIMEIRO DIA. Na abertura (15
+          execuções: 32/120 = 0,2667) o menor N com P(zero) <= 2% era 13
+          — o valor do 1º commit da maquinaria. As DUAS execuções deste
+          PR (5 e 6 AVX-512 de 13 cópias cada — sorteio RICO) subiram a
+          fração da janela para 43/146 = 0,2945 e o N CAIU para 12:
+          (1-0,2945)^11 = 2,16% > 2%; ^12 = 1,53% <= 2%. O lock FECHA em
+          12 — o recalculado do registro FINAL deste PR — e a lição fica
+          registrada em três lugares (lock, aqui e o teste): enquanto o
+          registro for menor que J, cada PR de manutenção pode mover o N
+          porque cada execução nova substitui uma fatia grande da
+          janela; com a janela CHEIA, a substituição de ~5% por execução
+          amortece. O desenho reage à DERIVA da frota, não ao ruído de
+          um run — e nunca por commit automático.
+        probabilidades_com_n_12: >
+          P(uma onda vazia) = 1,53%; P(duas ondas vazias) = 0,0231%
+          (1 em 4329) — SEM_AMOSTRA_DECISIVA ~55x mais raro que o
+          desenho de onda única com N=8 (P=8,9% por disparo na fração
+          da era), e o caminho de volta automático já roda dentro do
+          próprio run.
+      registro_final:
+        estado: >
+          17 execuções: as 14 da era CP-013/014 + a pendente do head
+          final da CP-014 (run 36092359210, 2 AVX-512, verde,
+          head_do_pr f545dde — fronteira do regresso cumprida) + as duas
+          deste PR (36101113176 e 36101683572). Taxa SEM_AMOSTRA 2/17 =
+          11,76% (as duas históricas da era do rerun; as três novas são
+          verdes); Wilson [3,29%; 34,34%] INTEIRO acima de 2%;
+          Clopper-Pearson [1,46%; 36,44%] cruza — NAO_INDEPENDENTE NÃO
+          dispara (a regra dos DOIS ICs), a fronteira medida segue a
+          UMA ocorrência de distância (3 em 18 põe os dois ICs acima);
+          homogeneidade 20,59 em 16 g.l., p=0,19 (sem sobredispersão);
+          fração da janela 29,5% x congelada 39,2% (cauda 0,0092 — o
+          pool segue vivo). O bloco calculo é regravado pelo caminho
+          único e reconferido pelo teste (72 verificações). A execução
+          do commit FINAL deste PR entra no próximo PR de manutenção —
+          a fronteira declarada.
+      credencial_passo_0:
+        feito: >
+          Arquivo 0600 e helper com fallback APAGADOS; helper novo lê
+          SÓ o GH_TOKEN do ambiente e falha nomeada CREDENCIA_AUSENTE
+          (provado com a variável vazia, nunca lê arquivo); git remote
+          -v e git config --list --show-origin conferidos: zero
+          credenciais em remote/config/arquivos/logs/commits/comentários.
+          TOKEN_A_ROTACIONAR registrado para o dono (revogar e rotacionar)
+          — registro, não parada; o trabalho seguiu.
+
+  desfecho:
+    entregue: >
+      (1) O N PELA JANELA MÓVEL: voz.lock com frota.janela J=20 e
+      frota.amostragem FECHADA em 12 (o recalculado do registro final de
+      17: 43/146 = 0,2945; N=11 daria 2,16% > 2%), o teste recalculando
+      do registro e fiscalizando "N desatualizado" — a mudança entrou
+      por PR de manutenção (este), com a decisão do dono citada no 1º
+      commit. (2) A SEGUNDA ONDA AUTOMÁTICA: o workflow em duas ondas
+      (dublador-onda.yml reutilizável + roteador + onda 2 condicional +
+      agregador sobre as ondas) rodou INTEIRO em produção (run
+      36101683572: roteador decidiu, agregador verde com 6 AVX-512 de
+      N=13), a segunda onda está provada FORÇADA EM TESTE (os casos da
+      diretiva em test_agregar_prova/test_rotear_segunda_onda) e
+      SEM_AMOSTRA_DECISIVA só nasce após DUAS ondas vazias (P=0,0231%).
+      (3) O RERUN HUMANO DEIXOU DE SER O CAMINHO DE VOLTA: o caminho
+      automático mora no próprio run; ilegível não vira sorte; cópia sem
+      artefato é AMOSTRA_ILEGIVEL, nunca SEM_AMOSTRA. (4) O REGISTRO
+      CRESCEU DE VERDADE: ci/atualizar_registro_frota.py rodou com a
+      pendente da CP-014 E as duas execuções deste PR (inclusive a do
+      tee vermelho — exclusão seria cherry-picking); o calculo regravado
+      pelo caminho único. (5) O incidente do tee: corrigido com mkdir
+      antes do pipeline + teste estrutural. (6) TOKEN_A_ROTACIONAR
+      registrado no passo 0 e no corpo do PR. (7) O merge pelo rito: CI
+      verde no head exato, sem --admin, sem force-push no main.
+    parada_final: >
+      NENHUMA desta CP (concluida). NAO_INDEPENDENTE não disparou (a
+      regra dos DOIS ICs, intocada: Wilson acima, CP cruzando por 0,54
+      pontos — a uma ocorrência de distância, fronteira medida 3 em 18).
+      As paradas que seguem ativas: AGUARDANDO_LEI (#14/CP-013 — sem
+      LEI_TOKEN o filme 03 não mergeia) e TOKEN_A_ROTACIONAR (registro:
+      o dono deve revogar e rotacionar o token que esteve no remote).
+
+  licoes:
+    a_janela_e_viva_no_primeiro_dia: >
+      O N moveu 13 -> 12 DENTRO do próprio PR: as duas execuções dele
+      eram sorteios ricos (11 AVX-512 em 26 cópias) e a fração da janela
+      subiu 2,8 pontos. Não é defeito — é o desenho reagindo à frota
+      real com o registro ainda menor que J; a fração de 20 execuções
+      cheias amortece (~5% de substituição por run). O fiscal do
+      "N desatualizado" é o que impede o lock de mentir sobre esse
+      movimento — e a lição está no lock, na CP e no teste.
+    o_log_tambem_e_codigo: >
+      O roteador decidiu certo, publicou o rotear.json e o passo morreu
+      vermelho: um tee abrindo arquivo antes do mkdir. O desenho de duas
+      ondas estava certo; o ENCANAMENTO do log é que quebrou. Correção
+      mínima (mkdir antes do pipeline) + teste estrutural para a corrida
+      não voltar — e o run vermelho entrou no registro com a fonte
+      declarando o incidente.
+    excluir_dado_ruim_e_cherry_picking: >
+      A tentação de registrar só o run verde (o do head consertado) e
+      deixar o do tee fora do registro era real: o número ficava mais
+      limpo. A CP-014 já tinha registrado a SEM_AMOSTRA do próprio
+      fechamento pelo mesmo motivo — e aqui a regra se manteve: o
+      registro leva o que MEDIU, com a fonte dizendo o que houve.
+    segurar_o_13_teria_sido_escolher_o_numero: >
+      Com as 17 execuções o N cai para 12; manter 13 no lock "porque a
+      diretiva citou 13" seria escolher o número em vez de recalculá-lo
+      — a diretiva manda o MÉTODO (janela móvel), não o valor. O valor
+      que fecha é o do registro final, e o fiscal do teste é quem garante
+      que o lock não discrepe dele.
 
   doutrina:
     - >
@@ -317,9 +455,10 @@ proposta:
       com a decisão do dono citada no 1º commit). Contenção: cópias avx2
       saem cedo e custam SEGUNDOS (medido: o gate sem instrumento termina
       em segundos na classe avx2), então N maior quase não custa build —
-      as cópias caras continuam sendo ~26% da amostra; a segunda onda
-      acorda SÓ quando a primeira terminou sem nenhuma AVX-512 (P=1,77%),
-      e duas ondas vazias têm P=0,0315%; o vermelho nomeado fica mais raro
+      as cópias caras continuam sendo ~26-30% da amostra; a segunda onda
+      acorda SÓ quando a primeira terminou sem nenhuma AVX-512 (P=1,53%
+      no fechamento com N=12 e fração 0,2945), e duas ondas vazias têm
+      P=0,0231% (1 em 4329); o vermelho nomeado fica mais raro
       sem afrouxar fiscal NENHUM — ilegível continua reprovando, divergente
       continua nomeando onda e cópia, e o gate de bytes segue intocado.
       O risco residual é a reestruturação do workflow (onda reutilizável

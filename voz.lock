@@ -138,17 +138,25 @@ tolerancia:
 # SE da fracao da janela e ~0,035 — o N sobe ~2 unidades por esse ruido
 # (dN/dp ~ 58 com p ~ 0,27), menos que a deriva ja medida (38/97 ->
 # 32/120 moveu o N de 8 para 13). O N MUDA POR PR DE MANUTENCAO (este
-# bloco e o lugar unico — jamais commit automatico no main). Com a
-# janela de 15 execucoes (32/120 = 0,2667): (1-0,2667)^12 = 2,42% >
-# 2%; ^13 = 1,77% <= 2% -> N = 13. A SEGUNDA ONDA (mesma decisao):
-# se a primeira onda terminar com ZERO copias AVX-512, um job
-# condicional roda a segunda onda de N copias no mesmo workflow; o
-# agregador decide sobre as DUAS; SEM_AMOSTRA_DECISIVA so nasce apos
-# duas ondas vazias — P(uma onda vazia) = 1,77%, P(duas) = 0,0315%
-# (1 em 3178): o vermelho fica ~50x mais raro sem tocar no gate de
-# bytes, e o RERUN humano deixa de ser o caminho de volta.
+# bloco e o lugar unico — jamais commit automatico no main). A JANELA
+# E VIVA DESDE O PRIMEIRO DIA — licao medida neste proprio PR: com as
+# 15 execucoes do registro na abertura (32/120 = 0,2667) o N era 13;
+# as DUAS execucoes deste PR (5 e 6 AVX-512 de 13 copias cada — sorteio
+# rico) subiram a fracao para 43/146 = 0,2945 e o N CAIU para 12. O
+# valor AQUI e o recalculado do registro FINAL deste PR (17 execucoes):
+# (1-0,2945)^11 = 2,16% > 2%; ^12 = 1,53% <= 2% -> N = 12. A SEGUNDA
+# ONDA (mesma decisao): se a primeira onda terminar com ZERO copias
+# AVX-512, um job condicional roda a segunda onda de N copias no mesmo
+# workflow; o agregador decide sobre as DUAS; SEM_AMOSTRA_DECISIVA so
+# nasce apos duas ondas vazias — P(uma onda vazia) = 1,53%, P(duas) =
+# 0,0231% (1 em 4329): o vermelho fica ~55x mais raro sem tocar no
+# gate de bytes, e o RERUN humano deixa de ser o caminho de volta.
+# Enquanto o registro for menor que J, cada PR de manutencao pode
+# mover o N (a substituicao por execucao e grande); com a janela cheia,
+# 5% por execucao amortece — o desenho reage a DERIVA, nao ao ruido de
+# um run.
 frota:
-  amostragem: 13
+  amostragem: 12
   fracao_avx512f: 38/97
   p_zero_2pct: 0.02
   janela: 20

@@ -61,9 +61,11 @@ def main():
     execucoes = doc["execucoes"]
     chk(doc["$schema"] == "estudio-suite/frota-gate@1",
         "o registro declara o esquema frota-gate@1")
-    chk(len(execucoes) == 15,
-        f"o registro leva as 15 execuções medidas (14 da era CP-013/014 "
-        f"+ a pendente do head final da CP-014 — tem {len(execucoes)})")
+    chk(len(execucoes) == 17,
+        f"o registro leva as 17 execuções medidas (14 da era CP-013/014 "
+        f"+ a pendente do head final da CP-014 + as DUAS deste PR: o run "
+        f"do tee vermelho com o agregador verde e o run do head "
+        f"consertado — tem {len(execucoes)})")
     for e in execucoes:
         integro = (int(e["n"]) == len(e["copias"])
                    and int(e["avx512"]) == sum(
@@ -75,12 +77,14 @@ def main():
             f"íntegros entre si")
         chk(bool(e.get("fonte")),
             f"run {e['run']} t{e['tentativa']}: a fonte é declarada")
-    # o N da matrix é o DA ERA (8 na CP-013/014, 13 da CP-015 em diante) —
-    # o fiscal vivo é o N da JANELA, não o histórico
+    # o N da matrix é o DA ERA (8 na CP-013/014, 13 nos dois runs deste
+    # PR, 12 do fechamento em diante) — o fiscal vivo é o N da JANELA,
+    # não o histórico
     eras = {int(e["n"]) for e in execucoes}
-    chk(eras == {8},
-        f"as entradas históricas são da era N=8 (o lock anda em 13 desde "
-        f"a CP-015 — eras registradas: {sorted(eras)})")
+    chk(eras == {8, 13},
+        f"as entradas registram o N da SUA era (8 na CP-013/014, 13 nos "
+        f"dois runs deste PR que abriram com N=13 — o lock FECHA em 12: "
+        f"eras: {sorted(eras)}; o fiscal vivo é o N da janela)")
     sem_amostra = [e for e in execucoes if e["sem_amostra_decisiva"]]
     chk(len(sem_amostra) == 2
         and {e["run"] for e in sem_amostra} == {"36075600630", "36091333340"}
@@ -95,6 +99,12 @@ def main():
         "a execução pendente do head final da CP-014 entrou no registro "
         "(run 36092359210: 2 AVX-512 idênticas, 6 avx2, verde; head_do_pr "
         "f545dde declarado — a fronteira do regresso cumprida)")
+    deste_pr = {e["run"] for e in execucoes if e.get("cp") == "CP-015"}
+    chk(deste_pr == {"36101113176", "36101683572"},
+        "as DUAS execuções deste PR entraram (a do tee vermelho — cujo "
+        "AGREGADOR foi verde com 5 AVX-512 de N=13, o passo que morreu "
+        "foi o log do roteador — e a do head consertado, verde com 6 "
+        "AVX-512: excluir a primeira seria escolher o dado confortável")
 
     # --- o cálculo gravado == o cálculo recalculado ---------------------
     calc = ind.calcular_do_registro(doc)
@@ -105,31 +115,35 @@ def main():
 
     # --- a JANELA MÓVEL e o fiscal do N ---------------------------------
     ja = calc["janela"]
-    chk(ja["j"] == j_lock and ja["execucoes_na_janela"] == 15
+    chk(ja["j"] == j_lock and ja["execucoes_na_janela"] == 17
         and ja["janela_incompleta"] is True,
-        f"a janela é J={j_lock} do lock; com 15 execuções ela declara "
+        f"a janela é J={j_lock} do lock; com 17 execuções ela declara "
         f"INCOMPLETA e usa TODAS — nunca inventa fração")
-    chk(ja["copias_na_janela"] == 120 and ja["avx512_na_janela"] == 32
-        and abs(ja["fracao"] - 32 / 120) < 1e-5,
-        "a fração da janela soma as cópias das 15 execuções: 32/120 = "
-        f"{32 / 120:.5f}")
-    chk(ja["n_recalculado"] == 13 and ja["n_do_lock"] == n_lock == 13
+    chk(ja["copias_na_janela"] == 146 and ja["avx512_na_janela"] == 43
+        and abs(ja["fracao"] - 43 / 146) < 1e-5,
+        "a fração da janela soma as cópias das 17 execuções: 43/146 = "
+        f"{43 / 146:.5f} (32/120 na abertura + 11 AVX-512 das 26 cópias "
+        "dos dois runs deste PR)")
+    chk(ja["n_recalculado"] == 12 and ja["n_do_lock"] == n_lock == 12
         and ja["n_conforme"] is True
-        and abs(ja["p_zero_no_n"] - (1 - 32 / 120) ** 13) < 1e-4,
+        and abs(ja["p_zero_no_n"] - (1 - 43 / 146) ** 12) < 1e-4,
         f"o N recalculado da janela é {ja['n_recalculado']} "
-        f"(P(zero)={ja['p_zero_no_n']:.5f} <= 2%) e BATE com o lock "
-        f"({n_lock}) — o fiscal não reprova")
+        f"(P(zero)={ja['p_zero_no_n']:.5f} <= 2%; N=11 daria "
+        f"{(1 - 43 / 146) ** 11:.5f} > 2%) e BATE com o lock fechado em "
+        f"12 — a janela é VIVA: moveu 13 -> 12 DENTRO do PR (a lição "
+        f"medida, registrada no lock e na CP)")
     chk(ja["nota"].startswith("o N do lock bate"),
         "a nota da janela declara a conformidade (o teste reprovaria 'N "
         "desatualizado' se divergisse)")
 
     # --- o fiscal: lock com outro N -> "N desatualizado" ----------------
-    calc_desat = ind.calcular(execucoes, p_lock, 8, janela=j_lock)
+    calc_desat = ind.calcular(execucoes, p_lock, 13, janela=j_lock)
     chk(calc_desat["janela"]["n_desatualizado"] is True
         if "n_desatualizado" in calc_desat["janela"] else
         calc_desat["veredito"]["n_desatualizado"] is True,
-        "lock com N=8 (o valor antigo) contra a janela que calcula 13 -> "
-        "N DESATUALIZADO — o fiscal reprova; a mudança é PR de manutenção")
+        "lock com N=13 (o valor de ABERTURA deste PR) contra a janela "
+        "final que calcula 12 -> N DESATUALIZADO — o fiscal reprova; a "
+        "mudança é PR de manutenção")
     chk("N DESATUALIZADO" in calc_desat["janela"]["nota"],
         "a nota do fiscal nomeia o caminho: PR de manutenção, commit "
         "automático jamais")
@@ -160,11 +174,12 @@ def main():
 
     # --- o diagnóstico da CP-015, conferido ------------------------------
     t = calc["taxa_sem_amostra"]
-    chk(t["k"] == 2 and t["n"] == 15,
-        "2 SEM_AMOSTRA em 15 execuções (as duas históricas; a pendente é "
-        "verde — o desenho novo ainda não sorteou duas ondas vazias)")
-    chk(abs(t["valor"] - 2 / 15) < 1e-5,
-        "a taxa é 2/15 = 13,33%")
+    chk(t["k"] == 2 and t["n"] == 17,
+        "2 SEM_AMOSTRA em 17 execuções (as duas históricas da era do "
+        "rerun; as três deste PR são verdes — o desenho novo ainda não "
+        "sorteou duas ondas vazias)")
+    chk(abs(t["valor"] - 2 / 17) < 1e-5,
+        "a taxa é 2/17 = 11,76%")
     chk(t["ic_wilson_95"][0] > 0.02,
         "o IC de Wilson está INTEIRO acima de 2% (limite inferior "
         f"{t['ic_wilson_95'][0]:.2%}) — sozinho, dispararia")
@@ -175,10 +190,10 @@ def main():
     v = calc["veredito"]
     chk(v["nao_independente_dispara"] is False,
         "NAO_INDEPENDENTE NÃO dispara (os dois ICs acima é a regra)")
-    # a fronteira honesta: uma ocorrência a mais (3 em 16) cruza os DOIS
-    chk(ind.ic_clopper_pearson(3, 16)[0] > 0.02
-        and ind.ic_wilson(3, 16)[0] > 0.02,
-        "a fronteira medida: 3 SEM_AMOSTRA em 16 execuções põem os DOIS "
+    # a fronteira honesta: uma ocorrência a mais (3 em 18) cruza os DOIS
+    chk(ind.ic_clopper_pearson(3, 18)[0] > 0.02
+        and ind.ic_wilson(3, 18)[0] > 0.02,
+        "a fronteira medida: 3 SEM_AMOSTRA em 18 execuções põem os DOIS "
         "ICs acima de 2% e a parada dispara — a uma ocorrência de "
         "distância, e o registro diz isso")
 
@@ -187,12 +202,12 @@ def main():
     chk(c["p_valor_homogeneidade"] > 0.05,
         f"homogeneidade sem sobredispersão (p={c['p_valor_homogeneidade']:.3f} "
         f"> 0,05): as cópias de um mesmo run são sorteios independentes")
-    chk(abs(c["quiquad_homogeneidade"] - 19.006) < 0.01
-        and c["graus_de_liberdade"] == 14,
+    chk(abs(c["quiquad_homogeneidade"] - 20.589) < 0.01
+        and c["graus_de_liberdade"] == 16,
         f"o qui-quadrado de homogeneidade é {c['quiquad_homogeneidade']} "
-        f"em 14 g.l. (15 execuções — o diagnóstico da CP foi declarado "
-        f"com as 14 primeiras: 18,94 em 13 g.l., p≈0,12; a pendente "
-        f"entra e o número é RECALCULADO, nunca afirmado)")
+        f"em 16 g.l. (17 execuções — o diagnóstico da CP foi declarado "
+        f"com as 14 primeiras: 18,94 em 13 g.l., p≈0,12; cada entrada "
+        f"nova RECALCULA o número, nunca o afirma)")
     chk(c["fracao_da_janela"] < c["fracao_congelada_do_lock"]
         and c["p_cauda_binomial_total"] < 0.05,
         "a fração da janela (%.1f%%) está ABAIXO da congelada (%.1f%%), "
@@ -266,10 +281,11 @@ def main():
             print(f"  ERRO: {m}", file=sys.stderr)
         print(f"\n  {len(bad)} falha(s).", file=sys.stderr)
         return 1
-    print("  a janela calcula 13 e o lock ancora 13: CONFORME. A taxa 2/15")
-    print("  com o Wilson acima e o CP cruzando segue a uma ocorrência de")
-    print("  distância; sem sobredispersão; fração da janela abaixo da")
-    print("  congelada: o pool mudou, o sorteio não — vigiado com número.")
+    print("  a janela FINAL calcula 12 e o lock fecha em 12: CONFORME —")
+    print("  a janela moveu 13 -> 12 DENTRO do PR (lição medida). A taxa")
+    print("  2/17 com o Wilson acima e o CP cruzando segue a uma ocorrência")
+    print("  (3/18) de distância; sem sobredispersão; fração da janela")
+    print("  abaixo da congelada: o pool mudou, o sorteio não — vigiado.")
     return 0
 
 
