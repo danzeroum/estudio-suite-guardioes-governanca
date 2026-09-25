@@ -70,10 +70,12 @@ def main():
         chk(bool(e.get("fonte")),
             f"run {e['run']} t{e['tentativa']}: a fonte é declarada")
     sem_amostra = [e for e in execucoes if e["sem_amostra_decisiva"]]
-    chk(len(sem_amostra) == 1 and sem_amostra[0]["run"] == "36075600630"
-        and sem_amostra[0]["tentativa"] == 1,
-        "a SEM_AMOSTRA_DECISIVA real (run 36075600630, tentativa 1) está "
-        "registrada com a fonte declarada")
+    chk(len(sem_amostra) == 2
+        and {e["run"] for e in sem_amostra} == {"36075600630", "36091333340"}
+        and all(e["tentativa"] == 1 for e in sem_amostra),
+        "as DUAS SEM_AMOSTRA_DECISIVA reais (36075600630 t1 da CP-013 e "
+        "36091333340 t1 da CP-014 — ambas devolvidas pelo rerun) estão "
+        "registradas com a fonte declarada")
 
     # --- o cálculo gravado == o cálculo recalculado ---------------------
     calc = ind.calcular(execucoes, p_lock, n_lock)
@@ -96,19 +98,24 @@ def main():
         "a dispersão gravada == recalculada (qui-quadrado e p-valor)")
     chk(gravado["veredito"]["nao_independente_dispara"]
         == calc["veredito"]["nao_independente_dispara"] is False,
-        "o veredito gravado == recalculado: NAO_INDEPENDENTE não dispara")
+        "o veredito gravado == recalculado: NAO_INDEPENDENTE não dispara "
+        "(a regra declarada exige os DOIS ICs; o Wilson dispara sozinho e "
+        "o CP cruza — o quase está registrado)")
 
     # --- os números que a CP-014 registra, conferidos -------------------
     t = calc["taxa_sem_amostra"]
-    chk(t["k"] == 1 and t["n"] == 11,
-        "1 SEM_AMOSTRA em 11 execuções (a medição da CP-014)")
-    chk(abs(t["valor"] - 1 / 11) < 1e-5,
-        "a taxa é 1/11 = 9,09%")
-    chk(t["ic_wilson_95"][0] <= 0.02 < t["ic_wilson_95"][1],
-        "o IC de Wilson CRUZA 2% (limite inferior 1,62%) — é isso que "
-        "manda NÃO disparar a parada")
+    chk(t["k"] == 2 and t["n"] == 14,
+        "2 SEM_AMOSTRA em 14 execuções (a medição da CP-014, com a "
+        "2ª ocorrência real no próprio fechamento)")
+    chk(abs(t["valor"] - 2 / 14) < 1e-5,
+        "a taxa é 2/14 = 14,29%")
+    chk(t["ic_wilson_95"][0] > 0.02,
+        "o IC de Wilson está INTEIRO acima de 2% (limite inferior 4,01%) — "
+        "o Wilson, sozinho, dispararia")
     chk(t["ic_clopper_pearson_95"][0] <= 0.02,
-        "o IC de Clopper-Pearson também cruza 2% (conservador)")
+        "o IC de Clopper-Pearson CRUZA 2% (limite inferior 1,78%) — é ele "
+        "que segura a regra declarada (os DOIS ICs), por 0,22 pontos: o "
+        "QUASE-disparar é o estado registrado, não um segredo")
     c = calc["correlacao_intra_execucao"]
     chk(0.05 < c["p_valor_dispersao"],
         "dispersão sem sobredispersão (p=%.3f > 0,05): as cópias de um "
@@ -128,6 +135,13 @@ def main():
         and v["aumento_percentual_n"] == 62.5,
         "o N condicional (se a fração se confirmar) é 13, +62,5% — acima "
         "dos 50%: aplicação unilateral proibida, proposta por CP")
+    # a fronteira honesta: UMA ocorrência a mais (3 em 15) cruza o CP e a
+    # parada dispara — o teste declara o quase
+    chk(ind.ic_clopper_pearson(3, 15)[0] > 0.02
+        and ind.ic_wilson(3, 15)[0] > 0.02,
+        "a fronteira medida: 3 SEM_AMOSTRA em 15 execuções põem os DOIS "
+        "ICs acima de 2% e NAO_INDEPENDENTE dispara — a parada está a uma "
+        "ocorrência de distância, e o registro diz isso")
 
     # --- a regra da diretiva, provada nos dois sentidos -----------------
     # caso sintético: 6 SEM_AMOSTRA em 10 — taxa 60%, IC inferior >> 2%
@@ -186,6 +200,10 @@ def main():
     chk("commit automático" in doc["como_cresce"].lower().replace("automático", "automático"),
         "o registro declara como cresce: por PR de manutenção, sem commit "
         "automático no main")
+    chk("fronteira" in doc["como_cresce"],
+        "a fronteira do regresso é declarada: o PR que fecha o registro "
+        "leva as execuções medidas até o seu último commit; a do commit "
+        "final entra no próximo PR de manutenção")
 
     print(f"  {len(ok)} verificações da independência das cópias (CP-014).")
     if bad:
@@ -193,9 +211,10 @@ def main():
             print(f"  ERRO: {m}", file=sys.stderr)
         print(f"\n  {len(bad)} falha(s).", file=sys.stderr)
         return 1
-    print("  a taxa e a correlação são recalculadas do registro: 1/11 com")
-    print("  IC cruzando 2% (não dispara), dispersão sem sobredispersão e")
-    print("  fração da era CP-013 abaixo do lock — registrado, vigiado.")
+    print("  a taxa e a correlação são recalculadas do registro: 2/14 com")
+    print("  o Wilson acima de 2% e o CP cruzando — a regra dos dois ICs")
+    print("  segura a parada a uma ocorrência de distância; sem")
+    print("  sobredispersão e fração abaixo do lock: vigiado com número.")
     return 0
 
 

@@ -200,42 +200,58 @@ proposta:
         reprova, nada valida; o gate segue sendo bytes do PCM em AVX-512.
     independencia:
       registro: >
-        harness/frota/execucoes-gate.json leva as 11 execuções medidas da
-        era CP-013 (10 runs com artefato agregado-frota baixado e lido +
-        a tentativa 1 do run 36075600630, a SEM_AMOSTRA real, com a fonte
-        declarada: os artefatos daquela tentativa foram substituídos pelo
-        rerun; run_attempt=2 medido na API). O bloco calculo é RECALCULADO
-        por ci/independencia.py e reconferido pelo teste — número
+        harness/frota/execucoes-gate.json leva as 14 execuções medidas: as
+        11 da era CP-013 (10 runs com artefato agregado-frota baixado e
+        lido + a tentativa 1 do run 36075600630, a 1ª SEM_AMOSTRA real, com
+        a fonte declarada) E as 3 do PR desta CP (a 1ª execução do gate no
+        head novo, verde, 3 AVX-512; a SEM_AMOSTRA do fechamento — 2ª
+        ocorrência real, tentativa 1 do run 36091333340, 8/8 avx2, log
+        público do agregador; e o rerun que devolveu o verde, tentativa 2,
+        4 AVX-512). A fronteira do regresso é declarada no próprio
+        registro: a execução do commit FINAL deste PR entra no próximo PR
+        de manutenção. O bloco calculo é RECALCULADO por
+        ci/independencia.py e reconferido pelo teste — número
         reproduzível, nunca afirmado.
       taxa_e_ic: >
-        Taxa de SEM_AMOSTRA: 1/11 = 9,09% — acima de 2% no ponto, MAS o IC
-        de 95% cruza o limiar: Wilson [1,62%; 37,74%] e Clopper-Pearson
-        [0,23%; 41,28%], limites inferiores ABAIXO de 2%. NAO_INDEPENDENTE
-        NÃO DISPARA (a regra da diretiva exige o IC acima de 2%): com 11
-        execuções o poder é baixo — registrar e vigiar, não concluir. A
-        vigilância operacional segue a da CP-013: 3 disparos SEGUIDOS de
-        SEM_AMOSTRA recalculam o N por CP com medição nova.
+        Taxa de SEM_AMOSTRA: 2/14 = 14,29% — acima de 2% no ponto, e o
+        quadro mudou de figura com a 2ª ocorrência real: o IC de WILSON
+        está INTEIRO acima do limiar ([4,01%; 39,94%] — sozinho, ele
+        dispararia); o de CLOPPER-PEARSON ([1,78%; 42,81%]) ainda CRUZA
+        2% — por 0,22 pontos. A regra declarada nesta CP exige os DOIS
+        ICs acima de 2%: NAO_INDEPENDENTE NÃO dispara — mas o estado é o
+        QUASE, registrado com número: uma SEM_AMOSTRA a mais (3 em 15)
+        põe os dois ICs acima do limiar e a parada dispara (fronteira
+        medida no teste). NADA foi ajustado depois de ver o dado — a
+        regra dos dois ICs foi declarada no 1º commit, antes da 2ª
+        ocorrência existir; o que o dado mudou foi o ESTADO (de 'IC cruza
+        largo' para 'uma ocorrência de distância'), e é isso que fica
+        registrado. A vigilância operacional segue dupla: a da CP-013 (3
+        disparos SEGUIDOS recalculam o N por CP) e esta fronteira
+        estatística.
       correlacao_intra_execucao: >
         Cópias AVX-512 por execução comparadas à binomial(N=8, p=38/97):
-        variância observada 2,09 x binomial 1,91 (razão 1,10) —
-        qui-quadrado de dispersão 10,97 em 10 g.l., p=0,36: SEM
-        SOBREDISPERSÃO, as cópias de um mesmo run são sorteios
-        independentes (a independência que o N pressupõe foi conferida, não
-        assumida). A MÉDIA é outro assunto: 23/88 cópias com avx512f =
-        26,1% na era CP-013, contra 38/97 = 39,2% do lock (cauda binomial
-        0,0072) — a fração da frota MEDIDA nesta era ficou abaixo da
-        fração do registro das CPs 009/011/012; pool vivo. Se a tendência
-        se confirmar, o N sai de 8 para 13 (+62,5%) — acima dos 50%:
-        aplicação unilateral proibida, proposta por CP quando o dado
-        sustentar.
+        variância observada 2,29 x binomial 1,91 — qui-quadrado de
+        dispersão 15,59 em 13 g.l., p=0,27: SEM SOBREDISPERSÃO, as cópias
+        de um mesmo run seguem sorteios independentes (a independência
+        que o N pressupõe foi conferida com 14 execuções, não assumida).
+        A MÉDIA é o achado persistente: 30/112 cópias com avx512f =
+        26,8% na era CP-013/014, contra 38/97 = 39,2% do lock (cauda
+        binomial 0,0041) — a fração da frota MEDIDA ficou abaixo da
+        fração do registro das CPs 009/011/012, e as duas SEM_AMOSTRA em
+        14 disparos são exatamente o que a fração observada prevê
+        (P(zero) = 8,9% por disparo com N=8: ~1,25 em 14 esperado, 2
+        observado — consistente). Pool vivo. Se a tendência se confirmar,
+        o N sai de 8 para 13 (+62,5%) — acima dos 50%: aplicação
+        unilateral proibida, proposta por CP quando o dado sustentar.
       registro_em_producao: >
         O agregador publica a entrada de registro no agregado.json de todo
-        run (medido no run 36090778482: run/tentativa/head/evento/quando/
-        copias/avx512/sem_amostra); o curador a acrescenta ao registro por
-        PR de manutenção — commit automático no main, JAMAIS. Nota medida:
-        no evento pull_request o GITHUB_SHA é o commit de MERGE, não o
-        head do PR — o head do registro é o SHA testado (o merge commit),
-        e o curador registra o head do PR na entrada quando acrescenta.
+        run (medido nos runs 36090778482 e 36091333340 t2:
+        run/tentativa/head/evento/quando/copias/avx512/sem_amostra); o
+        curador a acrescenta ao registro por PR de manutenção — commit
+        automático no main, JAMAIS. Nota medida: no evento pull_request o
+        GITHUB_SHA é o commit de MERGE, não o head do PR — o head do
+        registro é o SHA testado (o merge commit), e o head_do_pr é
+        registrado na entrada junto.
 
   desfecho:
     entregue: >
@@ -256,9 +272,14 @@ proposta:
       campos de síntese da avx2 exatamente nao_aplicavel:classe_avx2, e
       texto com "ou" reprova a geração (73 verificações no teste).
       (5) A TAXA DE SEM_AMOSTRA E A CORRELAÇÃO CALCULADAS E REGISTRADAS:
-      1/11 = 9,09% com IC95 cruzando 2% (não dispara), dispersão sem
-      sobredispersão (p=0,36), fração 26,1% vs 39,2% do lock — tudo no
-      registro versionado, recalculável, crescendo por PR de manutenção.
+      2/14 = 14,29% (a 2ª ocorrência real veio no próprio fechamento e
+      entrou no registro — exclusão seletiva seria cherry-picking) com o
+      Wilson INTEIRO acima de 2% e o CP cruzando por 0,22 pontos: a regra
+      declarada (os DOIS ICs) segura a parada a UMA ocorrência de
+      distância — o quase registrado com número e fronteira medida;
+      dispersão sem sobredispersão (p=0,27), fração 26,8% vs 39,2% do
+      lock (cauda 0,0041) — tudo no registro versionado, recalculável,
+      crescendo por PR de manutenção.
       (6) O merge do PR #15 pelo rito do adendo: checks verdes no head
       exato, sem --admin, sem force-push no main, main VERDE depois.
       Nenhum .opus mudou; nenhum arquivo de filme entrou na CP.
@@ -291,6 +312,16 @@ proposta:
       na hora: o estado medido pelo CI é o que fica; a máquina sem
       instrumento não publica evidência. E o run do navegador gerado pelo
       teste local era ruído, não evidência — revertido junto.
+    o_vermelho_nomeado_funcionou_segunda_vez: >
+      A 2ª SEM_AMOSTRA real veio no commit de fechamento DESTE PR (8/8
+      avx2 no sorteio): o agregador reprovou vermelho nomeado, o rerun
+      devolveu o verde (4 AVX-512 idênticas), e a ocorrência ENTROU no
+      registro — porque excluí-la seria escolher o dado que favorece a
+      conclusão confortável. Com ela, o quadro ficou honestamente
+      desconfortável: o Wilson dispara sozinho, o CP cruza por 0,22
+      pontos, e a parada NAO_INDEPENDENTE está a uma ocorrência de
+      distância — registrada com fronteira medida, sem ajustar regra
+      nenhuma depois de ver o número.
 
   doutrina:
     - >
@@ -370,13 +401,17 @@ proposta:
   risco:
     nivel: medio
     porque: >
-      O risco honesto é o mesmo da CP-013 (pool vivo): 11 execuções são
-      poucas para um IC estreito — a conclusão sobre independência pode
-      ficar em "não rejeita" em vez de "confirma", e é isso que será
-      registrado (sem inflar o que o dado não sustenta). O segundo risco
-      é operacional: o dispatch de observação builda de propósito numa
-      classe que o gate abandonou — o custo é pago quando pedido; o
-      rótulo "observação, sem gate" é o contrato de que nada dali
-      bloqueia merge nenhum.
+      O risco estatístico materializou-se em número: a frota real da era
+      CP-013/014 entregou 26,8% de avx512f visível (contra 38/97 do lock)
+      e P(zero) por disparo subiu para ~8,9% — as duas SEM_AMOSTRA em 14
+      execuções são o desenho funcionando contra uma frota que mudou de
+      mistura. Contenção: NAO_INDEPENDENTE está a uma ocorrência de
+      distância (fronteira medida: 3 em 15), o N é recalculável do
+      registro por CP (13, +62,5% — jamais aplicado sozinho acima de 50%),
+      e o rerun é o caminho de volta nomeado em cada vermelho. O segundo
+      risco segue operacional: o dispatch de observação builda de
+      propósito numa classe que o gate abandonou — o custo é pago quando
+      pedido; o rótulo "observação, sem gate" é o contrato de que nada
+      dali bloqueia merge nenhum.
 
   aval_humano_necessario: true   # diretiva do dono (25/09/2026) — execução, medição e merges desta CP
