@@ -188,21 +188,33 @@ def main():
     chk("estado: proposta" in cp and "REVISAO_NECESSARIA" in cp,
         "a CP-016 está em estado PROPOSTA com a parada de decisão do dono")
     # a regra dura: nada de gate/lock/audio.json muda NESTA branch — provado
-    # pelo diff contra o main (merge-base), não por promessa
+    # pelo diff contra o main (merge-base), não por promessa. No clone local
+    # o main é origin/main; no CI de pull_request o checkout é o MERGE REF
+    # (sem origin/main) e o pai HEAD^1 é o tip do base — os DOIS caminhos
+    # dão o diff do PR; sem nenhum, o cheque reprova nomeado
     import subprocess as _sp
-    dif = _sp.run(["git", "diff", "--name-only", "origin/main...HEAD"],
-                  capture_output=True, text=True, cwd=RAIZ)
-    tocados = [l.strip() for l in (dif.stdout or "").splitlines() if l.strip()]
+
+    def _diff_cmd():
+        for base in ("origin/main", "HEAD^1"):
+            r = _sp.run(["git", "diff", "--name-only", f"{base}...HEAD"],
+                        capture_output=True, text=True, cwd=RAIZ)
+            if r.returncode == 0:
+                return base, r.stdout
+        return None, ""
+
+    base_usado, diff_txt = _diff_cmd()
+    tocados = [l.strip() for l in diff_txt.splitlines() if l.strip()]
     proibidos = [p for p in tocados if (
         p in ("voz.lock", "amostras.lock",
               ".github/workflows/dublador.yml",
               ".github/workflows/dublador-onda.yml")
         or p.startswith(("estudio_suite/", "ferramentas/dublador/"))
         or (p.startswith("filmes/") and p.endswith("audio.json")))]
-    chk(dif.returncode == 0 and not proibidos,
-        f"o diff da CP-016 contra o main NÃO toca gate/lock/audio.json "
-        f"({len(tocados)} arquivos, zero proibido) — a decisão de virar "
-        f"âncora é do dono, e a regra está provada no diff, não prometida")
+    chk(base_usado is not None and not proibidos,
+        f"o diff da CP-016 contra o main ({base_usado}) NÃO toca "
+        f"gate/lock/audio.json ({len(tocados)} arquivos, zero proibido) — "
+        f"a decisão de virar âncora é do dono, e a regra está provada no "
+        f"diff, não prometida")
 
     # --- a evidência REAL (se commitada): reconferida --------------------
     real = RAIZ / "harness" / "frota" / "observacao-avx2.json"
