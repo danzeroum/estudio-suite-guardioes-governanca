@@ -208,10 +208,19 @@ def main() -> int:
 
     classe = (os.environ.get("CLASSE_DO_RUNNER")
               or "").strip() or "indeterminada"
+    # CP-015: a ONDA da cópia (1 ou 2) — o agregador distingue
+    # onda-1/copia-3 de onda-2/copia-3; a segunda onda é automática quando
+    # a primeira termina sem nenhuma AVX-512. Default 1 (compatibilidade
+    # com o artefato da era CP-013/014, que não carregava o campo).
+    try:
+        onda = int(str(os.environ.get("ONDA") or "1").strip() or "1")
+    except ValueError:
+        onda = 1
 
     # ---- o veredito.json: o contrato do agregador (CP-013) ---------------
     doc = {
         "copia": os.environ.get("COPIA"),
+        "onda": onda,
         "run_id": os.environ.get("RUN_ID"),
         "run_attempt": os.environ.get("ATTEMPT"),
         "cpu": os.environ.get("CPU_MODELO", "ilegivel"),
@@ -286,6 +295,7 @@ def main() -> int:
         "run_id": os.environ.get("RUN_ID"),
         "run_attempt": os.environ.get("ATTEMPT"),
         "copia": os.environ.get("COPIA"),
+        "onda": onda,
         "cpu": {
             "modelo": os.environ.get("CPU_MODELO", "ilegivel"),
             "sockets": os.environ.get("SOCKETS"),
@@ -347,8 +357,8 @@ def main() -> int:
     (saida / "identidade.json").write_text(
         json.dumps(identidade, ensure_ascii=False, indent=1) + "\n",
         encoding="utf-8")
-    print("== veredito da cópia (CP-014: rótulos únicos) — "
-          f"{doc.get('copia')}/{classe}: {doc.get('veredito')}")
+    print("== veredito da cópia (CP-014: rótulos únicos; CP-015: onda) — "
+          f"onda {onda}/{doc.get('copia')}/{classe}: {doc.get('veredito')}")
     print(json.dumps(identidade, ensure_ascii=False, indent=1))
     return 0
 

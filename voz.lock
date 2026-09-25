@@ -116,10 +116,47 @@ tolerancia:
 # lscpu antes do cancelamento), 29/72 daria o MESMO N=8. O workflow
 # le o N AQUI (ci/pins_do_lock.py --amostragem-n) e monta a matrix de
 # N copias — o numero nunca e digitado no YAML. Lock sem o bloco frota
-# e lock INCOMPLETO (CP-013): recusa nomeada, nunca um N chutado. O
-# objetivo da frota (>= 3 Intel e >= 3 AMD-avx512 identicas) e contado
-# pela CP nas execucoes, nao pelo workflow.
+# e lock INCOMPLETO (CP-013): recusa nomeada, nunca um N chutado.
+#
+# CP-015 (decisao do dono 25/09/2026): O N PELA JANELA MOVEL — a frota
+# e um pool VIVO e a fracao 38/97 congelada ja nao o descreve: a era
+# CP-013/014 entregou 30/112 (26,8%, cauda binomial 0,0041 do valor
+# congelado; com a pendente do head final da CP-014, 32/120 = 26,7%).
+# O N passa a ser o menor valor com P(zero copia AVX-512) <= 2% sobre
+# a FRAÇÃO DAS ÚLTIMAS J EXECUÇÕES do registro do GATE
+# (harness/frota/execucoes-gate.json — o registro das execucoes reais,
+# uma entrada por tentativa), recalculavel pelo teste, que reprova "N
+# desatualizado" se o valor AQUI divergir do recalculado. fracao_avx512f
+# ACIMA fica como a ORIGEM CONGELADA da decisao CP-013 (o registro
+# historico das CPs 009/011/012) — a fracao VIVA mora no registro do
+# gate, na janela; p_zero_2pct e o alvo de probabilidade, a unica
+# constante de desenho. J = 20: a janela cobre ~1 era de CP do gate
+# (14-15 execucoes ate hoje — com J maior que o registro, o calculo
+# declara "janela incompleta" e usa TODAS, nunca inventa fracao); cada
+# execucao nova troca 5% da janela (reacao a deriva em dezenas de runs,
+# nao em um); com ~8 copias por onda, 20 execucoes dao ~160 copias e o
+# SE da fracao da janela e ~0,035 — o N sobe ~2 unidades por esse ruido
+# (dN/dp ~ 58 com p ~ 0,27), menos que a deriva ja medida (38/97 ->
+# 32/120 moveu o N de 8 para 13). O N MUDA POR PR DE MANUTENCAO (este
+# bloco e o lugar unico — jamais commit automatico no main). A JANELA
+# E VIVA DESDE O PRIMEIRO DIA — licao medida neste proprio PR: com as
+# 15 execucoes do registro na abertura (32/120 = 0,2667) o N era 13;
+# as DUAS execucoes deste PR (5 e 6 AVX-512 de 13 copias cada — sorteio
+# rico) subiram a fracao para 43/146 = 0,2945 e o N CAIU para 12. O
+# valor AQUI e o recalculado do registro FINAL deste PR (17 execucoes):
+# (1-0,2945)^11 = 2,16% > 2%; ^12 = 1,53% <= 2% -> N = 12. A SEGUNDA
+# ONDA (mesma decisao): se a primeira onda terminar com ZERO copias
+# AVX-512, um job condicional roda a segunda onda de N copias no mesmo
+# workflow; o agregador decide sobre as DUAS; SEM_AMOSTRA_DECISIVA so
+# nasce apos duas ondas vazias — P(uma onda vazia) = 1,53%, P(duas) =
+# 0,0231% (1 em 4329): o vermelho fica ~55x mais raro sem tocar no
+# gate de bytes, e o RERUN humano deixa de ser o caminho de volta.
+# Enquanto o registro for menor que J, cada PR de manutencao pode
+# mover o N (a substituicao por execucao e grande); com a janela cheia,
+# 5% por execucao amortece — o desenho reage a DERIVA, nao ao ruido de
+# um run.
 frota:
-  amostragem: 8
+  amostragem: 12
   fracao_avx512f: 38/97
   p_zero_2pct: 0.02
+  janela: 20

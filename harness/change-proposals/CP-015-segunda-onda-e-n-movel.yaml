@@ -1,0 +1,468 @@
+# Mudanca proposta a partir de DIRETIVA DO DONO sobre EVIDENCIA medida.
+# Declarada antes de executada; fica como registro mesmo depois.
+#
+# A CP-014 fechou com o quadro honesto mas desconfortavel: taxa de
+# SEM_AMOSTRA 2/14 = 14,29% com o IC de Wilson INTEIRO acima de 2% e o de
+# Clopper-Pearson cruzando por 0,22 pontos — NAO_INDEPENDENTE a UMA
+# ocorrencia de distancia — e a fracao medida da frota caiu de 38/97
+# (lock) para 30/112 (era CP-013/014). O dono viu o estado e decidiu:
+#
+#   DECISAO DO DONO (25/09/2026):
+#   "N pela fracao da janela movel da frota; segunda onda automatica
+#    quando a primeira nao tiver AVX-512; rerun humano deixa de ser o
+#    caminho de volta."
+#
+# O que a decisao corrige, cada ponta com o porquê medido:
+#
+#   (1) O N PAROU DE SER ESTATICO. O N=8 do lock nasceu da fracao 38/97
+#   congelada das CPs 009/011/012 — mas a frota e um pool VIVO que ja
+#   entregou 30/112 (26,8%) na era CP-013/014, cauda binomial 0,0041 do
+#   valor do lock: o modelo do lock nao descreve mais a frota que sorteia.
+#   P(zero em 8) subiu de 1,87% (promessa do N=8) para 8,26% — as duas
+#   SEM_AMOSTRA em 14 disparos sao exatamente o que a fracao OBSERVADA
+#   prevê (esperado 1,16, observado 2, P(X>=2)=32%). O N passa a ser
+#   RECALCULADO da fracao das ultimas J execucoes do REGISTRO versionado
+#   (harness/frota/execucoes-gate.json): N = menor valor com
+#   P(zero copia AVX-512) <= 2%. J vive num lugar so (o lock, bloco
+#   frota); o calculo roda no TESTE a partir do registro; o N do lock tem
+#   de bater com ele, senao o fiscal reprova ("N desatualizado"). Mudanca
+#   de N entra por PR de manutencao — nunca por commit automatico no main.
+#
+#   (2) O RERUN HUMANO DEIXA DE SER O CAMINHO DE VOLTA. Ate aqui, zero
+#   copias AVX-512 no sorteio era vermelho nomeado cuja saida era um
+#   humano apertar rerun — caminho de volta com dono humano, risco
+#   registrado (a recomendacao de gestao desta CP: automatizar ou nomear
+#   a pendencia). A segunda onda AUTOMATICA resolve no mesmo workflow:
+#   se a primeira onda terminar com zero copias AVX-512, um job
+#   condicional roda uma SEGUNDA onda de N copias; o agregador final
+#   decide sobre as DUAS — verde com >=1 AVX-512 identica e zero
+#   divergentes. SEM_AMOSTRA_DECISIVA so existe apos DUAS ondas vazias, e
+#   continua vermelho nomeado. Com N=13 e fracao 0,2667 (15 execucoes do
+#   registro, incluindo a pendente do head final da CP-014):
+#   P(uma onda vazia) = 1,77%; P(duas ondas vazias) = 0,0315% — 1 em 3178.
+#   O vermelho nomeado fica ~50x mais raro sem tocar no gate: a prova
+#   decisiva continua sendo bytes do PCM mixado em copia AVX-512.
+#
+#   (3) O REGISTRO CRESCE DE VERDADE. O agregador ja publica a linha da
+#   execucao no agregado.json (CP-014); agora ele publica a linha COM AS
+#   ONDAS (classe por copia, ondas usadas, SEM_AMOSTRA sim/nao) e o
+#   script ci/atualizar_registro_frota.py junta os artefatos baixados no
+#   registro versionado para o PR de manutencao. A fronteira do regresso
+#   declarada na CP-014 e cumprida AQUI: a execucao do head final do PR
+#   #15 (run 36092359210: 8 copias, 2 AVX-512 identicas, 6 avx2, verde)
+#   entra no registro por ESTE PR.
+#
+#   (4) CP-016 EM PROPOSTA (a pergunta seguinte). O dispatch observar_avx2
+#   da CP-014 mediu 4 copias avx2 (EPYC 7763 x3, 9V74 x1 — modelos
+#   DIFERENTES) com deltas por fala IDENTICOS entre si: a divergencia da
+#   classe avx2 parece DETERMINISTICA. Se a sintese na classe avx2 for
+#   byte-deterministica entre modelos e execucoes, o audio.json poderia
+#   carregar um segundo hash de PCM (avx2) e TODA copia seria decisiva —
+#   o problema do N sumiria. Mas isso e DECISAO DO DONO, nao do agente:
+#   a CP-016 nasce em estado PROPOSTA com a pergunta, a evidencia a medir
+#   (>=3 modelos avx2 distintos, >=5 execucoes, sha256 do PCM mixado por
+#   filme por copia) e o veredito medido. NADA implementado do contrato —
+#   a CP-016 nao altera gate, lock nem audio.json.
+schema: estudio-suite/change-proposal@1
+
+proposta:
+  id: CP-015
+  titulo: "N pela janela móvel da frota; segunda onda automática quando a primeira não tiver AVX-512; rerun humano deixa de ser o caminho de volta; registro cresce de verdade; CP-016 (âncora avx2) nasce em proposta"
+  autor: agente/curador
+  criada_em: "2026-09-25T05:30:00Z"
+  estado: concluida
+
+  # PASSO 0 (credencial) — registro, NAO parada:
+  pendencia_do_dono:
+    TOKEN_A_ROTACIONAR: >
+      O token em uso e o mesmo que esteve embutido na URL do remote do
+      clone (era CP-013/014) — credential exposta, tratada como QUEIMADA.
+      FEITO nesta CP: o arquivo 0600 com o valor e o credential helper
+      que o lia foram APAGADOS ("removido" — o valor nunca foi impresso,
+      registrado ou commitado); o helper novo le SOMENTE o GH_TOKEN do
+      AMBIENTE e falha nomeada (CREDENCIAL_AUSENTE, saida 1) quando a
+      variavel esta vazia — provado com a variavel vazia, nunca le
+      arquivo; `git remote -v` e `git config --list --show-origin`
+      conferidos: zero credenciais em remote, config, arquivos, logs,
+      commits ou comentarios do repositorio. PEDIDO AO DONO: REVOGAR e
+      ROTACIONAR o token. E registro, nao parada — o trabalho segue.
+
+  sinal:
+    tipo: diretiva-do-dono
+    chave: "cp015-janela-movel-e-segunda-onda-automatica"
+    evidencia: >
+      O estado medido ao assumir: main em af0533c (merge do PR #15, verde);
+      #14 aberto em rascunho (AGUARDANDO_LEI, intocado); registro
+      harness/frota/execucoes-gate.json com 14 execuções medidas — taxa de
+      SEM_AMOSTRA 2/14 = 14,29% (IC de Wilson [4,01%; 39,94%] inteiro
+      acima de 2%; o de Clopper-Pearson [1,78%; 42,81%] cruzando por 0,22
+      pontos — NAO_INDEPENDENTE a uma ocorrência de distância, regra dos
+      DOIS ICs declarada no 1º commit da CP-014 ANTES da 2ª ocorrência);
+      dispersão sem sobredispersão (15,59 em 13 g.l., p=0,27); fração
+      AVX-512 30/112 = 26,8% contra 38/97 = 39,2% do lock (cauda 0,0041);
+      N condicional 13 calculado na CP-014 e NÃO aplicado (proibição dos
+      50%). Pendências herdadas: (a) a execução do head final do PR #15
+      (run 36092359210, verde, 2 AVX-512) fora do registro — fronteira do
+      regresso declarada; (b) o arquivo 0600 com o token e o credential
+      helper com fallback a ele (CP-014, passo 0) — dívida de credencial;
+      (c) o caminho de volta do SEM_AMOSTRA é o RERUN humano.
+    decisao_do_dono: >
+      25/09/2026, na abertura desta CP: "N pela fração da janela móvel da
+      frota; segunda onda automática quando a primeira não tiver AVX-512;
+      rerun humano deixa de ser o caminho de volta."
+
+  plano:
+    - >
+      0. CREDENCIAL: apagar o arquivo 0600 e o helper que o lê; o helper
+      novo lê SOMENTE o GH_TOKEN do ambiente e falha nomeada se vazio;
+      conferir `git remote -v` e `git config --list --show-origin` sem
+      credencial em lugar nenhum; registrar TOKEN_A_ROTACIONAR (pedindo
+      revogação e rotação ao dono) — registro, não parada.
+    - >
+      1. DIAGNÓSTICO NA CP, ANTES DE MUDAR CÓDIGO, com os dados do
+      registro: a fração AVX-512 caiu de 38/97 (lock) para 30/112 (era
+      CP-013/014); com p=0,268, P(zero em 8) ≈ 8,2% e o esperado em 14
+      execuções é ≈1,15 SEM_AMOSTRA — observadas 2, sem sobredispersão.
+      Confirmar ou refutar que o excesso se explica pela DERIVA da
+      fração e não por dependência entre cópias; se refutado, registrar
+      NAO_INDEPENDENTE com os números e seguir o plano (a segunda onda
+      também cobre esse caso).
+    - >
+      2. N POR JANELA MÓVEL: N = menor valor com P(zero AVX-512) <= 2%
+      sobre a fração das últimas J execuções do registro. J vive num só
+      lugar (o lock) e sua escolha é justificada nesta CP. O cálculo roda
+      no teste a partir do registro; o N do lock tem de bater com ele,
+      senão o fiscal reprova ("N desatualizado"). Mudança de N entra por
+      PR de manutenção, nunca por commit automático.
+    - >
+      3. SEGUNDA ONDA: se a primeira onda terminar com zero cópias
+      AVX-512, um job condicional roda uma segunda onda de N cópias no
+      MESMO workflow; o agregador final decide sobre as duas — verde com
+      >=1 AVX-512 idêntica e zero divergentes; SEM_AMOSTRA_DECISIVA só
+      existe após duas ondas vazias e continua vermelho nomeado. A
+      probabilidade de duas ondas vazias com a fração da janela fica
+      registrada aqui. Provada em execução real ou forçada em teste.
+    - >
+      4. REGISTRO AUTOMÁTICO: o agregador publica a linha da execução
+      (classe por cópia, ondas usadas, SEM_AMOSTRA sim/não) no
+      agregado.json; ci/atualizar_registro_frota.py junta os artefatos
+      baixados no registro versionado para o PR de manutenção. Rodá-lo
+      AGORA incluindo a execução pendente do head final da CP-014
+      (run 36092359210).
+    - >
+      5. CP-016 SÓ PROPOSTA: arquivo CP-016-ancora-avx2.yaml em estado
+      proposta com a pergunta ("a síntese na classe avx2 é
+      byte-determinística entre modelos de CPU e execuções, a ponto de o
+      audio.json carregar um segundo hash de PCM (avx2) e tornar TODA
+      cópia decisiva?"), a evidência a medir (>=3 modelos avx2 distintos,
+      >=5 execuções, sha256 do PCM mixado avx2 por filme por cópia), o
+      veredito medido (DETERMINISTICO_NA_CLASSE ou NAO_DETERMINISTICO com
+      a tabela) e — se determinístico — o esboço do contrato completo e
+      dos riscos, NADA implementado. O PR da CP-016 fica ABERTO como
+      proposta, para decisão do dono.
+    - >
+      6. Rito de merge do adendo para o PR desta CP: checks verdes no
+      head exato, atualizado com o main, sem --admin, sem force-push no
+      main, `git revert -m 1` + MAIN_QUEBROU se o main quebrar. O #14 não
+      é tocado (segue AGUARDANDO_LEI). Worklog e pare.
+
+  resultado_da_medicao:
+    quando: "2026-09-25 — diagnóstico com o registro de 14 (ANTES de mudar código, passo 2) + o fechamento medido com o registro FINAL de 17 (diagnóstico, maquinaria, runs reais e N vivo)"
+    diagnostico_na_cp:
+      pergunta: >
+        A fração AVX-512 caiu de 38/97 (lock) para 30/112 (era CP-013/014).
+        Com p=0,268, P(zero em 8) ≈ 8,2% e o esperado em 14 execuções é
+        ≈1,15 SEM_AMOSTRA. Observadas: 2, sem sobredispersão. O excesso se
+        explica pela DERIVA da fração, ou por dependência entre cópias?
+      numeros_do_registro:
+        fracao_do_lock: "38/97 = 0,39175"
+        fracao_da_era_cp013_014: "30/112 = 0,26786"
+        p_zero_em_8_com_fracao_da_era: 0.08256
+        esperado_sem_amostra_em_14_com_fracao_da_era: 1.156
+        observado_sem_amostra_em_14: 2
+        esperado_sem_amostra_em_14_com_fracao_do_lock: 0.262
+        p_x_maior_ou_igual_2_binomial_14_0_08256: 0.3237
+        dispersao_vs_fracao_do_lock: "qui-quadrado 15,59 em 13 g.l., p=0,27 (o registrado na CP-014)"
+        homogeneidade_vs_fracao_da_era: "qui-quadrado 18,94 em 13 g.l., p≈0,12"
+        cauda_binomial_da_fracao_total: "P(X <= 30 | Bin(112, 38/97)) = 0,0041"
+      veredito_do_diagnostico: >
+        CONFIRMO: o excesso se explica pela DERIVA da fração e não por
+        dependência entre cópias. A conta em três partes: (1) SOB O
+        MODELO DO LOCK (p=38/97, P(zero em 8)=1,87%) o esperado em 14
+        disparos era 0,26 SEM_AMOSTRA — as 2 observadas seriam um excesso
+        de ~8x, suspeito de dependência; (2) SOB A FRAÇÃO MEDIDA DA ERA
+        (p=30/112=0,2679, P(zero em 8)=8,26%) o esperado era 1,16 e as 2
+        observadas são rotina de binomial — P(X>=2 | Bin(14, 8,26%)) =
+        32,4%: nada de anômalo; (3) a CORRELAÇÃO INTRA-EXECUÇÃO segue
+        limpa nos dois referenciais: dispersão 15,59 em 13 g.l. p=0,27
+        contra a binomial do lock, e homogeneidade 18,94 em 13 g.l.
+        p≈0,12 contra a fração da era — nenhum dos dois rejeita sorteios
+        independentes no run. E a média é o próprio achado persistente:
+        30/112 contra 38/97 tem cauda binomial 0,0041 — o POOL MUDOU, o
+        sorteio não. NAO_INDEPENDENTE: NÃO dispara (e nem chega perto:
+        a regra dos DOIS ICs segue como na CP-014 — o Wilson sozinho
+        dispararia com 2/14, o Clopper-Pearson cruza por 0,22 pontos).
+        A conclusão operacional é a da decisão do dono: recalcular o N da
+        fração VIVA (janela móvel), não perseguir dependência que os
+        dados não mostram.
+      consequencia_no_n: >
+        Com a fração da janela (as 15 execuções do registro após incluir
+        a pendente do head final da CP-014: 32/120 = 0,2667), o menor N
+        com P(zero) <= 2% é 13: P(zero) em 12 = 2,42% > 2%; em 13 =
+        1,77% <= 2%. É o mesmo N condicional que a CP-014 calculou e
+        proibiu-se de aplicar sozinha (+62,5% > 50%): aqui ele entra por
+        PR de manutenção — este PR, com a decisão do dono citada no 1º
+        commit — e a partir dele o próprio teste recalcula e fiscaliza.
+
+    fechamento_medido:
+      runs_reais_das_ondas:
+        run_36101683572: >
+          Head consertado 1ad8870: o Dublador montou a matrix de N=13
+          cópias do lock novo, o ROTEADOR leu a onda 1 (13 vereditos
+          baixados), decidiu "não acorda" (a onda tinha 6 AVX-512 — não
+          é sorteio sem decisiva), a saída segunda_onda=false chegou ao
+          agregador (ondas declaradas: 1) e o veredito final foi VERDE —
+          6 cópias AVX-512 com PCM idêntico, 7 avx2 neutras, zero
+          ilegíveis, --conferir-n com 13 == lock. A onda 2 foi PULADA
+          pela condição certa: o desenho das duas ondas rodou inteiro,
+          ponta a ponta, em produção — a segunda onda em si está provada
+          FORÇADA EM TESTE (test_agregar_prova: onda 1 {8 avx2} + onda 2
+          {1 AVX-512 idêntica} -> verde; duas ondas vazias ->
+          SEM_AMOSTRA_DECISIVA; onda 2 divergente -> DIVERGENCIA nomeando
+          onda e cópia; test_rotear_segunda_onda: o sorteio limpo ACORDA,
+          todo o resto não) — pegá-la ao vivo por sorteio custaria ~58
+          disparos (P=1,7%), e o desenho não se prova esperando sorte.
+        run_36101113176_e_o_tee: >
+          Head 1db804b (a maquinaria no primeiro disparo): o AGREGADOR
+          deu VERDE (5 AVX-512 idênticas de 13 cópias), o roteador
+          DECIDIU certo e publicou o rotear.json — e o PASSO morreu
+          vermelho por um tee que abria /tmp/rotear/rotear.log antes de
+          o script criar o diretório (corrida de pipeline; pipefail).
+          A correção é mkdir ANTES do pipeline (o mesmo padrão que o
+          agregar já tinha), com teste estrutural reprova-a-se-voltar.
+          A ocorrência ENTROU no registro (com a fonte declarando o
+          incidente): excluir o run vermelho-por-log para "guardar" o
+          verde teria sido escolher o dado confortável.
+      o_n_vivo:
+        licao_medida: >
+          A JANELA É VIVA DESDE O PRIMEIRO DIA. Na abertura (15
+          execuções: 32/120 = 0,2667) o menor N com P(zero) <= 2% era 13
+          — o valor do 1º commit da maquinaria. As DUAS execuções deste
+          PR (5 e 6 AVX-512 de 13 cópias cada — sorteio RICO) subiram a
+          fração da janela para 43/146 = 0,2945 e o N CAIU para 12:
+          (1-0,2945)^11 = 2,16% > 2%; ^12 = 1,53% <= 2%. O lock FECHA em
+          12 — o recalculado do registro FINAL deste PR — e a lição fica
+          registrada em três lugares (lock, aqui e o teste): enquanto o
+          registro for menor que J, cada PR de manutenção pode mover o N
+          porque cada execução nova substitui uma fatia grande da
+          janela; com a janela CHEIA, a substituição de ~5% por execução
+          amortece. O desenho reage à DERIVA da frota, não ao ruído de
+          um run — e nunca por commit automático.
+        probabilidades_com_n_12: >
+          P(uma onda vazia) = 1,53%; P(duas ondas vazias) = 0,0231%
+          (1 em 4329) — SEM_AMOSTRA_DECISIVA ~55x mais raro que o
+          desenho de onda única com N=8 (P=8,9% por disparo na fração
+          da era), e o caminho de volta automático já roda dentro do
+          próprio run.
+      registro_final:
+        estado: >
+          17 execuções: as 14 da era CP-013/014 + a pendente do head
+          final da CP-014 (run 36092359210, 2 AVX-512, verde,
+          head_do_pr f545dde — fronteira do regresso cumprida) + as duas
+          deste PR (36101113176 e 36101683572). Taxa SEM_AMOSTRA 2/17 =
+          11,76% (as duas históricas da era do rerun; as três novas são
+          verdes); Wilson [3,29%; 34,34%] INTEIRO acima de 2%;
+          Clopper-Pearson [1,46%; 36,44%] cruza — NAO_INDEPENDENTE NÃO
+          dispara (a regra dos DOIS ICs), a fronteira medida segue a
+          UMA ocorrência de distância (3 em 18 põe os dois ICs acima);
+          homogeneidade 20,59 em 16 g.l., p=0,19 (sem sobredispersão);
+          fração da janela 29,5% x congelada 39,2% (cauda 0,0092 — o
+          pool segue vivo). O bloco calculo é regravado pelo caminho
+          único e reconferido pelo teste (72 verificações). A execução
+          do commit FINAL deste PR entra no próximo PR de manutenção —
+          a fronteira declarada.
+      credencial_passo_0:
+        feito: >
+          Arquivo 0600 e helper com fallback APAGADOS; helper novo lê
+          SÓ o GH_TOKEN do ambiente e falha nomeada CREDENCIA_AUSENTE
+          (provado com a variável vazia, nunca lê arquivo); git remote
+          -v e git config --list --show-origin conferidos: zero
+          credenciais em remote/config/arquivos/logs/commits/comentários.
+          TOKEN_A_ROTACIONAR registrado para o dono (revogar e rotacionar)
+          — registro, não parada; o trabalho seguiu.
+
+  desfecho:
+    entregue: >
+      (1) O N PELA JANELA MÓVEL: voz.lock com frota.janela J=20 e
+      frota.amostragem FECHADA em 12 (o recalculado do registro final de
+      17: 43/146 = 0,2945; N=11 daria 2,16% > 2%), o teste recalculando
+      do registro e fiscalizando "N desatualizado" — a mudança entrou
+      por PR de manutenção (este), com a decisão do dono citada no 1º
+      commit. (2) A SEGUNDA ONDA AUTOMÁTICA: o workflow em duas ondas
+      (dublador-onda.yml reutilizável + roteador + onda 2 condicional +
+      agregador sobre as ondas) rodou INTEIRO em produção (run
+      36101683572: roteador decidiu, agregador verde com 6 AVX-512 de
+      N=13), a segunda onda está provada FORÇADA EM TESTE (os casos da
+      diretiva em test_agregar_prova/test_rotear_segunda_onda) e
+      SEM_AMOSTRA_DECISIVA só nasce após DUAS ondas vazias (P=0,0231%).
+      (3) O RERUN HUMANO DEIXOU DE SER O CAMINHO DE VOLTA: o caminho
+      automático mora no próprio run; ilegível não vira sorte; cópia sem
+      artefato é AMOSTRA_ILEGIVEL, nunca SEM_AMOSTRA. (4) O REGISTRO
+      CRESCEU DE VERDADE: ci/atualizar_registro_frota.py rodou com a
+      pendente da CP-014 E as duas execuções deste PR (inclusive a do
+      tee vermelho — exclusão seria cherry-picking); o calculo regravado
+      pelo caminho único. (5) O incidente do tee: corrigido com mkdir
+      antes do pipeline + teste estrutural. (6) TOKEN_A_ROTACIONAR
+      registrado no passo 0 e no corpo do PR. (7) O merge pelo rito: CI
+      verde no head exato, sem --admin, sem force-push no main.
+    parada_final: >
+      NENHUMA desta CP (concluida). NAO_INDEPENDENTE não disparou (a
+      regra dos DOIS ICs, intocada: Wilson acima, CP cruzando por 0,54
+      pontos — a uma ocorrência de distância, fronteira medida 3 em 18).
+      As paradas que seguem ativas: AGUARDANDO_LEI (#14/CP-013 — sem
+      LEI_TOKEN o filme 03 não mergeia) e TOKEN_A_ROTACIONAR (registro:
+      o dono deve revogar e rotacionar o token que esteve no remote).
+
+  licoes:
+    a_janela_e_viva_no_primeiro_dia: >
+      O N moveu 13 -> 12 DENTRO do próprio PR: as duas execuções dele
+      eram sorteios ricos (11 AVX-512 em 26 cópias) e a fração da janela
+      subiu 2,8 pontos. Não é defeito — é o desenho reagindo à frota
+      real com o registro ainda menor que J; a fração de 20 execuções
+      cheias amortece (~5% de substituição por run). O fiscal do
+      "N desatualizado" é o que impede o lock de mentir sobre esse
+      movimento — e a lição está no lock, na CP e no teste.
+    o_log_tambem_e_codigo: >
+      O roteador decidiu certo, publicou o rotear.json e o passo morreu
+      vermelho: um tee abrindo arquivo antes do mkdir. O desenho de duas
+      ondas estava certo; o ENCANAMENTO do log é que quebrou. Correção
+      mínima (mkdir antes do pipeline) + teste estrutural para a corrida
+      não voltar — e o run vermelho entrou no registro com a fonte
+      declarando o incidente.
+    excluir_dado_ruim_e_cherry_picking: >
+      A tentação de registrar só o run verde (o do head consertado) e
+      deixar o do tee fora do registro era real: o número ficava mais
+      limpo. A CP-014 já tinha registrado a SEM_AMOSTRA do próprio
+      fechamento pelo mesmo motivo — e aqui a regra se manteve: o
+      registro leva o que MEDIU, com a fonte dizendo o que houve.
+    segurar_o_13_teria_sido_escolher_o_numero: >
+      Com as 17 execuções o N cai para 12; manter 13 no lock "porque a
+      diretiva citou 13" seria escolher o número em vez de recalculá-lo
+      — a diretiva manda o MÉTODO (janela móvel), não o valor. O valor
+      que fecha é o do registro final, e o fiscal do teste é quem garante
+      que o lock não discrepe dele.
+
+  doutrina:
+    - >
+      O gate continua sendo SÓ bytes do PCM mixado em cópia AVX-512
+      visível (decisão (e) da CP-013, intocada); nenhum .opus commitado
+      muda; nenhum teto de descritor entra no lock; a CP-016 não altera
+      gate, lock nem audio.json.
+    - >
+      N, J e fração vêm de um só lugar e são recalculáveis pelo teste: N e
+      J moram no voz.lock (bloco frota), a fração vem do registro
+      versionado (janela das últimas J execuções). Nenhum commit
+      automático no main — mudança de N é PR de manutenção.
+    - >
+      Cada caminho de volta que depende de humano é risco com dono: ou
+      vira automático (a segunda onda), ou vira pendência nomeada
+      (TOKEN_A_ROTACIONAR). Rerun humano deixa de ser caminho de volta.
+    - >
+      Separação de verificação e validação (a CP-016 só VERIFICA
+      determinismo na classe; decidir se isso vira âncora é validação do
+      dono). Amostra ilegível continua reprovando, nunca neutra; vermelho
+      nomeado continua nomeado.
+
+  paradas_nomeadas:
+    NAO_INDEPENDENTE:
+      status: "vigilância ativa no cálculo de independência (regra dos DOIS ICs, CP-014)"
+      regra: >
+        Taxa observada de SEM_AMOSTRA acima de 2% COM os limites
+        inferiores dos DOIS ICs de 95% (Wilson e Clopper-Pearson) acima
+        de 2%: registrar, recalcular N e propor por CP — sem aplicar
+        sozinho. Sobredispersão (correlação intra-execução) é o mesmo
+        achado por outro número. Com a segunda onda, SEM_AMOSTRA só nasce
+        após DUAS ondas vazias — a taxa futura mede o desenho novo; as
+        entradas históricas da era do rerun seguem no registro com sua
+        fonte.
+    SEM_AMOSTRA_DECISIVA:
+      status: "vermelho nomeado — só existe após DUAS ondas vazias (CP-015)"
+      regra: >
+        Zero cópias AVX-512 na primeira onda E na segunda: o workflow
+        reprovou com nome; o caminho de volta agora é automático e já
+        rodou (a segunda onda) — resta o rerun ou a revisão do N pela
+        janela. Três disparos SEGUIDOS recalculam o N por CP com medição
+        nova (vigilância operacional da CP-013, herdada).
+    MAIN_QUEBROU:
+      status: "vigilância ativa em cada merge"
+      regra: >
+        CI do main vermelho após o merge: git revert -m 1 no main, job
+        reexecutado, parada registrada no PR. Não se conserta o main com
+        commit novo antes de reverter.
+    REVISAO_NECESSARIA:
+      status: "reservada a decisões fora deste plano"
+      regra: >
+        Qualquer decisão que o plano não previu vira ponto de decisão no
+        PR — o agente não escolhe por conta própria. A CP-016 inteira é
+        isso: proposta aberta, decisão do dono.
+    TOKEN_A_ROTACIONAR:
+      status: "REGISTRO, NÃO PARADA (CP-015, passo 0)"
+      regra: >
+        O token em uso é o mesmo que esteve no remote: exposto, tratado
+        como queimado. Arquivo e helper apagados; helper novo só lê
+        ambiente e falha nomeada; zero credenciais em remote/config/
+        arquivos/logs/commits/comentários. O dono deve REVOGAR e
+        ROTACIONAR. O trabalho NÃO para por isso.
+
+  escopo:
+    sprint_18: >
+      Esta CP; voz.lock (bloco frota: N da janela recalculado + J novo,
+      PR de manutenção); .github/workflows/dublador.yml (roteador da
+      segunda onda + agregador sobre as duas ondas);
+      .github/workflows/dublador-onda.yml (novo — a onda reutilizável
+      chamada duas vezes); ci/rotear_segunda_onda.py (novo);
+      ci/agregar_prova.py (ondas, registro com ondas_usadas);
+      ci/veredito_da_copia.py (campo onda); ci/independencia.py (janela
+      móvel, N fiscal "N desatualizado", heterogeneidade);
+      ci/pins_do_lock.py (limite da matrix); ci/atualizar_registro_frota.py
+      (novo); harness/frota/execucoes-gate.json (a execução pendente +
+      bloco calculo recalculado); tests/test_agregar_prova.py,
+      test_independencia.py, test_veredito_da_copia.py,
+      test_pins_do_lock.py, test_rotear_segunda_onda.py (novo),
+      test_atualizar_registro_frota.py (novo);
+      .github/workflows/suite.yml (os testes novos); docs (CLAUDE/README).
+      A CP-016 (yaml + evidência) mora em branch PRÓPRIA aberta como
+      proposta — não neste PR.
+
+  impacto:
+    - "voz.lock :: frota.amostragem recalculado da janela (8 -> 13) + frota.janela (J=20, novo) — mudança de N por PR de manutenção, este PR É o PR de manutenção"
+    - ".github/workflows/dublador.yml :: roteador da segunda onda + agregador final sobre as duas ondas"
+    - ".github/workflows/dublador-onda.yml :: a onda de cópias reutilizável (chamada para a onda 1 e, condicional, para a 2) — novo"
+    - "ci/rotear_segunda_onda.py :: decide se a onda 2 acorda (zero AVX-512 legíveis na onda 1) — novo"
+    - "ci/agregar_prova.py :: veredito sobre as DUAS ondas; DIVERGENCIA_AVX512 nomeia onda e cópia; SEM_AMOSTRA_DECISIVA só após duas ondas vazias; registro com ondas_usadas"
+    - "ci/veredito_da_copia.py :: campo onda no veredito.json (o agregador distingue onda-1/copia-3 de onda-2/copia-3)"
+    - "ci/independencia.py :: janela móvel do registro; N fiscal (lock tem de bater, senão 'N desatualizado'); heterogeneidade com n por execução"
+    - "ci/atualizar_registro_frota.py :: junta os agregados baixados no registro para o PR de manutenção — novo"
+    - "harness/frota/execucoes-gate.json :: a execução pendente do head final da CP-014 entra; calculo recalculado no modelo novo"
+    - "tests/test_*.py :: os contratos novos (ondas, janela, registro) e os atualizados"
+
+  risco:
+    nivel: medio
+    porque: >
+      O risco estatístico da CP-014 se materializa em mudança de desenho:
+      o N sobe de 8 para 13 (+62,5% — acima dos 50% que a CP-014 proibia
+      aplicar sozinho: por isso mesmo entra por PR de manutenção, ESTE,
+      com a decisão do dono citada no 1º commit). Contenção: cópias avx2
+      saem cedo e custam SEGUNDOS (medido: o gate sem instrumento termina
+      em segundos na classe avx2), então N maior quase não custa build —
+      as cópias caras continuam sendo ~26-30% da amostra; a segunda onda
+      acorda SÓ quando a primeira terminou sem nenhuma AVX-512 (P=1,53%
+      no fechamento com N=12 e fração 0,2945), e duas ondas vazias têm
+      P=0,0231% (1 em 4329); o vermelho nomeado fica mais raro
+      sem afrouxar fiscal NENHUM — ilegível continua reprovando, divergente
+      continua nomeando onda e cópia, e o gate de bytes segue intocado.
+      O risco residual é a reestruturação do workflow (onda reutilizável
+      chamada duas vezes): coberto por testes estruturais e por execução
+      real no head do PR.
+
+  aval_humano_necessario: true   # diretiva do dono (25/09/2026) — execução, medição e merge desta CP; decisão da CP-016 (proposta aberta)
