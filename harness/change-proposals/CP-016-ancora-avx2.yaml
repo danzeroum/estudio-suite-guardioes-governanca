@@ -1,0 +1,157 @@
+# Mudanca proposta AGUARDANDO DECISAO DO DONO — estado PROPOSTA.
+# Declarada antes de medida; fica como registro mesmo depois.
+#
+# A CP-014 mediu (dispatch observar_avx2, run 36090788416): 4 cópias avx2
+# (EPYC 7763 x3, 9V74 x1 — modelos diferentes) sintetizaram os 2 filmes e
+# devolveram deltas por fala IDENTICOS entre si — a divergência da classe
+# avx2 contra a âncora parece DETERMINÍSTICA, não ruído por máquina. Isso
+# levanta a pergunta que este documento carrega:
+#
+#   A PERGUNTA (CP-016):
+#   "a síntese na classe avx2 é byte-determinística entre modelos de CPU
+#    e execuções, a ponto de o audio.json carregar um segundo hash de PCM
+#    (avx2) e tornar TODA cópia decisiva?"
+#
+# NADA implementado do contrato: esta CP está em estado PROPOSTA — medir é
+# o que se faz agora (verificação); decidir se o hash avx2 vira âncora é
+# VALIDAÇÃO DO DONO. O gate, o voz.lock e o audio.json NÃO mudem até a
+# decisão.
+schema: estudio-suite/change-proposal@1
+
+proposta:
+  id: CP-016
+  titulo: "Âncora de bytes própria para a classe avx2: medir o determinismo da síntese avx2 entre modelos e execuções — o audio.json com um segundo hash de PCM tornaria toda cópia decisiva (PROPOSTA, sem implementação)"
+  autor: agente/curador
+  criada_em: "2026-09-25T06:20:00Z"
+  estado: proposta
+
+  sinal:
+    tipo: pergunta-medida-do-dono
+    chave: "cp016-ancora-avx2-determinismo-na-classe"
+    evidencia: >
+      O estado medido que abre a pergunta: o dispatch observar_avx2 da
+      CP-014 (run 36090788416, head 5eca95a) sorteou 4 cópias avx2 — 3 em
+      EPYC 7763 e 1 em EPYC 9V74, modelos DE CPU diferentes — e cada uma
+      buildou de propósito, sintetizou os 2 filmes (42 falas) e mediu os
+      quatro descritores do regenerado contra a âncora: os deltas por
+      fala saíram IDÊNTICOS entre as 4 cópias (medianas |dF0| 1,44 e
+      1,19 cents; máximos 2,1 ms / 0,08 LU / 14,23 Hz / 42,1 Hz — o
+      42,1 Hz É a fala 22/p10/elefante, a fala de instrumento instável
+      da issue audio-suite#46). Deltas idênticos entre máquinas distintas
+      é o cheiro de divergência DETERMINÍSTICA na classe — o que o gate
+      de bytes nunca precisou perguntar (a decisão (e) da CP-013 põe a
+      prova decisiva na classe avx512 e a avx2 em observação), mas que a
+      CP-014 publicou com número. Se a síntese avx2 for byte-determinística
+      de verdade, o custo do gate cai: o sorteio da frota deixa de
+      importar (TODA cópia decide) e o N deixa de existir como cálculo de
+      probabilidade.
+    pergunta: >
+      "a síntese na classe avx2 é byte-determinística entre modelos de
+      CPU e execuções, a ponto de o audio.json carregar um segundo hash
+      de PCM (avx2) e tornar TODA cópia decisiva?"
+
+  plano:
+    - >
+      1. EVIDÊNCIA (medir — verificação): disparar o dispatch manual
+      observar_avx2 na branch desta CP até ter >= 3 modelos de CPU avx2
+      distintos e >= 5 execuções; cada cópia avx2 sorteada builda,
+      sintetiza e o ci/observar_avx2.py REGISTRA o sha256 do PCM mixado
+      avx2 POR FILME em cada cópia (o mix.pcm_f32_sha256 do audio.json
+      REGENERADO — o mesmo campo que o gate lê na classe avx512 — e o da
+      âncora commitada como referência). A evidência versionada mora em
+      harness/frota/observacao-avx2.json e cresce por PR — a CP não usa
+      dado não versionado.
+    - >
+      2. VEREDITO MEDIDO: ci/determinismo_avx2.py recalcula da evidência
+      e declara DETERMINISTICO_NA_CLASSE (todos os hashes avx2 de um
+      mesmo filme iguais entre cópias, modelos e execuções) ou
+      NAO_DETERMINISTIVO (com a tabela: qual cópia, qual modelo, qual
+      execução divergiu — o ONDE, não só o que). O veredito é
+      reproduzível do registro, nunca afirmado.
+    - >
+      3. SE DETERMINÍSTICO — O CONTRATO ESBOÇADO (nada implementado):
+      quem gera o hash avx2 (o redublar, na cópia avx2? o dispatch?),
+      como ele entra num PR de redublagem, o estado "dívida" quando o
+      hash avx2 falta no audio.json, o que muda no N (deixa de ser
+      sorteio: toda cópia decide — a frota sai do cálculo de
+      probabilidade) e os RISCOS (o registro é curto: 2 modelos avx2
+      distintos no pool hoje; a âncora avx2 travaria a classe como o
+      8370C travou a avx512 — e a frota avx2 é 70% do pool). A decisão
+      é do dono; o PR fica ABERTO como proposta.
+    - >
+      4. SE NÃO DETERMINÍSTICO: a pergunta se encerra com o número (a
+      âncora avx2 não existe — o desenho CP-013/015 segue: prova em
+      avx512, observação em avx2, N pela janela e segunda onda), e o
+      achado vira registro.
+
+  resultado_da_medicao:
+    quando: "2026-09-25 (dispatches do observar_avx2 na branch desta CP — preenchido quando a evidência fecha)"
+    # PREENCHIDO PELO PASSO 2: a tabela por filme/cópia/modelo/execução
+    # com os sha256, e o veredito DETERMINISTICO_NA_CLASSE ou
+    # NAO_DETERMINISTICO recalculado por ci/determinismo_avx2.py.
+
+  desfecho:
+    proposta_aberta: >
+      O PR desta CP fica ABERTO como proposta, para decisão do dono —
+      nada é mergeado sem a decisão. Verificação (a medição) é do agente;
+      validação (virar âncora) é do dono.
+
+  doutrina:
+    - >
+      Nada aqui muda o gate, o voz.lock ou o audio.json: a prova decisiva
+      segue sendo bytes do PCM mixado em cópia AVX-512 (decisão (e) da
+      CP-013); o N segue pela janela móvel e a segunda onda automática
+      (CP-015) — se o dono aceitar a âncora avx2, é UMA CP de execução
+      própria que muda o desenho, declarada antes de executada.
+    - >
+      Separação de verificação e validação: esta CP VERIFICA o
+      determinismo na classe com número; decidir se o hash avx2 vira
+      âncora de bytes é VALIDAÇÃO do dono — o agente não escolhe o
+      desenho do gate por conta própria.
+    - >
+      A evidência é versionada e reproduzível: o sha256 por filme por
+      cópia mora em harness/frota/observacao-avx2.json, cresce por PR,
+      e o veredito é recalculado dali pelo teste — nunca afirmado.
+
+  paradas_nomeadas:
+    REVISAO_NECESSARIA:
+      status: "A CP inteira é uma decisão pendente do dono"
+      regra: >
+        A proposta fica aberta: o dono decide se a âncora avx2 existe.
+        Nenhum gate, lock ou audio.json muda antes da decisão — e a
+        mudança, se aceita, é CP própria declarada antes de executada.
+
+  escopo:
+    sprint_19: >
+      Esta CP (proposta); ci/observar_avx2.py (REGISTRA o
+      mix.pcm_f32_sha256 regenerado e o da âncora por filme — o MESMO
+      campo que o gate lê; observação, não gate);
+      harness/frota/observacao-avx2.json (novo — a evidência versionada
+      dos dispatches: run, quando, head, cópia, modelo de CPU, sha256
+      por filme); ci/atualizar_observacao_avx2.py (novo — junta os
+      artefatos baixados na evidência); ci/determinismo_avx2.py (novo —
+      o veredito recalculado); tests/test_determinismo_avx2.py (novo);
+      .github/workflows/suite.yml (o passo do teste novo). NENHUM
+      arquivo de gate/lock/audio.json é tocado.
+
+  impacto:
+    - "ci/observar_avx2.py :: acrescenta o registro do sha256 do PCM mixado (regenerado e âncora) por filme — o mesmo campo do gate, como OBSERVAÇÃO"
+    - "harness/frota/observacao-avx2.json :: a evidência versionada (novo) — cresce por PR"
+    - "ci/atualizar_observacao_avx2.py :: junta os artefatos do dispatch na evidência (novo)"
+    - "ci/determinismo_avx2.py :: o veredito DETERMINISTICO_NA_CLASSE / NAO_DETERMINISTICO, recalculável (novo)"
+    - "tests/test_determinismo_avx2.py :: o contrato da evidência e do veredito (novo)"
+
+  risco:
+    nivel: baixo
+    porque: >
+      Nada de gate muda: a medição roda no dispatch manual de observação
+      (rotulado "observação, sem gate") e o veredito é um registro
+      versionado. O risco de verdade mora na DECISÃO que a evidência
+      alimenta: uma âncora avx2 tornaria a classe avx2 decisiva e
+      mataria o problema do N — mas congelaria a frota avx2 (70% do
+      pool, 2 modelos distintos hoje) como o 8370C congelou a avx512, e
+      o histórico diz que a mistura do pool MUDA (38/97 -> 32/120
+      medida). O contrato esboçado declara esses riscos para o dono
+      decidir com número na mão.
+
+  aval_humano_necessario: true   # a decisão INTEIRA desta CP é do dono — proposta aberta
