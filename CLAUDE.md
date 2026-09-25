@@ -42,8 +42,12 @@ AVX-512) ≤ 2%, recalculável de `harness/frota/execucoes.json`). Cada cópia
 `mix.pcm_f32_sha256` do `audio.json` tem de bater, o `.opus` decodificado
 fica sob o **teto do lock** — base medida −80,9 + margem 6 = −74,9, abaixo
 de −60 — e o **controle do teto** reprova citando o número); `avx2` → **sai
-cedo**: publica classe e identidade, mede os descritores da **âncora** como
-observação (sem gate, sem build) e termina **neutra**. O veredito do run é
+cedo** (CP-014): publica classe e identidade rotulada (campos de síntese
+`nao_aplicavel:classe_avx2` — `medido:`/`falhou:`/`nao_aplicavel:`, nunca
+texto com "ou") e termina **neutra**, sem build e **sem medir a âncora**
+("medir o mesmo arquivo em toda cópia não traz informação"). A observação
+de verdade — regenerado × âncora, fala a fala, com build — é o **dispatch
+manual `observar_avx2`** ("observação, sem gate"). O veredito do run é
 do **agregador**: verde com ≥1 cópia AVX-512 idêntica e zero divergentes;
 `DIVERGENCIA_AVX512` nomeia a cópia; `SEM_AMOSTRA_DECISIVA` (zero avx512) é
 vermelho nomeado — o rerun é o caminho de volta; amostra ilegível reprova,

@@ -166,9 +166,29 @@ jobs:
       # avx512 SEM_AMOSTRA_DECISIVA; divergente nomeado; amostra ilegível
       # reprova, nunca neutra; e o contrato estrutural do workflow (avx2
       # sem build e sem gate, job obrigatório, veredito.json publicado,
-      # matrix do lock).
+      # matrix do lock; CP-014: a saída cedo sem audio-suite e o registro
+      # no agregado.json).
       - name: O agregador da amostragem da frota (CP-013)
         run: python3 tests/test_agregar_prova.py
+
+      # CP-014: os RÓTULOS ÚNICOS do identidade.json — a cópia avx2 com
+      # TODOS os campos de síntese em nao_aplicavel:classe_avx2; campo
+      # com "ou" REPROVA (o artefato ambíguo não nasce); todo campo de
+      # medição casa com medido:/falhou:/nao_aplicavel:; e o contrato
+      # estrutural: o veredito/identidade nascem de ci/veredito_da_copia.py
+      # e a saída cedo da avx2 não instala audio-suite.
+      - name: Os rótulos únicos do identidade.json (CP-014)
+        run: python3 tests/test_veredito_da_copia.py
+
+      # CP-014: a INDEPENDÊNCIA das cópias, recalculada do registro
+      # versionado (harness/frota/execucoes-gate.json) — a taxa de
+      # SEM_AMOSTRA com os ICs de 95% (Wilson e Clopper-Pearson), a
+      # correlação intra-execução contra a binomial do lock, e a regra
+      # da diretiva (taxa > 2% com IC acima de 2% dispara
+      # NAO_INDEPENDENTE) provada nos dois sentidos: o número é
+      # reproduzível, nunca afirmado.
+      - name: A independência das cópias (CP-014)
+        run: python3 tests/test_independencia.py
 
       # CP-004/CP-007: o sexto portao, agora MEDINDO de verdade -- a
       # audio-suite esta instalada (isolada, pinada) e o job a prometeu no

@@ -36,7 +36,17 @@ proposta:
   titulo: "A prova por amostragem da frota: bytes do PCM mixado em cópias AVX-512 visíveis; AVX2 sai cedo como observação; falta de amostra decisiva é vermelho nomeado"
   autor: agente/curador
   criada_em: "2026-09-25T00:00:00Z"
-  estado: em-execucao
+  # ENCERRADA COM PARADA ATIVA (AGUARDANDO_LEI, reservada ao #14): a
+  # decisao (e) foi executada, medida e comprovada na frota; os merges
+  # #12 e #13 procederam pelo rito com o main VERDE depois de cada um
+  # (6bed9de e d81d97b); o #14 ficou PRONTO (rebase, derivados
+  # sincronizados, secao terceiro_filme do test_navegador aplicada com
+  # 252/252 e controle negativo refeito: 251/1 nomeando a linha 19,
+  # exatamente como o B provou) — mas roteiro e storyboard do filme 03
+  # seguem INDECISOS sem LEI_TOKEN e os artigos 38 e 10 inconferiveis
+  # contra o lei.lock: merge NAO procede ate a lei entrar (CP-002).
+  estado: encerrada-com-parada
+  parada_ativa: AGUARDANDO_LEI
 
   sinal:
     tipo: decisao-do-dono-sobre-evidencia-medida
@@ -188,6 +198,40 @@ proposta:
       medida com o N do lock: P(zero avx512) = 0,019 por disparo.
     execucoes: 5
 
+  desfecho:
+    entregue: >
+      (1) O N da amostragem no voz.lock (bloco frota: 8), derivado da
+      fracao medida 38/97 e REPRODUTIVEL do registro
+      harness/frota/execucoes.json pelo teste. (2) A saida cedo: copia
+      avx2 classifica, publica, mede a ANCORRA como observacao (sem
+      build, sem gate — 33 copias mediram, F0 por voz identica entre
+      copias e igual a medida local) e termina neutra. (3) O
+      AGREGADOR com o veredito do run: DIVERGENCIA_AVX512 nomeia,
+      SEM_AMOSTRA_DECISIVA e vermelho nomeado (ocorreu 1x; o rerun
+      devolveu o verde — o desenho especificado), amostra ilegivel
+      reprova; resumo do job com copia/CPU/classe/prova/veredito.
+      (4) A frota COMPROVADA: 8+4 copias AVX-512 identicas (3+3 Intel
+      de duas geracoes, 5+1 AMD-avx512), zero divergentes, controle do
+      codec reprovando com numero em todas. (5) Os MERGES #12 e #13
+      pelo rito do adendo, main VERDE apos cada um (sem MAIN_QUEBROU,
+      sem --admin, sem force-push no main; o force-with-lease foi so no
+      rebasing das branches). (6) O #14 PRONTO e AGUARDANDO_LEI.
+      (7) A observacao registrada: issue danzeroum/audio-suite#46 (o
+      salto de 42,1 Hz de F0 na fala p10, com arquivo reproduzivel) e o
+      contexto avx2 (~+-20 cents por fala) na CP-010, sem mudar o
+      estado dela. (8) A CP-012 encerrada-com-sucessora: a decisao (e)
+      resolveu a TETO_NAO_DISCRIMINA sem ajustar instrumento nem
+      controle. Nenhum .opus commitado mudou em nenhuma hipotese.
+    parada_final: >
+      AGUARDANDO_LEI ATIVA (reservada ao #14): sem LEI_TOKEN, roteiro e
+      storyboard do filme 03 ficam INDECISO (CP-002) e os artigos 38 e
+      10 nao sao conferiveis contra o lei.lock — o PR #14 fica pronto
+      (head 1c8f839, CI verde: fiscais + navegador; derivados em dia;
+      controle negativo refeito) e SEM merge, como o rito manda. O
+      caminho de volta: o segredo LEI_TOKEN existir -> conferir os
+      artigos 38 (elefante) e 10 (tartaruga) contra o lei.lock ->
+      corrigir o que divergir -> assinar a tabela de revisao ->
+      CI inteiro verde -> merge.
   doutrina:
     - >
       Unica prova de merito: BYTES do PCM mixado em copia AVX-512

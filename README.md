@@ -208,16 +208,26 @@ dez"). Não existe roteiro de áudio separado. Desde a CP-005, o **timbre animal
   fica sob **tolerância decodificada** (teto do lock: base medida −80,9 dBFS +
   margem 6 = −74,9, abaixo do piso de −60, com **controle positivo** que
   reprova citando o número) — o log diz "PCM idêntico; codec dentro do teto";
-  as **AVX2 saem cedo**: publicam classe e identidade, medem os descritores
-  da **âncora** como **observação** (sem gate, sem build — o gate de
-  descritores morreu com o `TETO_NAO_DISCRIMINA` medido da CP-012: o controle
-  de +20 cents estava no nível do ruído da frota) e terminam **neutras**. O
+  as **AVX2 saem cedo** (CP-014): publicam classe e identidade rotuladas
+  (campos de síntese `nao_aplicavel:classe_avx2`) e terminam **neutras** —
+  sem build, sem gate e **sem medir a âncora** ("medir o mesmo arquivo em
+  toda cópia não traz informação": 33 cópias mediram valores idênticos na
+  CP-013; o gate de descritores morreu com o `TETO_NAO_DISCRIMINA` medido
+  da CP-012). A observação de verdade — **regenerado × âncora, fala a
+  fala** (duração, loudness, F0, centróide), com build — é o **dispatch
+  manual `observar_avx2`**, rotulado "observação, sem gate". O
   **agregador** decide o run: verde com ≥1 cópia AVX-512 idêntica e zero
   divergentes; `DIVERGENCIA_AVX512` nomeia a cópia; `SEM_AMOSTRA_DECISIVA`
   (zero avx512) é vermelho nomeado — rerun; amostra ilegível reprova, nunca
   neutra. Hash **por etapa** (PCM cru → prosódia → timbre → mix → `.opus`),
   classe, máquina, números e veredito seguem no artefato de identidade de
-  cada cópia e no agregado do run.
+  cada cópia e no agregado do run — que publica a **entrada de registro**
+  da execução (classe por cópia, `SEM_AMOSTRA` sim/não) para o registro
+  versionado `harness/frota/execucoes-gate.json` crescer **por PR de
+  manutenção** (nunca commit automático no main): é dele que
+  `ci/independencia.py` recalcula a taxa de `SEM_AMOSTRA` e a correlação
+  intra-execução contra a binomial do lock — a independência das cópias é
+  monitorada de dados versionados, não assumida.
 - No player, o botão **Som nasce desligado**; sem trilha, ele nem aparece.
   `renderizar(t)` segue pura: o áudio é escravo do tempo, nunca dono dele.
 - O **fiscal de redublagem** reprova quem edita legenda sem redublar — mesmo

@@ -9,6 +9,13 @@ cópia (um subdiretório por artefato, baixado pelo workflow) e decide o
 run INTEIRO — nenhuma cópia decide sozinha, e nenhuma falta decide
 calada.
 
+CP-014 (passo 5): o agregado.json ganha o campo REGISTRO — a entrada
+daquela execução (classe por cópia, SEM_AMOSTRA sim/não, run/head)
+pronta para o registro versionado harness/frota/execucoes-gate.json.
+O registro cresce POR PR DE MANUTENÇÃO (o curador acrescenta a entrada);
+commit automático no main, jamais — a independência das cópias é
+monitorada de dados versionados, não de memória.
+
 O VEREDITO do agregador:
 
   VERDE                     >= 1 cópia AVX-512 com PCM idêntico E zero
@@ -43,6 +50,7 @@ para o stdout; o agregado.json vai para --saida. Saídas: 0 verde · 1
 vermelho nomeado (divergência, sem amostra ou amostra ilegível).
 """
 import argparse
+import datetime
 import json
 import os
 import sys
@@ -275,12 +283,37 @@ def main() -> int:
         "veredito": veredito_final,
         "resumo_markdown": resumo,
         "copias": linhas,
+        # CP-014 (passo 5): a entrada de REGISTRO desta execução — pronta
+        # para harness/frota/execucoes-gate.json. O curador a acrescenta
+        # por PR de manutenção; commit automático no main, JAMAIS. A
+        # independência das cópias (taxa de SEM_AMOSTRA, correlação
+        # intra-execução) é recalculada de lá por ci/independencia.py.
+        "registro": {
+            "run": os.environ.get("GITHUB_RUN_ID"),
+            "tentativa": os.environ.get("GITHUB_RUN_ATTEMPT"),
+            "head": (os.environ.get("GITHUB_SHA") or "")[:8] or None,
+            "evento": os.environ.get("GITHUB_EVENT_NAME"),
+            "quando": datetime.datetime.now(
+                datetime.timezone.utc).isoformat(timespec="seconds"),
+            "n": len(esperadas),
+            "copias": {c: str(por_copia[c][0].get("classe", "?"))
+                       if c in por_copia else "sem-artefato"
+                       for c in esperadas},
+            "avx512": avx512_total,
+            "sem_amostra_decisiva": veredito == "SEM_AMOSTRA_DECISIVA",
+            "fonte": "agregado.json desta execução — a entrada entra no "
+                     "registro por PR de manutenção (CP-014, passo 5)",
+        },
     }
     saida.mkdir(parents=True, exist_ok=True)
     (saida / "agregado.json").write_text(
         json.dumps(doc, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     print(f"== VEREDITO: {veredito_final}")
     print(f"   agregado: {saida / 'agregado.json'}")
+    print("   registro (CP-014): a entrada desta execução vai no campo "
+          "registro do agregado.json — o curador a acrescenta a "
+          "harness/frota/execucoes-gate.json por PR de manutenção; "
+          "commit automático no main, jamais")
     return 0 if veredito == "verde" else 1
 
 

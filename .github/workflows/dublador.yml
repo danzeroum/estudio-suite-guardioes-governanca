@@ -79,6 +79,23 @@ name: Dublador
 # (8/8 avx2) — vermelho nomeado, e o RERUN devolveu o verde: o desenho
 # funcionou como especificado.
 #
+# CP-014 (25/09/2026, diretiva do dono): a cópia avx2 do gate sai
+# cedo SEM instalar audio-suite e SEM medir a âncora commitada — "medir
+# o mesmo arquivo em toda cópia não traz informação" (a âncora é uma
+# só, independente de classe: 33 cópias mediram valores idênticos na
+# CP-013). A observação de verdade — regenerado x âncora, fala a fala,
+# com build — é o DISPATCH MANUAL observar_avx2
+# (.github/workflows/observar-avx2.yml), disparado quando se quer
+# olhar, rotulado "observação, sem gate". O veredito e a identidade
+# da cópia passam a nascer de ci/veredito_da_copia.py com RÓTULOS
+# ÚNICOS: medido:<valor>, falhou:<motivo>, nao_aplicavel:<motivo> — a
+# cópia avx2 declara os campos de síntese como nao_aplicavel:classe_avx2,
+# e texto com "ou" reprova a geração (rótulo ambíguo não publica). O
+# agregador publica no agregado.json a entrada de registro de cada
+# execução (classe por cópia, SEM_AMOSTRA sim/não) para o registro
+# versionado harness/frota/execucoes-gate.json crescer por PR de
+# manutenção — commit automático no main, jamais.
+#
 # CP-011: o FILTRO POR DECLARACAO. O job so processa filmes que DECLARAM
 # audio (audio: true no proprio filme.js, lido de la -- nunca de lista de
 # nomes). E so e acionado por eles: PR que so toca filme mudo (ex. um
@@ -106,9 +123,14 @@ on:
       - 'ci/pins_do_lock.py'
       - 'ci/prova_por_classe.py'
       - 'ci/agregar_prova.py'
+      - 'ci/veredito_da_copia.py'
       - 'ci/observacao_ancora.py'
+      - 'ci/observar_avx2.py'
+      - 'ci/independencia.py'
       - 'harness/frota/execucoes.json'
+      - 'harness/frota/execucoes-gate.json'
       - '.github/workflows/dublador.yml'
+      - '.github/workflows/observar-avx2.yml'
       - 'filmes/*/*.filme.js'
 
 jobs:
@@ -191,9 +213,13 @@ jobs:
               assina = any(
                   p in ("voz.lock", "amostras.lock",
                         "ci/pins_do_lock.py", "ci/prova_por_classe.py",
-                        "ci/agregar_prova.py", "ci/observacao_ancora.py",
+                        "ci/agregar_prova.py", "ci/veredito_da_copia.py",
+                        "ci/observacao_ancora.py", "ci/observar_avx2.py",
+                        "ci/independencia.py",
                         "harness/frota/execucoes.json",
-                        ".github/workflows/dublador.yml")
+                        "harness/frota/execucoes-gate.json",
+                        ".github/workflows/dublador.yml",
+                        ".github/workflows/observar-avx2.yml")
                   or p.startswith(("estudio_suite/", "ferramentas/dublador/"))
                   for p in muda)
               com_audio_tocado = False
@@ -330,64 +356,36 @@ jobs:
           echo "  descritores:   OBSERVACAO sem gate (CP-013, decisao (e)) — nenhum teto de descritor no lock"
           echo "  flags SIMD:    $(grep '^FLAGS_SIMD=' /tmp/identidade-maquina.env | cut -d= -f2- | tr ' ' '\n' | wc -l) flags (completas no artefato)"
 
-      # CP-013: a SAIDA CEDO — o classificador (passo anterior) decidiu a
-      # classe DE ANTES de qualquer passo caro. A copia avx2 NAO constroi,
-      # NAO dubla, NAO prova: o gate dela nao existe (decisao (e)). A
-      # observacao mede o que da para medir SEM build — os descritores da
-      # ANCORRA commitada, com o MESMO instrumento da CP-012 (audio-suite
-      # pinada por SHA + energia numpy do lock): o runner decodifica o
-      # .opus com libsndfile (o container e OGG-Opus — medido) e extrai
-      # cada fala pelo [em, em+dur] do PROPRIO audio.json. A falha da
-      # observacao e STATUS PUBLICADO, nao reprovaçao: observacao nao e
-      # gate — a copia termina NEUTRA e o agregador nao a conta (nem a
-      # favor, nem contra). O passo e tolerante DE PROPOSITO e unico
-      # nesta condicao: tudo o que e gate reprova.
-      # O interpretador: o VENV da própria audio-suite pinada (numpy, scipy
-      # e soundfile da ferramenta — um pin só governa o instrumento inteiro).
-      # O caminho sai do SHEBANG do CLI (robusto a qualquer PIPX_HOME — o
-      # runner do GitHub usa /opt/pipx, o local usa ~/.local/pipx); se o
-      # shebang não resolver, o fallback é o python3 do runner e a falha
-      # vira status publicado — nunca reprovação, porque observação não é
-      # gate (medido na 1ª rodada real: o soundfile só existia no venv e o
-      # python3 do runner não o importava — ModuleNotFoundError publicado,
-      # cópia neutra: o desenho funcionou; a correção é o interpretador).
-      # Onde o pipx pôs as coisas: PERGUNTADO AO PRÓPRIO pipx (environment
-      # --value PIPX_BIN_DIR / PIPX_LOCAL_VENVS) — o runner do GitHub e a
-      # máquina local usam casas diferentes, e achar o binário com
-      # command -v ANTES de exportar o PATH foi o defeito medido na 2ª
-      # rodada real (o CLI existia, mas fora do PATH corrente: a cadeia
-      # && parava no command -v vazio; o log publicou a falha, a cópia
-      # seguiu neutra — observação não é gate). O interpretador é o PYTHON
-      # DO VENV da audio-suite pinada: numpy, scipy e soundfile da própria
-      # ferramenta — um pin só governa o instrumento inteiro.
-      - name: A observação da âncora (CP-013, classe avx2 — sem build, sem gate)
+      # CP-014: a SAIDA CEDO da cópia avx2 — sem NADA. O classificador
+      # (passo anterior) decidiu a classe DE ANTES de qualquer passo
+      # caro; a cópia avx2 NÃO constrói, NÃO dubla, NÃO prova, NÃO
+      # instala audio-suite e NÃO mede a âncora commitada — "medir o
+      # mesmo arquivo em toda cópia não traz informação" (diretiva do
+      # dono, 25/09/2026; a CP-013 mediu a âncora em 33 cópias avx2 com
+      # valores idênticos entre si e iguais à medição local — a âncora
+      # é independente de classe, e a medição repetida não informava
+      # nada). A observação de VERDADE — o regenerado contra a âncora,
+      # fala a fala, os quatro descritores com deltas — exige build e é
+      # o DISPATCH MANUAL observar_avx2 (.github/workflows/
+      # observar-avx2.yml), rotulado "observação, sem gate": paga o
+      # preço do build quando é PEDIDA, nunca em todo PR. Este passo é
+      # só a DECLARAÇÃO pública do que a cópia não faz — o veredito
+      # (abaixo) publica a classe e o estado neutro para o agregador.
+      - name: A saída cedo da classe avx2 (CP-014 — sem build, sem gate, sem audio-suite)
         if: env.CLASSE_DO_RUNNER == 'avx2'
         shell: bash
         run: |
-          set -o pipefail
-          if ( pipx install "git+https://github.com/danzeroum/audio-suite@90ffac796d7615e798b5bb7e17e48726be7fa686" \
-               && BIN_AS=$(pipx environment --value PIPX_BIN_DIR 2>/dev/null \
-                            || echo "$HOME/.local/bin") \
-               && export PATH="$BIN_AS:$PATH" \
-               && echo "$BIN_AS" >> "$GITHUB_PATH" \
-               && VENV_AS=$(pipx environment --value PIPX_LOCAL_VENVS 2>/dev/null \
-                            || echo "$HOME/.local/pipx/venvs") \
-               && PY_AS="$VENV_AS/audio-suite/bin/python" \
-               && [ -x "$PY_AS" ] \
-               && echo "interpretador da observação: $PY_AS (venv da audio-suite pinada; CLI em $BIN_AS)" \
-               && "$PY_AS" ci/observacao_ancora.py \
-                    --saida /tmp/identidade ) 2>&1 | tee /tmp/identidade/observacao.log; then
-            echo "observacao: medida publicada (sem gate — CP-013, decisao (e))"
-          else
-            echo "observacao=FALHOU_NAO_E_GATE" >> "$GITHUB_ENV"
-            echo "A OBSERVACAO FALHOU — registrado no log/artefato; NAO e gate:"
-            echo "a copia avx2 termina neutra (a classe nao decide nada no agregador)"
-          fi
+          echo "== SAÍDA CEDO (CP-014): cópia ${COPIA} classificou avx2"
+          echo "   não instala audio-suite (o instrumento de observação não entra no gate)"
+          echo "   não mede a âncora commitada (medir o mesmo arquivo em toda cópia não traz informação)"
+          echo "   não constrói, não dubla, não prova (o gate dela não existe — decisão (e) da CP-013)"
+          echo "   a observação desta classe é o dispatch manual observar_avx2 — rotulada 'observação, sem gate'"
+          echo "   a cópia termina NEUTRA: classe e identidade publicadas, o agregador não a conta"
 
       # CP-013: daqui para baixo, so a classe avx512 — a prova completa
       # da CP-012: build, dublagem em 2 rodadas, determinismo e a prova
       # por classe (bytes do PCM + codec sob teto + controle vivo). A
-      # copia avx2 ja saiu cedo (observacao acima, neutra).
+      # copia avx2 ja saiu cedo (declaracao acima, neutra).
       #
       # buildx com cache de camadas do GitHub Actions: a base por digest e
       # os pins do lock mudam raramente; o build efetivo costuma ser so
@@ -529,161 +527,48 @@ jobs:
             python3 ci/prova_por_classe.py --commitado /commitado --saida /prova \
             | tee /tmp/prova/prova.log
 
-      # CP-013: o VEREDITO DA COPIA — o contrato do agregador. A copia
-      # declara classe, prova e veredito num veredito.json que o job
-      # final le: avx512 -> identica | divergente | nao-provou (com os
-      # numeros da prova da CP-012); avx2 -> observacao (sem build, sem
-      # gate — o detalhe carrega o status da observacao da ancora).
-      # Classe indeterminada -> a copia nao prova nem observa: ilegivel
-      # para o agregador. Escreve SEMPRE (if: always) — vermelho tambem
-      # tem veredito, e e assim que o agregador nomeia quem divergiu.
-      - name: O veredito da cópia (CP-013)
+      # CP-013/CP-014: o VEREDITO E A IDENTIDADE DA COPIA — o contrato do
+      # agregador e a identidade ROTULADA. ci/veredito_da_copia.py escreve
+      # os dois artefatos de uma vez: veredito.json (cópia, classe, prova,
+      # veredito, números — avx512 -> identica | divergente | nao-provou;
+      # avx2 -> observacao, neutra; indeterminada -> ilegível) e
+      # identidade.json com RÓTULOS ÚNICOS (CP-014): medido:<valor>,
+      # falhou:<motivo>, nao_aplicavel:<motivo> — os campos de síntese da
+      # cópia avx2 são todos "nao_aplicavel:classe_avx2", e um rótulo com
+      # "ou" REPROVA a geração (o artefato ambíguo não nasce; saída 2
+      # nomeando o campo). Escreve SEMPRE (if: always) — vermelho também
+      # tem veredito, e é assim que o agregador nomeia quem divergiu.
+      - name: O veredito e a identidade da cópia (CP-013; rótulos CP-014)
         if: always()
         shell: bash
         run: |
-          python3 - <<'EOF' | tee /tmp/identidade/veredito-da-copia.log
-          import json, os
-          classe = (os.environ.get("CLASSE_DO_RUNNER") or "indeterminada").strip()
-          doc = {
-            "copia": os.environ.get("COPIA"),
-            "run_id": os.environ.get("RUN_ID"),
-            "run_attempt": os.environ.get("ATTEMPT"),
-            "cpu": os.environ.get("CPU_MODELO", "ilegivel"),
-            "classe": classe,
-          }
-          if classe == "avx512":
-              doc["prova"] = "bytes-pcm+codec-sob-teto"
-              causa = "prova.json ausente ou ilegivel"
-              p = {}
-              try:
-                  p = json.load(open("/tmp/prova/prova.json"))
-                  v = str(p.get("veredito", "?")).strip()
-              except Exception as e:
-                  v, causa = "NAO MEDIDO", f"prova.json ausente/ilegivel: {e}"
-              if v.startswith("verde"):
-                  doc["veredito"] = "identica"
-                  doc["detalhe"] = v + " (CP-012: PCM idêntico; codec sob teto; controle vivo)"
-              elif v.startswith("VERMELHO"):
-                  doc["veredito"] = "divergente"
-                  doc["detalhe"] = v
-              else:
-                  doc["veredito"] = "nao-provou"
-                  doc["detalhe"] = f"{v} — {causa}"
-              numeros = {}
-              try:
-                  for f in p.get("filmes", []):
-                      numeros[f.get("filme")] = {
-                          "pcm_mixado": (f.get("pcm_mixado") or {}).get("identico"),
-                          "residuo_codec_dbfs": (f.get("residuo_dbfs") or {}).get(
-                              "opus_decodificado"),
-                          "controle_codec_dbfs": (f.get("controle_codec") or {}).get(
-                              "residuo_dbfs"),
-                      }
-              except Exception:
-                  pass
-              doc["numeros"] = numeros
-          elif classe == "avx2":
-              doc["prova"] = "observacao-ancora"
-              doc["veredito"] = "observacao"
-              obs = "sem observacao.json (medida nao rodou — ver observacao.log)"
-              try:
-                  o = json.load(open("/tmp/identidade/observacao.json"))
-                  obs = (f"status {o.get('status', '?')} — "
-                         f"{len(o.get('filmes', []))} filme(s) medidos sem build")
-              except Exception:
-                  pass
-              doc["detalhe"] = ("classe avx2: sem build e sem gate (CP-013, "
-                                "decisão (e)); observação da âncora: " + obs)
-          else:
-              doc["prova"] = "classificacao"
-              doc["veredito"] = "indeterminada"
-              doc["detalhe"] = ("o classificador não determinou a classe — a cópia "
-                                "não prova nem observa; ilegível para o agregador")
-          with open("/tmp/identidade/veredito.json", "w", encoding="utf-8") as f:
-              json.dump(doc, f, indent=1, ensure_ascii=False)
-          print(json.dumps(doc, indent=1, ensure_ascii=False))
-          EOF
+          set -o pipefail
+          python3 ci/veredito_da_copia.py \
+            --saida /tmp/identidade \
+            --prova /tmp/prova/prova.json \
+            --rodada1 /tmp/rodada1.sha256 \
+            --rodada2 /tmp/rodada2.sha256 \
+            | tee /tmp/identidade/veredito-da-copia.log
 
       # CP-009/CP-011: o artefato de identidade — SEMPRE (verde ou
       # vermelho). Verde sem identidade seria sorte sem prova; vermelho
       # sem identidade seria diagnostico perdido (André Borges: cada
       # veredito carrega maquina, classe, prova aplicada e numeros).
-      # Carrega tambem o hash POR ETAPA de cada rodada, o prova.json com
-      # os residuos medidos nos dois pontos, a observacao.json da CP-013
-      # (classe avx2) e o veredito.json da copia — o contrato do
-      # agregador.
+      # O veredito.json e o identidade.json rotulado já moram em
+      # /tmp/identidade (passo anterior); este passo empacota o resto:
+      # o hash POR ETAPA de cada rodada, o prova.json com os residuos
+      # medidos nos dois pontos e as flags completas do lscpu.
       - name: O artefato de identidade (run, CPU, classe, prova, números)
         if: always()
         shell: bash
         run: |
           mkdir -p /tmp/identidade
-          THREADS_GRAVADAS=$(python3 -c "
-          import json, glob
-          alvo = sorted(glob.glob('filmes/*/audio/audio.json'))
-          print(json.load(open(alvo[0]))['ambiente'].get('threads', 'ausente') if alvo else 'sem filme')" 2>/dev/null || echo "ilegivel")
-          if [ -f /tmp/prova/prova.json ]; then
-            VEREDITO_PROVA=$(python3 -c "
-          import json
-          print(json.load(open('/tmp/prova/prova.json')).get('veredito', '?'))")
-          else
-            VEREDITO_PROVA="NAO RODOU"
-          fi
-          if [ -f /tmp/identidade/observacao.json ]; then
-            OBSERVACAO=$(python3 -c "
-          import json
-          print(json.load(open('/tmp/identidade/observacao.json')).get('status', '?'))")
-          else
-            OBSERVACAO="NAO RODOU (a observacao e da classe avx2 — CP-013)"
-          fi
-          if [ -f /tmp/rodada1.sha256 ] && [ -f /tmp/rodada2.sha256 ] \
-             && diff -q /tmp/rodada1.sha256 /tmp/rodada2.sha256 >/dev/null 2>&1; then
-            DETERMINISMO="estavel"
-          else
-            DETERMINISMO="copia avx2 (sem build, CP-013) ou DIVERGENTE"
-          fi
-          export THREADS_GRAVADAS VEREDITO_PROVA OBSERVACAO DETERMINISMO
-          python3 - <<'EOF' > /tmp/identidade/identidade.json
-          import json, os
-          dados = {
-            "run_id": os.environ.get("RUN_ID"),
-            "run_attempt": os.environ.get("ATTEMPT"),
-            "copia": os.environ.get("COPIA"),
-            "cpu": {
-              "modelo": os.environ.get("CPU_MODELO"),
-              "sockets": os.environ.get("SOCKETS"),
-              "nucleos_fisicos": os.environ.get("NUCLEOS_FISICOS"),
-              "threads_por_nucleo": os.environ.get("THREADS_POR_NUCLEO"),
-              "avx2": bool(int(os.environ.get("AVX2", "0"))),
-              "avx512f": bool(int(os.environ.get("AVX512F", "0"))),
-              "amx_tile": bool(int(os.environ.get("AMX_TILE", "0"))),
-              "nproc": os.environ.get("NPROC"),
-              "cgroup_cpu_max": os.environ.get("CGROUP_CPU"),
-            },
-            "threads": {
-              "ancora_voz_lock": os.environ.get("THREADS_ANCORA", "nao lida"),
-              "efetivas_da_sessao": os.environ.get("THREADS_EFETIVAS", "nao medida"),
-              "gravadas_no_audio_json": os.environ.get("THREADS_GRAVADAS", "nao lidas"),
-              "omp_da_imagem": os.environ.get("OMP_NUM_THREADS", "nao medido"),
-            },
-            "classe_simd": {
-              "do_runner": os.environ.get("CLASSE_DO_RUNNER", "nao medida"),
-              "da_ancora": os.environ.get("CLASSE_ANCORA", "nao lida"),
-              "teto_residuo_dbfs": os.environ.get("TETO_RESIDUO") or "NAO REGISTRADO",
-            },
-            "prova": {
-              "determinismo_interno": os.environ.get("DETERMINISMO"),
-              "veredito_da_prova_por_classe": os.environ.get("VEREDITO_PROVA"),
-              "observacao_da_ancora": os.environ.get("OBSERVACAO"),
-            },
-          }
-          print(json.dumps(dados, indent=1, ensure_ascii=False))
-          EOF
           cat /tmp/identidade/identidade.json
           cp -r /tmp/etapas-rodada1 /tmp/identidade/ 2>/dev/null || true
           cp -r /tmp/etapas-rodada2 /tmp/identidade/ 2>/dev/null || true
           cp /tmp/prova/prova.json /tmp/prova/prova.log /tmp/identidade/ 2>/dev/null || true
-          # CP-013: veredito.json (contrato do agregador) e observacao.json
-          # (classe avx2) ja moram em /tmp/identidade — o upload pega tudo
+          # veredito.json e identidade.json (rotulados, CP-014) ja
+          # moram em /tmp/identidade — o upload pega tudo
           echo "== hash por etapa (rodada 2):"
           cat /tmp/etapas-rodada2/*.etapas.json 2>/dev/null | head -40 || echo "  (sem etapas)"
 
