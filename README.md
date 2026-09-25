@@ -182,11 +182,42 @@ camada **aditiva e derivada** — a única fonte do texto narrado é o `txt` da
 legenda, normalizado por `estudio_suite/fala.py` ("(Art. 10)" vira "artigo
 dez"). Não existe roteiro de áudio separado. Desde a CP-005, o **timbre animal** (vocoder de canais sobre portadoras CC0 ancoradas em `amostras.lock`) e os earcons do Dado moram na mesma camada — ver `harness/change-proposals/CP-005-timbre-guardioes.yaml`. No modo quadrinhos (CP-006), cada plano com fala tem **"Ouvir este plano"**.
 
-- **`python3 -m estudio_suite dublar <id>`** sintetiza um clipe por legenda
-  (Piper local, modelo ancorado por sha256 em `voz.lock`, o `lei.lock` das
-  vozes) e mixa em `filmes/<id>/audio/<id>.opus` — 48 kHz, mono, loudness
+- **`ferramentas/dublador/dublar.sh <id>`** é o caminho portátil: constrói a imagem
+  que **materializa o `voz.lock`** (base pinada por digest, ffmpeg/libopus na versão
+  exata, pins pip do lock, ENV de threads do lock, sempre `linux/amd64`) e dubla dentro
+  dela — em qualquer host com Docker, Debian ou não. Dublar direto (`python3 -m
+  estudio_suite dublar <id>`) só funciona se o ambiente da máquina **bater com o
+  lock** (python, piper, onnxruntime, numpy/scipy, ffmpeg, libopus, arquitetura e
+  threads da sessão — o dublar mede tudo e
+  recusa na divergência, nomeando pacote, versão e correção — e a **classe de SIMD**
+  desde a CP-011: lida de flags medidas, gravada no `audio.json`). O dublar sintetiza um clipe
+  por legenda (Piper local, modelo ancorado por sha256 em `voz.lock`, o `lei.lock`
+  das vozes) e mixa em `filmes/<id>/audio/<id>.opus` — 48 kHz, mono, loudness
   −16 LUFS. Clipe que estoura o tempo da legenda **reprova**: nunca
-  time-stretch, nunca reamostrar — encurta-se a legenda.
+  time-stretch, nunca reamostrar — encurta-se a legenda. No CI, o job `dublador`
+  roda **só para filmes que declaram `audio: true`** (lido do próprio `filme.js` —
+  filme mudo não aciona) e aplica a **prova por amostragem da frota**
+  (CP-013, executando a decisão do dono de 24/09/2026, saída (e): "a prova
+  decisiva é bytes do PCM mixado em cópia AVX-512 visível; AVX2 é observação;
+  sem amostra decisiva é vermelho nomeado"). O job dispara **N cópias** com
+  N do `voz.lock` (bloco `frota`, derivado da fração medida 38/97 — menor N
+  com P(zero cópia AVX-512) ≤ 2%; o teste recalcula de
+  `harness/frota/execucoes.json`). Cada cópia **classifica primeiro**: as
+  **AVX-512** fazem a prova completa da CP-012 — o **hash do PCM mixado**
+  (`mix.pcm_f32_sha256` do `audio.json`) tem de bater e o `.opus` decodificado
+  fica sob **tolerância decodificada** (teto do lock: base medida −80,9 dBFS +
+  margem 6 = −74,9, abaixo do piso de −60, com **controle positivo** que
+  reprova citando o número) — o log diz "PCM idêntico; codec dentro do teto";
+  as **AVX2 saem cedo**: publicam classe e identidade, medem os descritores
+  da **âncora** como **observação** (sem gate, sem build — o gate de
+  descritores morreu com o `TETO_NAO_DISCRIMINA` medido da CP-012: o controle
+  de +20 cents estava no nível do ruído da frota) e terminam **neutras**. O
+  **agregador** decide o run: verde com ≥1 cópia AVX-512 idêntica e zero
+  divergentes; `DIVERGENCIA_AVX512` nomeia a cópia; `SEM_AMOSTRA_DECISIVA`
+  (zero avx512) é vermelho nomeado — rerun; amostra ilegível reprova, nunca
+  neutra. Hash **por etapa** (PCM cru → prosódia → timbre → mix → `.opus`),
+  classe, máquina, números e veredito seguem no artefato de identidade de
+  cada cópia e no agregado do run.
 - No player, o botão **Som nasce desligado**; sem trilha, ele nem aparece.
   `renderizar(t)` segue pura: o áudio é escravo do tempo, nunca dono dele.
 - O **fiscal de redublagem** reprova quem edita legenda sem redublar — mesmo
@@ -195,7 +226,10 @@ dez"). Não existe roteiro de áudio separado. Desde a CP-005, o **timbre animal
   [audio-suite](https://github.com/danzeroum/audio-suite) (CLI externa,
   perfil `harness/perfis/guardioes-narracao.yaml`): 0 → VERDE, 1 → VERMELHO,
   ausência ou códigos 2/3 → **INDECISO** — porque "não consegui medir" não é
-  "está errado", e descritor nunca reprova.
+  "está errado", e descritor nunca reprova. O vermelho carrega a **causa**:
+  `promessa-quebrada` (audio-suite prometida pelo CI e ausente — nada foi
+  medido) diz outra frase que `trilha-reprovada` (FINDING da ferramenta),
+  e as duas saem 1 cada uma pelo motivo certo.
 
 > **Privacidade de voz:** proibida a clonagem de voz humana real sem
 > contrato de cessão expressa. Todas as vozes são sintéticas (Piper,

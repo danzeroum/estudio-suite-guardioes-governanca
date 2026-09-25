@@ -14,14 +14,18 @@
   "scipy": "1.14.1",
   "espeak-ng": "sha256:bc00fca4d93879ed50ff44e280d7d9ad30e00b1d2ee38b3dcefd40ed7a946b7a",
   "ffmpeg": "7.1.5-0+deb13u1",
-  "libopus": "1.5.2"
+  "libopus": "1.5.2",
+  "arquitetura": "x86_64",
+  "threads": "2",
+  "classe_simd": "avx512"
  },
  "mix": {
   "arquivo": "legitimo-interesse.opus",
   "taxa_hz": 48000,
   "canais": 1,
   "loudness_alvo_lufs": -16.0,
-  "true_peak_alvo_dbtp": -2.0
+  "true_peak_alvo_dbtp": -2.0,
+  "pcm_f32_sha256": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
  },
  "earcons": [],
  "quadrinhos": [

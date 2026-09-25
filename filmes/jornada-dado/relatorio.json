@@ -3,8 +3,9 @@
  "alvo": "jornada-dado",
  "checagens_ok": 14,
  "nota": "14 checagem(ns) verdes",
- "quando": "2026-09-23T01:40:39+00:00",
+ "quando": "2026-09-24T05:50:45+00:00",
  "sonorizacao": {
+  "causa": "",
   "estado": "verde",
   "medidas": {
    "clipping.clipped_sample_pct": 0.0,
@@ -14,7 +15,7 @@
    "true_peak.true_peak": -1.315
   },
   "nota": "dentro das ancoras do perfil",
-  "quando": "2026-09-23T01:38:10+00:00"
+  "quando": "2026-09-23T02:17:21+00:00"
  },
  "vozes": {
   "estado": "verde",
@@ -31,6 +32,6 @@
    "gravadas": [],
    "needs_review": []
   },
-  "quando": "2026-09-23T01:39:38+00:00"
+  "quando": "2026-09-23T02:20:09+00:00"
  }
 }

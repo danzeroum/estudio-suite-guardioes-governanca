@@ -1,0 +1,40 @@
+# Perfil da EQUIVALENCIA POR DESCRITORES da classe avx2 (CP-012).
+#
+# A decisao do dono (24/09/2026) validou a classe avx2 por descritores
+# com controle positivo — nao por null test (a nulidade nao e audibilidade:
+# o residuo alto entre classes e aritmetica de rede neural sobre som
+# perceptualmente igual). Este perfil e o INSTRUMENTO da medida por fala:
+# loudness (nivel), pitch_f0 (altura — AS-DESC-008, F0 mediana sobre
+# quadros vozeados) e spectral_health (centroide, a cor da voz). A
+# DURACAO e medida pela propria suite (energia), e o contrato de
+# duracao do manifesto ja e fiscalizado na prova dentro da imagem.
+#
+# DESCritores NUNCA reprova (R1) — quem julga e a suite dos Guardioes,
+# contra os TETOS do voz.lock (bloco tolerancia, chaves descritores_*):
+# maximo observado na frota AVX2 contra a ancora + margem declarada,
+# num lugar so. O CONTROLE POSITIVO (cp012) prova que os tetos ainda
+# enxergam mudanca real: +0,5 dB, +20 cents, fala trocada do mesmo
+# guardiao e 50 ms de corte tem de reprovar, nomeando o descritor.
+#
+# loudness com faixa larga DE PROPOSITO: aqui o valor e descritor, nao meta
+# de entrega (a meta de -17..-15 LUFS da trilha inteira mora no
+# guardioes-narracao.yaml, o portao de sonorizacao) — a faixa larga evita
+# que o finding nasca warning por causa de meta que nao e desta prova.
+# Parametros default do pitch_f0: fmin 60 / fmax 500 Hz, janela 40 ms,
+# hop 10 ms — voz falada pt_BR.
+name: guardioes-equivalencia
+version: "1.0.0"
+data_classification: internal
+
+analyzers:
+  loudness:
+    min_lufs: -70
+    max_lufs: 0
+  pitch_f0: {}
+  spectral_health: {}
+
+# Sem strict_overlay de proposito (R1: descritor nunca reprova) — o
+# veredito e da suite contra os tetos do lock, nao da audio-suite.
+retention_policy:
+  bundle_ttl_days: 90
+  redact_pii: true

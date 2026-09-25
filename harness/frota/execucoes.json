@@ -1,0 +1,808 @@
+{
+ "$schema": "estudio-suite/frota-execucoes@1",
+ "descricao": "Todas as execuções com lscpu das CPs 009, 011 e 012 (CP-013, passo 1): cada registro é uma cópia de job dublador que mediu as flags do runner. É daqui que o teste recalcula a fração com avx512f visível e o N que o voz.lock ancora — o número é reproduzível a partir do registro, nunca afirmado.",
+ "nota_canceladas": "Os 3 dispatches cancelados da CP-012 (25 cópias) mediram lscpu antes do cancelamento — sorteio real da frota; contam, e a CP registra a fração também sem eles.",
+ "execucoes": [
+  {
+   "cp": "CP-009",
+   "run": "35961992748",
+   "copia": "gate-1",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "tabela-registrada-cp011"
+  },
+  {
+   "cp": "CP-009",
+   "run": "35962368216",
+   "copia": "copia-1",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": false,
+   "fonte": "tabela-registrada-cp011"
+  },
+  {
+   "cp": "CP-009",
+   "run": "35962368216",
+   "copia": "copia-2",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "tabela-registrada-cp011"
+  },
+  {
+   "cp": "CP-009",
+   "run": "35962368216",
+   "copia": "copia-3",
+   "cpu": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-009",
+   "run": "35962368216",
+   "copia": "copia-4",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "tabela-registrada-cp011"
+  },
+  {
+   "cp": "CP-009",
+   "run": "35962368216",
+   "copia": "copia-5",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "tabela-registrada-cp011"
+  },
+  {
+   "cp": "CP-009",
+   "run": "35962643263",
+   "copia": "rerun-1",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "tabela-registrada-cp011"
+  },
+  {
+   "cp": "CP-009",
+   "run": "35962861639",
+   "copia": "rerun-2",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "tabela-registrada-cp011"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36018593059",
+   "copia": "copia-1",
+   "cpu": "AMD EPYC 9V45 96-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36018634467",
+   "copia": "copia-1",
+   "cpu": "AMD EPYC 9V45 96-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36018634467",
+   "copia": "copia-2",
+   "cpu": "AMD EPYC 9V45 96-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36018634467",
+   "copia": "copia-3",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36018634467",
+   "copia": "copia-4",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36018634467",
+   "copia": "copia-5",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36018634467",
+   "copia": "copia-6",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36021081855",
+   "copia": "copia-1",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36021112280",
+   "copia": "copia-1",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36021112280",
+   "copia": "copia-2",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36021112280",
+   "copia": "copia-3",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36021112280",
+   "copia": "copia-4",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36021112280",
+   "copia": "copia-5",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36021112280",
+   "copia": "copia-6",
+   "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36021112280",
+   "copia": "copia-7",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36021112280",
+   "copia": "copia-8",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36022398667",
+   "copia": "copia-1",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36022398667",
+   "copia": "copia-10",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36022398667",
+   "copia": "copia-11",
+   "cpu": "Intel(R) Xeon(R) 6973P-C",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36022398667",
+   "copia": "copia-12",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36022398667",
+   "copia": "copia-2",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36022398667",
+   "copia": "copia-3",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36022398667",
+   "copia": "copia-4",
+   "cpu": "Intel(R) Xeon(R) 6973P-C",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36022398667",
+   "copia": "copia-5",
+   "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36022398667",
+   "copia": "copia-6",
+   "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36022398667",
+   "copia": "copia-7",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36022398667",
+   "copia": "copia-8",
+   "cpu": "Intel(R) Xeon(R) 6973P-C",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-011",
+   "run": "36022398667",
+   "copia": "copia-9",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056369068",
+   "copia": "copia-1",
+   "cpu": "AMD EPYC 9V45 96-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056385787",
+   "copia": "copia-1",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056385787",
+   "copia": "copia-10",
+   "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+   "avx512f": true,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056385787",
+   "copia": "copia-11",
+   "cpu": "Intel(R) Xeon(R) 6973P-C",
+   "avx512f": true,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056385787",
+   "copia": "copia-12",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056385787",
+   "copia": "copia-2",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056385787",
+   "copia": "copia-3",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056385787",
+   "copia": "copia-4",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056385787",
+   "copia": "copia-5",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056385787",
+   "copia": "copia-6",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056385787",
+   "copia": "copia-7",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056385787",
+   "copia": "copia-8",
+   "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+   "avx512f": true,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056385787",
+   "copia": "copia-9",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056391429",
+   "copia": "copia-1",
+   "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056391429",
+   "copia": "copia-10",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056391429",
+   "copia": "copia-11",
+   "cpu": "AMD EPYC 9V45 96-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056391429",
+   "copia": "copia-12",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056391429",
+   "copia": "copia-2",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056391429",
+   "copia": "copia-3",
+   "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056391429",
+   "copia": "copia-4",
+   "cpu": "AMD EPYC 9V45 96-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056391429",
+   "copia": "copia-5",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056391429",
+   "copia": "copia-6",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056391429",
+   "copia": "copia-7",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056391429",
+   "copia": "copia-8",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056391429",
+   "copia": "copia-9",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056401187",
+   "copia": "copia-1",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056401187",
+   "copia": "copia-10",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056401187",
+   "copia": "copia-11",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056401187",
+   "copia": "copia-12",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056401187",
+   "copia": "copia-2",
+   "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+   "avx512f": true,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056401187",
+   "copia": "copia-3",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056401187",
+   "copia": "copia-4",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056401187",
+   "copia": "copia-5",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056401187",
+   "copia": "copia-6",
+   "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+   "avx512f": true,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056401187",
+   "copia": "copia-7",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056401187",
+   "copia": "copia-8",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056401187",
+   "copia": "copia-9",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056415255",
+   "copia": "copia-5",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade",
+   "cancelada": true
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056989353",
+   "copia": "copia-1",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056994002",
+   "copia": "copia-1",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056994002",
+   "copia": "copia-10",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056994002",
+   "copia": "copia-2",
+   "cpu": "AMD EPYC 9V45 96-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056994002",
+   "copia": "copia-3",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056994002",
+   "copia": "copia-4",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056994002",
+   "copia": "copia-5",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056994002",
+   "copia": "copia-6",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056994002",
+   "copia": "copia-7",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056994002",
+   "copia": "copia-8",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36056994002",
+   "copia": "copia-9",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36058080095",
+   "copia": "copia-1",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36058080095",
+   "copia": "copia-10",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36058080095",
+   "copia": "copia-2",
+   "cpu": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36058080095",
+   "copia": "copia-3",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36058080095",
+   "copia": "copia-4",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36058080095",
+   "copia": "copia-5",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36058080095",
+   "copia": "copia-6",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36058080095",
+   "copia": "copia-7",
+   "cpu": "AMD EPYC 7763 64-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36058080095",
+   "copia": "copia-8",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36058080095",
+   "copia": "copia-9",
+   "cpu": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36058085332",
+   "copia": "copia-1",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": true,
+   "fonte": "artefato-identidade"
+  },
+  {
+   "cp": "CP-012",
+   "run": "36059732243",
+   "copia": "copia-1",
+   "cpu": "AMD EPYC 9V74 80-Core Processor",
+   "avx512f": false,
+   "fonte": "artefato-identidade"
+  }
+ ]
+}

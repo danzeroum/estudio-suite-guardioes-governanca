@@ -33,6 +33,58 @@ arquivos:
 # bytes de clipe que ninguem editou: medido com piper/onnxruntime
 # diferentes, as duracoes deslocam ate +0,08 s -- e a menor folga da
 # jornada e 0,07 s. Para avancar: change-proposal, como qualquer ancora.
+#
+# CP-008: a ARQUITETURA e parte do ambiente (platform.machine() na
+# maquina que sintetizou). O onnxruntime despacha kernels pela
+# arquitetura da CPU: uma conferencia que passa em arm64 nao prova bytes
+# que nasceram em x86_64. Lock sem esta linha e lock INCOMPLETO -- o
+# dublar recusa em vez de assumir. O caminho portavel para dublar em
+# qualquer host e a imagem que materializa este lock:
+# ferramentas/dublador/dublar.sh <id> (build sempre linux/amd64).
+#
+# CP-009: o NUMERO DE THREADS do onnxruntime assina os bytes do mesmo
+# jeito -- medido: o GEMM e particionado pelo numero de threads e a
+# ordem das somas parciais em float muda com a particao. O default segue
+# os nucleos FISICOS da maquina: o runner de 4 vCPU caia noutro regime
+# sem ninguem ter mudado linha nenhuma, e o gate dublador oscilava com
+# a sorte da frota (3 runs, 2 atratores).
+#
+# O valor ancorado e 2, o regime EFETIVO da maquina que sintetizou os
+# filmes publicados (2 nucleos fisicos, default = 2) — provado por
+# medicao, nao por hipotese: com a sessao explicita em (intra=2,
+# inter=2), os 30 clipes reais da jornada saem com o MESMO sha256 do
+# default, e a redublagem completa reproduz os 19 .opus byte a byte.
+# O valor 1 foi medido e REPROVADO: 4 clipes reais (p04-raposa,
+# p09-aguia x2, p12-aguia) mudam de PCM entre 1 e 2 -- a frase fixa do
+# experimento inicial era regime-insensivel e mentiu por amostragem
+# pequena (THREADS_NAO_BASTA registrado na CP-009). Lock sem esta linha
+# e lock INCOMPLETO, e o dublar tambem exige
+# OMP_NUM_THREADS/OPENBLAS_NUM_THREADS/MKL_NUM_THREADS iguais a ela no
+# ambiente: threads vem daqui, de nenhum outro lugar.
+#
+# CP-011: a CLASSE DE SIMD entra pela mesma razao — com as threads
+# ancoradas e LIDAS em 8/8 execucoes, 7 divergiram em AMD EPYC (sem
+# avx512f no lscpu do runner) e 1 reproduziu byte a byte em Intel Xeon
+# 8370C (com AVX-512, sem AMX): a classe seleciona os kernels do MLAS
+# do onnxruntime, e a ordem das somas parciais em float muda com o
+# kernel. O valor e avx512, a classe MEDIDA (flags, nunca fabricante)
+# da maquina que sintetizou o commitado — a mesma classe do 8370C que
+# reproduz. O classificador mora em estudio_suite/voz.py (um lugar so);
+# o dublar grava o MEDIDO no audio.json (ambiente.classe_simd) e o
+# fiscal de redublagem compara contra AQUI. Lock sem esta linha e lock
+# INCOMPLETO. O bloco tolerancia nasceu na CP-012 — a decisao do dono
+# (24/09/2026) trocou o ponto da prova de bytes para o PCM mixado e
+# aceitou o codificador opus como divergente-por-familia sob TETO
+# DECODIFICADO. A base e MEDIDA e herdada da CP-011: maximo observado
+# em AMD-avx512 = -80.9 dBFS (jornada-dado; -83.1 no legitimo-interesse;
+# 4 amostras, numeros identicos entre execucoes), margem declarada de
+# 6 dB (quase 3x a dispersao observada de 2.2 dB entre os filmes) — o
+# teto -74.9 fica abaixo do piso de -60 dBFS. Os tetos de DESCRITORES
+# da classe avx2 (descritores_*) nascem da medicao da frota AVX2 contra
+# a ancora na fase 2 desta CP, com a mesma disciplina: maximo observado
+# + margem declarada, e controle positivo provando que discriminam.
+# Sem as chaves da sua classe, o job RECUSA (lock incompleto) — nunca
+# verde por omissao. Tolerancia sem teto medido e afrouxar fiscal.
 ambiente:
   python: 3.12
   piper-tts: 1.8.0
@@ -42,3 +94,32 @@ ambiente:
   espeak-ng: sha256:bc00fca4d93879ed50ff44e280d7d9ad30e00b1d2ee38b3dcefd40ed7a946b7a
   ffmpeg: 7.1.5-0+deb13u1
   libopus: 1.5.2
+  arquitetura: x86_64
+  threads: 2
+  classe_simd: avx512
+
+tolerancia:
+  ponto: opus_decodificado
+  base_dbfs: -80.9
+  margem_db: 6
+  residuo_max_dbfs: -74.9
+
+# CP-013 (decisao do dono 24/09/2026, saida (e)): a AMOSTRAGEM DA FROTA.
+# A prova decisiva e bytes do PCM mixado em copia AVX-512 visivel; a
+# fracao da frota com avx512f visivel foi MEDIDA em todas as execucoes
+# com lscpu das CPs 009, 011 e 012: 38/97 (0,39175) — o registro
+# maquina-legivel (copia, CPU, avx512f, run) mora em
+# harness/frota/execucoes.json, e o teste recalcula a fracao e o N
+# conferindo contra AQUI. N = 8: o menor N com P(nenhuma copia
+# AVX-512 no disparo) <= 2% — (59/97)^7 = 0,0308, (59/97)^8 =
+# 0,01873. Sem as 25 copias dos 3 dispatches cancelados (que mediram
+# lscpu antes do cancelamento), 29/72 daria o MESMO N=8. O workflow
+# le o N AQUI (ci/pins_do_lock.py --amostragem-n) e monta a matrix de
+# N copias — o numero nunca e digitado no YAML. Lock sem o bloco frota
+# e lock INCOMPLETO (CP-013): recusa nomeada, nunca um N chutado. O
+# objetivo da frota (>= 3 Intel e >= 3 AMD-avx512 identicas) e contado
+# pela CP nas execucoes, nao pelo workflow.
+frota:
+  amostragem: 8
+  fracao_avx512f: 38/97
+  p_zero_2pct: 0.02

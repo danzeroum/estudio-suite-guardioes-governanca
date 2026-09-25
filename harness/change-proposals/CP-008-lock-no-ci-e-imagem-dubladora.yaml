@@ -1,0 +1,373 @@
+# Mudanca proposta a partir de EVIDENCIA, nao de gosto.
+# Declarada antes de executada; fica como registro mesmo depois.
+#
+# A CP-007 travou o ambiente de sintese no voz.lock e fez o dublar recusar a
+# divergencia. Sobrou uma licao da validacao do PR #11 (SHA 83f4c27, medida em
+# ambiente propositalmente divergente): o lock manda no DUBLAR, mas nao manda
+# no CI nem em ninguem que queira dublar fora do Debian 13. O workflow instala
+# numpy e scipy SEM versao e roda python 3.11 enquanto o lock ancora 3.12 --
+# os testes de timbre e prosodia provam determinismo FORA do ambiente travado.
+# E o portao de sonorizacao, com a audio-suite prometida e ausente, encerra
+# dizendo "trilha reprovada" sem ter medido nada. Esta CP fecha as tres
+# portas: o CI le o lock, a dublagem fica portatil por uma imagem que
+# materializa o lock, e o vermelho do portao diz a propria causa.
+schema: estudio-suite/change-proposal@1
+
+proposta:
+  id: CP-008
+  titulo: "O lock manda no CI, a imagem dubladora e a causa honesta do portao"
+  autor: agente/curador
+  criada_em: "2026-09-23T12:05:00Z"
+  # concluida no Sprint 14: as entregas desta CP (lock no CI, imagem
+  # dubladora, portao honesto) estao provadas e rodando; o
+  # IMAGEM_NAO_REPRODUZ que ela registrou foi medido ATE O FIM pela CP-011
+  # (28 execucoes: a divergencia nasce no PCM com avx512f oculta e no
+  # CODIFICADOR entre familias de CPU; 6/6 Intel reproduzem byte a byte).
+  # As saidas para o dono (runner dedicado Intel, redub na familia, tolerancia
+  # doutrinaria, vermelho honesto) moram na CP-011, desfecho/saidas_para_o_dono.
+  estado: concluida
+
+  resultado: >
+    Executada ate a prova. (1) voz.lock ancora arquitetura x86_64; o dublar
+    mede platform.machine() e recusa lock sem arquitetura como INCOMPLETO --
+    provado por monkeypatch (aarch64 citado, zero arquivo escrito) e por
+    lock sem a linha (recusa nomeando "lock incompleto"). A recusa do
+    ambiente divergente agora oferece ferramentas/dublador/dublar.sh
+    ANTES das correcoes pacote a pacote. Redublagem dos dois filmes no
+    ambiente travado: audio.json com arquitetura, os 19 .opus
+    BYTE-IDENTICOS ao commitado (sha256 conferido antes e depois). (2)
+    ci/pins_do_lock.py (--so/--python/--conferir) le o lock pelo parser
+    de voz.py; suite.yml nao digita versao nenhuma de python/numpy/scipy
+    (test_pins_do_lock le o workflow e acusa numero escrito a mao); o
+    primeiro passo dos jobs fiscais e navegador imprime o ambiente
+    medido e o confere. (3) ferramentas/dublador/{Dockerfile,dublar.sh}:
+    base python:3.12-slim-trixie por digest, ffmpeg+libav+libopus no apt
+    pinado na versao EXATA do lock, pins pip do lock, build sempre
+    linux/amd64, repositorio montado e workspace/voz em volume/cache.
+    (4) Workflow dublador executado no PR: a imagem buildou, dublou 2x
+    (rodadas byte-identicas entre si -- a imagem e deterministica), e a
+    comparacao com o commitado REPROVOU: os 19 .opus divergem, com
+    duracoes identicas em todos. Diagnostico em imagem_nao_reproduz.
+    (5) Veredito.causa: promessa-quebrada x trilha-reprovada x
+    declaracao-divergente, publicadas no relatorio.json;
+    ci/portao_sonorizacao.py imprime "PROMESSA QUEBRADA: audio-suite
+    ausente -- nada foi medido" so na primeira e "DIVERGENCIA: trilha
+    reprovada" so na segunda, ambas saida 1. Validacao local:
+    validar_tudo --sem-lei conforme; fala 212, melhorias 12, amostras
+    37, timbre 37, prosodia 22, dublar 20, vozes 15, sonorizacao 24,
+    pins 10, navegador 240 -- todos verdes.
+
+  imagem_nao_reproduz:          # o registro que a regra desta CP exige
+    quando: >
+      2026-09-23, job dublador do PR do Sprint 12. TRES runs, codigo de
+      sintese identico nos tres: run 35810120017 (commit 3e29d3b)
+      REPROVOU -- 19/19 .opus divergentes; run 35811182097 (commit
+      ee13666) PASSOU -- 19/19 byte-identicos ao commitado; run
+      35811738718 (commit a9a4b57, que so editou ESTE registro)
+      REPROVOU de novo -- e regenerou os MESMOS bytes do run 1 (ex.:
+      p01 = 430c107b... nos dois; commitado = b1220778...). O quadro:
+      a maioria da frota converge para uma saida propria e estavel
+      entre si; um runner minoritario tem o ambiente efetivo da maquina
+      que sintetizou e reproduz o commitado. Dois atratores, zero
+      ancora decidindo entre eles -- o gate hoje e loteria da frota, e
+      e isso que este registro existe para nomear.
+    o_que_variou: >
+      O NUMERO DE THREADS do onnxruntime (e, entre runners, a classe de
+      CPU) -- nao versao, nao build, nao pacote. Prova local, mesma
+      maquina, mesmo modelo, mesmo texto, so mudando
+      intra_op_num_threads: 2 threads -> PCM A; 4 threads -> PCM B; A !=
+      B, 120 bytes divergentes de 139.776 (0,09%), primeira diferenca
+      delta 1 LSB (amostra 34047: -3248 x -3247). A maquina que
+      sintetizou os filmes publicados tem 2 CPUs (onnxruntime default =
+      2 threads); o runner do GitHub anuncia 4 vCPUs (default = 4). O
+      GEMM do onnxruntime e particionado pelo numero de threads, e a
+      ordem das somas parciais em float muda com a particao: ancora de
+      versao NENHUMA cobre isso. O run que PASSOU reproduziu os bytes
+      commitados exatamente -- o que so fecha se aquele runner tinha o
+      mesmo ambiente EFETIVO da maquina que sintetizou (2 threads e/ou
+      classe de CPU que despacha os mesmos kernels): a frota e
+      heterogeneica ABAIXO do nivel de versao, e o gate verde de um run
+      nao prova o proximo.
+    o_que_nao_variou: >
+      Medido, nao assumido. (1) Os quatro pacotes da cadeia sao
+      byte-identicos aos wheels do PyPI que a imagem instala: piper-tts
+      (373 arquivos de fonemizacao, sha bc00fca4... + espeakbridge.so),
+      numpy 818/818, scipy 1387/1387, onnxruntime 321/321 arquivos
+      conferidos contra o RECORD do wheel. (2) ffmpeg 7:7.1.5-0+deb13u1
+      com a familia libav inteira e libopus0 1.5.2-2: mesmas versoes
+      pinadas do apt trixie que a maquina que sintetizou tem instaladas.
+      (3) Base da imagem por digest; build sempre linux/amd64. (4) O
+      dublar DENTRO da imagem conferiu o ambiente inteiro contra o lock
+      (passou: todas as ancoras, incluida arquitetura). (5) Duracoes
+      identicas em 19/19 -- a divergencia e de ultimo bit, nao de
+      cronometragem.
+    hipotese_residual: >
+      Threads e a variavel CONFIRMADA localmente; a heterogeneidade da
+      frota e a variavel CONFIRMADA entre runs (um reprovou, outro passou,
+      mesmo codigo). O runner que passou tinha o ambiente EFETIVO da
+      maquina que sintetizou -- 2 threads e/ou classe de CPU igual (a
+      maquina que sintetizou e um Xeon com AVX-512 + AMX, classe
+      Sapphire Rapids). Enquanto threads e CPU nao forem ANCORAS, o job
+      dublador e uma loteria: verde num run nao prova o proximo. Fechar
+      essa porta e o conteudo da CP-009 proposta abaixo.
+    desfecho_cp009: >
+      2026-09-24, CP-009 executada: threads ANCORADA em voz.lock
+      (threads: 2, mudanca de 1 para 2 medida nas 42 falas reais e
+      validada pelo dono), sessao construida com o valor do lock e LIDA
+      DE VOLTA, ENV da imagem pelo build-arg, job instrumentado com
+      lscpu/cgroup/threads efetivas. A ancora chegou na sessao em TODAS
+      as 8 execucoes (gate do push + 7 rodadas) -- e a frota respondeu
+      CLASSE_DE_CPU_DIVERGE: 7/8 divergiram em AMD EPYC (sem AVX-512 no
+      lscpu), 1/8 reproduziu em Intel Xeon 8370C (com AVX-512), duracoes
+      identicas em todos. A hipotese residual acima se confirmou na
+      forma medida: threads fechou UMA porta; a classe de CPU e a
+      variavel que sobra, e as tres saidas seguem decisao humana --
+      tabela e registro completos na CP-009 (resultado_da_prova).
+    caminhos_para_o_humano:    # a regra desta CP: o agente PARE, o humano decide
+      - >
+        CP-009 "threads no lock": acrescentar threads: 2 (o que a maquina
+        que sintetizou usava) ao bloco ambiente, o dublar criar a sessao
+        do onnxruntime com intra_op_num_threads do lock (hoje: default =
+        nucleos da maquina), e OMP_NUM_THREADS=2 na imagem. Redublagem
+        NAO necessaria se threads for a unica variavel: os bytes
+        commitados nasceram com 2 threads, e o run que passou sugere que
+        e essa a lacuna. Se o job ainda oscilar com threads pinadas,
+        sobra a classe de CPU (kernels SIMD por CPUID) -- e ai as saidas
+        sao: fixar o job num runner de classe conhecida (self-hosted ou
+        larger-runner com CPU declarado), redublar dentro da imagem (CP
+        que muda TODO o audio commitado), ou tolerancia via audio-suite
+        compare (backlog da CP-007).
+      - >
+        Redublar tudo dentro da imagem: re-ancora o audio no ambiente
+        100% materializado (threads fixadas ou nao) -- muda TODOS os
+        .opus commitados, exige CP propria e diff de audio revisado por
+        humano. Nao cabe nesta CP, que prometeu audio inalterado.
+      - >
+        Tolerancia de reproducao (audio-suite compare + limites): o
+        backlog da CP-007. O lock seguiria provando versoes; a
+        byte-identidade viraria faixa medida. Mudanca de doutrina --
+        so o humano.
+    porque_o_agente_parou: >
+      A regra desta CP: "Se a imagem nao reproduzir byte a byte os .opus
+      publicados mesmo com tudo fixado (inclusive arquitetura e snapshot
+      do apt), PARE e registre IMAGEM_NAO_REPRODUZ, com o que variou e a
+      hipotese. Nao redublar para fazer bater." Tudo foi fixado (digest,
+      apt, pins, arquitetura), e a reproducao OSCILOU entre runs da
+      mesma prova -- um reprovou, outro passou, com codigo identico. Um
+      gate que alterna vermelho e verde com a maquina que o roda nao e
+      gate, e loteria; estabiliza-lo exige ancorar threads (e talvez
+      classe de CPU), o que muda o que o lock exige de cada maquina, ou
+      re-ancorar o audio dentro da imagem, o que muda TODO o audio
+      commitado. Os dois sao decisao humana, registrada aqui com as
+      medicoes. O job dublador fica no PR como esta -- verde no ultimo
+      run POR SORTE DA FROTA, e o registro acima diz o que isso vale.
+
+  aval_do_dono:
+    quando: "24/09/2026"
+    o_que_autorizou: >
+      "fazer o merge de cada PR corretamente" — merge do PR #12 AUTORIZADO
+      sob as condicoes do adendo da sessao (CPs concluidas sem parada ativa,
+      checks obrigatorios verdes no head exato, PR atualizado com o main,
+      sem --admin, sem force-push, reverter se o main quebrar).
+    estado_das_condicoes: >
+      NAO cumpridas: CP-011 registra CLASSE_MAL_DEFINIDA e RESIDUO_AUDIVEL
+      ATIVAS (medidas, com descoberta completa) — o merge NAO procedeu; a
+      decisao de caminho (runner dedicado Intel / redub / tolerancia
+      doutrinaria / vermelho honesto) foi devolvida ao dono. Registro
+      completo em CP-011.desfecho e no corpo do PR #12.
+
+  sinal:
+    tipo: evidencia-medida
+    chave: "ci-cego-ao-lock-dublagem-nao-portatil-portao-desonesto"
+    evidencia: >
+      Medido em 2026-09-23 na validacao do PR #11 (SHA 83f4c27), em ambiente
+      propositalmente divergente. (1) O dublar recusou certo (piper-tts 1.3.0,
+      onnxruntime 1.24.4, ffmpeg 6.1.1-3ubuntu5, libopus 1.4, espeak-ng com
+      outro sha256) e nao tocou arquivo -- o lock de ambiente funciona. (2) Mas
+      o workflow instala "pip install numpy scipy" SEM versao, com
+      python-version 3.11, enquanto o voz.lock ancora python 3.12, numpy 2.1.3
+      e scipy 1.14.1: test_timbre e test_prosodia passam verde provando
+      determinismo num ambiente que o dublar recusaria -- o CI testa outra
+      coisa que a que produziu o audio. (3) O lock exige ffmpeg
+      7.1.5-0+deb13u1 e libopus 1.5.2: so uma maquina Debian 13 dubla. Mac,
+      Ubuntu e o proprio runner do CI sao recusados -- a dublagem nao e
+      portatil, e o lock nao registra a ARQUITETURA (onnxruntime em arm64 nao
+      prova nada para bytes gerados em x86_64). (4) Com
+      ESTUDIO_EXIGIR_AUDIO_SUITE=1 e a ferramenta ausente,
+      ci/portao_sonorizacao.py termina com "DIVERGENCIA: trilha reprovada
+      pela audio-suite" -- mas NADA foi medido: promessa quebrada e trilha
+      reprovada imprimem a mesma frase, e a frase errada. (5) LEI_TOKEN segue
+      ausente -- fora do escopo desta CP, intocada.
+    medidas_de_referencia: >
+      Medidas em 2026-09-23 para materializar a imagem. Base: python:3.12-
+      slim-trixie, digest sha256:2f17fc044b579bab302c2e8054d3a686e2cb9a83de4
+      8e70534b94cd8ebbe06a9 (indice multi-arquitetura; manifest amd64
+      44ff437bba879d4941b710a369a8f19266aea34b29002807f0c487fabc9eec9b) -- a
+      serie 3.12 do lock e Debian trixie, a mesma que serve o ffmpeg do lock.
+      Debian trixie amd64 HOJE serve exatamente ffmpeg 7:7.1.5-0+deb13u1 e
+      libopus0 1.5.2-2 (a string do proprio libopus e 1.5.2, a do lock). O
+      wheel piper-tts 1.8.0 do PyPI (sha256 25b4d3f31ff70c8fa7151908e00aaa56
+      50cbdf16bca8fcf21299f3941b89a7d3) e byte a byte o instalado na maquina
+      que sintetizou os filmes: os 373 arquivos de espeak-ng-data somam
+      bc00fca4d93879ed50ff44e280d7d9ad30e00b1d2ee38b3dcefd40ed7a946b7a (a
+      ancora do lock) e o espeakbridge.so e identico. onnxruntime 1.30.0,
+      numpy 2.1.3 e scipy 1.14.1 tem wheels cp312 x86_64 no PyPI.
+      platform.machine() na maquina que sintetizou: x86_64.
+
+  doutrina:                    # herdada; nada aqui e negociavel
+    - >
+      O voz.lock e a UNICA fonte de versoes. CI, imagem e dublar LEEM dele;
+      versao digitada em segundo lugar e defeito, nao redundancia. E o fator
+      II do 12-Factor aplicado a serio: dependencia declarada explicitamente
+      e isolada -- o lock e a declaracao, a imagem e o isolamento.
+    - >
+      Verificacao antes, validacao depois, e a mesma moeda. O job dublador
+      PROVA que a imagem reproduz byte a byte o audio publicado: verificacao
+      (sha256) por cima da validacao que a audio-suite ja faz no portao. Se a
+      imagem nao reproduzir mesmo com tudo fixado (digest, apt, pins,
+      arquitetura), a regra e PARE e registrar IMAGEM_NAO_REPRODUZ -- o que
+      variou e a hipotese -- e JAMAIS redublar para "fazer bater".
+    - >
+      "Nao medi" nao e "reprovei". O vermelho do portao passa a carregar a
+      CAUSA num campo estruturado: promessa-quebrada (ferramenta prometida e
+      ausente) e trilha-reprovada (FINDING da audio-suite) sao frases
+      diferentes, e cada uma sai 1 pelas razoes dela. Buscar texto na nota
+      para distingui-las seria o defeito que a CP corrige.
+    - >
+      Nao afrouxar fiscal. Nao editar derivado a mao. Nao commite workspace/
+      nem binario de imagem. Nenhum .opus commitado muda neste PR: a
+      redublagem aqui e so para o audio.json registrar a arquitetura, com
+      byte-identidade dos .opus provada antes de commitar.
+    - >
+      Rollback (Andre Borges, DevOps): cada estagio validado com caminho de
+      volta. O pin por digest da base, o apt pinado por versao exata (com
+      snapshot.debian.org como plano B datado), os pins do lock e esta CP sao
+      o caminho de volta.
+
+  tecnica:
+    pins_do_lock: >
+      ci/pins_do_lock.py le o bloco ambiente PELO PARSER de estudio_suite/
+      voz.py (sem YAML, sem regex duplicada) e imprime os pins pip pedidos
+      (--so numpy,scipy -> "numpy==2.1.3 scipy==1.14.1"; pacote ausente no
+      lock = saida 2 com mensagem nomeada). --python imprime a serie do lock
+      para o setup-python; --conferir chaves mede o ambiente efetivo (pelo
+      mesmo ambiente_instalado do dublar) e derruba o passo na divergencia,
+      imprimindo o ambiente medido. O workflow nao contem NENHUM numero de
+      versao de python, numpy ou scipy digitado a mao.
+    arquitetura_no_lock: >
+      O bloco ambiente ganha arquitetura (platform.machine() medido na
+      maquina que sintetizou: x86_64), conferida pelo dublar como qualquer
+      outro item. Lock SEM arquitetura e lock INCOMPLETO: o dublar recusa em
+      vez de assumir x86_64 -- onnxruntime em arm64 nao e prova de nada para
+      bytes gerados em x86_64.
+    imagem_dubladora: >
+      ferramentas/dublador/Dockerfile: base python:3.12-slim-trixie pinada
+      por digest; ffmpeg 7:7.1.5-0+deb13u1 e libopus0 1.5.2-2 na versao EXATA
+      do lock (apt do trixie; se o apt atual nao servir mais, snapshot.debian
+      .org com data fixada); piper-tts, onnxruntime, numpy e scipy vindos de
+      ci/pins_do_lock.py; build sempre --platform linux/amd64. ferramentas/
+      dublar/dublar.sh <id> constroi com cache e roda o dublar dentro da
+      imagem, com o repositorio montado e workspace/voz em volume (ou no
+      caminho de cache do CI), para nao baixar o modelo a cada vez. A
+      mensagem de ErroDeDados do dublar, no ambiente divergente, passa a
+      oferecer PRIMEIRO o dublar.sh e so depois as correcoes pacote a pacote.
+    job_dublador: >
+      Workflow proprio (.github/workflows/dublador.yml; o filtro de caminhos
+      nao pode morar no suite.yml sem calar os fiscais nos PRs que nao tocam
+      audio) disparado em workflow_dispatch e em PR que toque voz.lock,
+      amostras.lock, estudio_suite/{dublar,voz,fala,prosodia,timbre}.py,
+      ferramentas/dublador/** ou filmes/*/*.filme.js. Constroi a imagem com
+      cache de camadas (buildx, cache do GitHub Actions) e cache de
+      workspace/voz e workspace/amostras chaveado pelo sha256 dos locks; dubla
+      os dois filmes 2x dentro da imagem e compara cada .opus com o commitado
+      (sha256); qualquer diferenca falha o job e publica o diff de duracoes
+      como artefato.
+    portao_honesto: >
+      Veredito ganha o campo estruturado causa. portao_sonorizacao devolve
+      causa "promessa-quebrada" quando a ferramenta foi prometida
+      (ESTUDIO_EXIGIR_AUDIO_SUITE=1) e esta ausente, e "trilha-reprovada"
+      quando a audio-suite devolve FINDING (saida 1) -- e a causa e publicada
+      no relatorio.json. ci/portao_sonorizacao.py imprime "PROMESSA QUEBRADA:
+      audio-suite ausente -- nada foi medido" no primeiro caso e "DIVERGENCIA:
+      trilha reprovada pela audio-suite" so no segundo; as duas saidas
+      continuam 1.
+
+  escopo:
+    sprint_12: >
+      Esta CP; ci/pins_do_lock.py e seu teste; voz.lock com arquitetura e
+      voz.py medindo platform.machine (lock sem arquitetura = incompleto);
+      workflow fiscais e navegador com python e pins vindos do lock e o
+      primeiro passo conferindo o ambiente medido; ferramentas/dublador/
+      {Dockerfile,dublar.sh} e .dockerignore; workflow dublador com a prova
+      de portabilidade byte a byte; Veredito.causa + portao de sonorizacao
+      honesto e seus testes; SKILL.md, README e CLAUDE.md alinhados; redubla
+      gem dos dois filmes no ambiente travado para o audio.json registrar a
+      arquitetura (byte-identidade dos .opus provada em 2 execucoes e contra
+      o commitado, diff de duracoes no PR).
+
+  impacto:
+    - "estudio_suite/voz.py :: arquitetura medida e conferida; lock incompleto recusado; saida aponta o dublar.sh primeiro"
+    - "estudio_suite/pipeline.py :: Veredito.causa; portao devolve a causa do vermelho"
+    - "ci/pins_do_lock.py :: o lock como fonte unica de pins (novo, protegido por ci/)"
+    - "ci/portao_sonorizacao.py :: a frase certa para cada causa; as duas saem 1"
+    - ".github/workflows/suite.yml :: python e numpy/scipy do lock; passo que imprime e confere o ambiente"
+    - ".github/workflows/dublador.yml :: o job da prova de portabilidade (novo)"
+    - "ferramentas/dublador/{Dockerfile,dublar.sh} e .dockerignore :: a imagem que materializa o lock (novo)"
+    - "tests/test_{dublar,sonorizacao,pins_do_lock}.py :: os casos novos"
+    - "filmes/*/audio/audio.json :: redublagem no ambiente travado (arquitetura registrada; .opus inalterados)"
+    - ".claude/skills/fazer-filme/SKILL.md, README.md, CLAUDE.md :: dublar e pelo dublar.sh; caminhos protegidos"
+
+  caminhos_afetados:
+    - esta-suite :: voz.lock, estudio_suite/{voz,pipeline}.py, ci/{pins_do_lock,portao_sonorizacao}.py
+    - esta-suite :: .github/workflows/{suite,dublador}.yml, ferramentas/dublador/**, .dockerignore
+    - esta-suite :: tests/test_{dublar,sonorizacao,pins_do_lock}.py
+    - esta-suite :: filmes/*/audio/audio.json (redublagem no ambiente travado), filmes/*/relatorio.json, filmes/*/baseline/vozes/
+    - esta-suite :: .claude/skills/fazer-filme/SKILL.md, README.md, CLAUDE.md
+
+  risco:
+    nivel: medio
+    porque: >
+      A prova de portabilidade e uma aposta com plano B: mesma base Debian,
+      mesmos wheels, mesmo apt -- mas CPU do runner e glibc da base podem
+      mudar bytes que ninguem ancorou (dispatch SIMD do onnxruntime, ordem de
+      sumarizacao em float). Se o job dublador reprovar a byte-identidade, a
+      regra e PARE e registrar IMAGEM_NAO_REPRODUZ com o que variou e a
+      hipotese -- nao afrouxar o job, nao redublar, nao tolerar por antecipa
+      cao. Contencao: (1) digest da base fixado; (2) apt pinado por versao
+      exata; (3) pins so do lock; (4) o diff de duracoes como artefato diz
+      ONDE divergiu; (5) tudo isso e caminho de volta (rollback).
+
+  aval_humano_necessario: true   # merge do PR e decisao humana
+
+  como_se_prova:
+    - >-
+      pins_do_lock.py --so numpy,scipy -> "numpy==2.1.3 scipy==1.14.1";
+      --so inexistente -> saida 2 nomeando o pacote; --python -> 3.12;
+      --conferir divergente -> saida 1 com o ambiente medido.
+    - >-
+      platform.machine() trocado por "aarch64" (monkeypatch): o dublar
+      levanta ErroDeDados citando a arquitetura, sem escrever arquivo;
+      voz.lock sem a linha arquitetura: o dublar recusa por lock incompleto,
+      em vez de assumir x86_64.
+    - O workflow nao tem versao de python/numpy/scipy digitada a mao; o primeiro passo de cada job imprime o ambiente medido e o confere contra o lock.
+    - O job dublador dubla os dois filmes 2x na imagem, compara cada .opus com o commitado por sha256 (no log), e falha se um byte difere -- com o diff de duracoes como artefato.
+    - >-
+      Portao com EXIGIR=1 e sem ferramenta: causa promessa-quebrada, frase
+      "PROMESSA QUEBRADA", saida 1; com FINDING simulado: causa
+      trilha-reprovada, frase "DIVERGENCIA: trilha reprovada", saida 1;
+      sem EXIGIR e sem ferramenta: INDECISO nomeado, saida 0.
+    - Os .opus commitados dos dois filmes nao mudam: a redublagem deste PR regrava audio.json (arquitetura) com sha256 identico ao commitado antes do push.
+
+  backlog:                      # PROIBIDO nesta CP
+    - >
+      Redublar qualquer .opus "para fazer bater": se a imagem nao reproduzir,
+      e IMAGEM_NAO_REPRODUZ, ponto. Nenhuma tolerancia entra por antecipacao.
+    - >
+      Multi-arquitetura (arm64): a ancora e UNICA e x86_64. Quem quiser
+      dublar em arm64 propoe CP avancando o lock -- com medicao e redublagem
+      completa, porque os bytes mudam.
+    - >
+      LEI_TOKEN: ausencia pre-existente e documentada; fora do escopo.
+    - resposta_padrao: >
+        Se um revisor perguntar por esses itens: "backlog da CP-008" --
+        nao e esquecimento.

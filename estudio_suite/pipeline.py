@@ -38,6 +38,14 @@ class Veredito:
     estado: str                       # "verde" | "vermelho" | "indeciso"
     achados: list = field(default_factory=list)
     nota: str = ""
+    # CP-008: a CAUSA do vermelho, num campo estruturado -- nunca em
+    # busca de texto na nota. O portao de sonorizacao distingue
+    # "promessa-quebrada" (ferramenta prometida e ausente: NADA foi
+    # medido) de "trilha-reprovada" (FINDING da audio-suite: a trilha
+    # foi medida e reprovou) e de "declaracao-divergente" (o filme
+    # declara o que nao existe). Vermelho sem causa e vermelho sem
+    # diagnostico, e quem le o log escolhe a correcao errada.
+    causa: str = ""
 
     @property
     def ok(self):
@@ -303,6 +311,19 @@ def fiscal_redublagem(fid):
         achados.append(
             f"os momentos do Dado mudaram sem redublar ({'; '.join(partes)}). "
             f"Rode: python3 -m estudio_suite dublar {fid}")
+
+    # CP-012: o hash do PCM mixado e CONTRATO do audio.json — a decisao do
+    # dono (24/09/2026) apoiou a prova de bytes NELE (a entrada exata do
+    # codificador, estavel Intel x AMD-avx512 na medicao da CP-011).
+    # Manifesto sem o campo e dublagem anterior a CP-012 — o fiscal acusa a
+    # divida: sem o hash, o job dublador nao tem canônico para comparar, e
+    # a prova de bytes fica sem testemunha. Resolve com o mesmo comando.
+    if not (gravado.get("mix") or {}).get("pcm_f32_sha256"):
+        achados.append(
+            f"audio.json sem mix.pcm_f32_sha256 — dublagem anterior a CP-012, "
+            f"sem o contrato do PCM mixado que a prova de bytes do job "
+            f"compara (a entrada exata do codificador). Rode: "
+            f"python3 -m estudio_suite dublar {fid}")
     return achados
 
 
@@ -444,12 +465,14 @@ def _exige_audio_suite() -> bool:
     return os.environ.get("ESTUDIO_EXIGIR_AUDIO_SUITE") == "1"
 
 
-def _publicar_sonorizacao(fid, estado, medidas=None, nota=""):
+def _publicar_sonorizacao(fid, estado, medidas=None, nota="", causa=""):
     """O estado do portao vira evidencia no relatorio.json do filme.
 
     Integrado aos tres estados existentes: verde/vermelho/indeciso sao a
     mesma moeda das outras etapas. O navegador regrava o relatorio dele por
     cima e PRESERVA esta chave -- o teste e que costura as duas escritas.
+    CP-008: a causa do vermelho e publicada junto, porque "promessa
+       quebrada" e "trilha reprovada" exigem correcoes diferentes.
     """
     import datetime
     import json
@@ -465,6 +488,7 @@ def _publicar_sonorizacao(fid, estado, medidas=None, nota=""):
         "estado": estado,
         "medidas": medidas or {},
         "nota": nota,
+        "causa": causa,
         "quando": datetime.datetime.now(datetime.timezone.utc)
                   .isoformat(timespec="seconds"),
     }
@@ -491,25 +515,35 @@ def portao_sonorizacao(fid):
     if not declara and not opus.exists():
         return _v("sonorizacao", [], nota="filme mudo — nada a medir")
     if declara and not opus.exists():
-        _publicar_sonorizacao(fid, "vermelho", nota="declara sem trilha")
-        return _v("sonorizacao", [
+        _publicar_sonorizacao(fid, "vermelho", nota="declara sem trilha",
+                              causa="declaracao-divergente")
+        v = _v("sonorizacao", [
             f"o filme declara audio, mas falta {opus.relative_to(RAIZ)} — "
             f"declare a dublagem rodando dublar, ou remova a declaracao"])
+        v.causa = "declaracao-divergente"
+        return v
     if not declara and opus.exists():
-        _publicar_sonorizacao(fid, "vermelho", nota="trilha sem declaracao")
-        return _v("sonorizacao", [
+        _publicar_sonorizacao(fid, "vermelho", nota="trilha sem declaracao",
+                              causa="declaracao-divergente")
+        v = _v("sonorizacao", [
             f"existe {opus.relative_to(RAIZ)} sem o filme declarar audio: true — "
             f"a declaracao e o contrato da camada aditiva. Decida: declare, ou apague."])
+        v.causa = "declaracao-divergente"
+        return v
 
     if not _tem_audio_suite():
         if _exige_audio_suite():
-            _publicar_sonorizacao(fid, "vermelho", nota="audio-suite exigida e ausente")
-            return _v("sonorizacao", [
+            _publicar_sonorizacao(fid, "vermelho",
+                                  nota="audio-suite exigida e ausente",
+                                  causa="promessa-quebrada")
+            v = _v("sonorizacao", [
                 "ESTUDIO_EXIGIR_AUDIO_SUITE=1 promete a audio-suite, e ela nao "
                 "esta no PATH — neste ambiente a ausencia da ferramenta e "
                 "promessa quebrada (VERMELHO), nao INDECISO. Instale a "
                 "audio-suite (isolada, pinada por SHA) ou desfaca a promessa."],
                 nota="audio-suite exigida (ESTUDIO_EXIGIR_AUDIO_SUITE=1) e ausente")
+            v.causa = "promessa-quebrada"
+            return v
         _publicar_sonorizacao(fid, "indeciso", nota="audio-suite ausente")
         return _v("sonorizacao", [], indeciso=True,
                   nota="audio-suite ausente — NAO consigo medir (INDECISO, "
@@ -568,9 +602,12 @@ def portao_sonorizacao(fid):
                   nota="trilha dentro das ancoras do perfil "
                        + " · ".join(f"{k}={medidas[k]}" for k in destaque))
     if r.returncode == 1:
-        _publicar_sonorizacao(fid, "vermelho", medidas, "audio-suite reprovou")
-        return _v("sonorizacao", reprovas or ["audio-suite reprovou a trilha"],
-                  nota="saida 1 da audio-suite — FINDING")
+        _publicar_sonorizacao(fid, "vermelho", medidas, "audio-suite reprovou",
+                              causa="trilha-reprovada")
+        v = _v("sonorizacao", reprovas or ["audio-suite reprovou a trilha"],
+               nota="saida 1 da audio-suite — FINDING")
+        v.causa = "trilha-reprovada"
+        return v
     # 2 (perfil invalido), 3 (entrada invalida), 64 (uso) e qualquer outro:
     # o portao nao conseguiu MEDIR. Nao e aprovado nem reprovado.
     _publicar_sonorizacao(fid, "indeciso", medidas,
