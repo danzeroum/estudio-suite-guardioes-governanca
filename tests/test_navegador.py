@@ -761,6 +761,61 @@ def segundo_filme(nav, pgf):
     ctx.close()
 
 
+def terceiro_filme(nav):
+    """O filme 03 (relatorio-impacto): mudo e sem arte nova -- o template de
+    novo, agora sem trilha. Mesmas garantias do filme 02, e o Som ausente."""
+    pg = nav.new_page()
+    e3 = []
+    pg.on("pageerror", lambda e: e3.append(str(e)))
+    pg.on("console", lambda m: e3.append(m.text) if m.type == "error" else None)
+    pg.goto(B + "paginas/player.html?filme=relatorio-impacto")
+    pg.wait_for_timeout(1500)
+    chk(not e3, f"relatorio-impacto carrega sem erro ({e3[:2]})")
+    chk(pg.evaluate("ESTUDIO_PLAYER.filme.duracao") == 35, "relatorio-impacto dura 35s")
+    chk(pg.evaluate("ESTUDIO_PLAYER.filme.planos.length") == 5, "relatorio-impacto tem 5 planos")
+    chk(pg.evaluate("ESTUDIO_PLAYER._som === null") and pg.eval_on_selector("#btSom", "b => b.hidden"),
+        "relatorio-impacto e mudo: sem camada de som, e o botao Som nao aparece")
+
+    puro = pg.evaluate("""() => {
+      var p = ESTUDIO_PLAYER, f = p.filme, falhas = [];
+      f.planos.forEach(function (P) {
+        p.irPara(0); p.irPara(P.poster); var indo = document.querySelector('.est-wrap').outerHTML;
+        p.irPara(f.duracao); p.irPara(P.poster);
+        if (document.querySelector('.est-wrap').outerHTML !== indo) falhas.push(P.id);
+      });
+      return falhas;
+    }""")
+    chk(puro == [], f"relatorio-impacto: pureza nos dois sentidos ({puro})")
+
+    vaza = pg.evaluate("""() => {
+      var f = ESTUDIO_PLAYER.filme, fora = [];
+      f.planos.forEach(function (P, k) {
+        var elenco = Object.keys(f.dados.planos[k].entra || {});
+        Object.keys(f.alvos).forEach(function (a) {
+          if (elenco.indexOf(a) < 0 && f.snapshotDe(a, P.poster).op > 0.001) fora.push(P.id + '/' + a);
+        });
+      });
+      return fora;
+    }""")
+    chk(vaza == [], f"relatorio-impacto: elenco por plano ({vaza[:3]})")
+
+    leg = pg.evaluate("""() => {
+      var f = ESTUDIO_PLAYER.filme, ruins = [];
+      f.legendas.forEach(function (L) {
+        var meio = (L.t + L.ate) / 2;
+        if (f.legendaEm(meio) !== L) ruins.push(L.plano + '@' + meio.toFixed(1));
+      });
+      return ruins;
+    }""")
+    chk(leg == [], f"relatorio-impacto: cada instante tem a legenda declarada ({leg[:3]})")
+
+    for P in pg.evaluate("ESTUDIO_PLAYER.filme.planos.map(p=>({id:p.id,poster:p.poster}))"):
+        referencia(f"filmes/relatorio-impacto/baseline/relatorio-impacto-{P['id']}.txt",
+                   instantaneo_do_palco(pg, P["poster"]),
+                   f"relatorio-impacto/{P['id']}: o palco no poster bate com a referencia")
+    pg.close()
+
+
 def injecao_de_falha(nav):
     """G1 e G2: todo caminho de erro do motor dispara com a mensagem certa, e o
     que antes caia num padrao em silencio agora lanca."""
@@ -1563,6 +1618,7 @@ def main():
         personagens_e_rigs(nav)
         pgf = filme_e_transporte(nav)
         segundo_filme(nav, pgf)
+        terceiro_filme(nav)
         a_camada_de_som(nav)
         o_quadrinhos_sonoro(nav)
         injecao_de_falha(nav)

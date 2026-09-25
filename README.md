@@ -132,6 +132,7 @@ Lido do motor em tempo de execução (`estudio_suite/comum.py`), nunca redigitad
 |---|---|---|---|---|
 | [A jornada de um dado pessoal](paginas/player.html?filme=jornada-dado) `jornada-dado` | 12 | 124 s | 30 | 5, 6, 7, 8, 9, 18, 33, 37, 38, 39, 46, 48 |
 | [O teste do legítimo interesse](paginas/player.html?filme=legitimo-interesse) `legitimo-interesse` | 5 | 42 s | 12 | 9, 10, 38 |
+| [O relatório de impacto](paginas/player.html?filme=relatorio-impacto) `relatorio-impacto` | 5 | 35 s | 13 | 10, 38 |
 
 | jogo | artigo | opções | situações |
 |---|---|---|---|

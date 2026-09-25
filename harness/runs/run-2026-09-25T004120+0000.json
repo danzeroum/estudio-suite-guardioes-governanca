@@ -1,0 +1,24 @@
+{
+ "achados": [
+  "relatorio-impacto/p01: o palco no poster bate com a referencia -- difere da referencia na linha 19: 'rig dado | t=translate(520 430) scale(0.9 0.9) translate(-10' -> 'rig dado | t=translate(540 430) scale(0.9 0.9) translate(-10'"
+ ],
+ "falhas": 1,
+ "ok": 251,
+ "por_alvo": {
+  "jornada-dado": {
+   "achados": [],
+   "ok": 14
+  },
+  "legitimo-interesse": {
+   "achados": [],
+   "ok": 6
+  },
+  "relatorio-impacto": {
+   "achados": [
+    "relatorio-impacto/p01: o palco no poster bate com a referencia -- difere da referencia na linha 19: 'rig dado | t=translate(520 430) scale(0.9 0.9) translate(-10' -> 'rig dado | t=translate(540 430) scale(0.9 0.9) translate(-10'"
+   ],
+   "ok": 11
+  }
+ },
+ "quando": "2026-09-25T00:41:20+00:00"
+}
