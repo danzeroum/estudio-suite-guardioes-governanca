@@ -129,9 +129,10 @@ def main():
         finally:
             _voz.LOCK = _lock_real
 
-    # --- CP-013: a amostragem da frota — o N do lock --------------------
-    # O job dublador dispara N copias por disparo; o N vem do bloco frota
-    # do lock (derivado da fracao medida). A chamada aqui so pergunta.
+    # --- CP-013/CP-015: a amostragem da frota — o N do lock ----------------
+    # O job dublador dispara N copias POR ONDA; o N vem do bloco frota
+    # do lock (CP-013: da fracao congelada; CP-015: recalculado da
+    # JANELA MOVEL do registro do gate). A chamada aqui so pergunta.
     from estudio_suite import voz as _voz_frota
     r = _cli("--amostragem-n")
     _n_lock = int(_voz_frota.frota()["amostragem"])
@@ -147,39 +148,59 @@ def main():
         f"--amostragem-n com valor e recusado (exit {r.returncode}, "
         f"{r.stderr.strip()[:60]!r})")
 
-    # --- o calculo de N reproduz o valor do lock a partir do registro ---
-    # A aceite da CP-013: "o calculo de N reproduz o valor do lock a partir
-    # das execucoes registradas" — fracao medida, menor N com P(zero
-    # avx512) <= 2%, tudo lido de harness/frota/execucoes.json.
+    # --- CP-015: o N VIVO e o da JANELA MOVEL do registro do GATE ---------
+    # A aceite da CP-015: "o N do lock tem de bater com ele, senao o
+    # fiscal reprova ('N desatualizado')". A fracao viva mora no registro
+    # das execucoes REAIS do gate (harness/frota/execucoes-gate.json,
+    # janela das ultimas J); a fracao 38/97 do lock e a ORIGEM CONGELADA
+    # da decisao CP-013 (historico, nao o modelo vivo).
     import json as _json
+    _gate = _json.loads((RAIZ / "harness" / "frota" / "execucoes-gate.json")
+                        .read_text(encoding="utf-8"))["execucoes"]
+    _J = int(str(_voz_frota.frota().get("janela", "0")).strip() or "0")
+    _teto = float(_voz_frota.frota().get("p_zero_2pct", "0.02"))
+    _janela = _gate[-_J:] if _J else _gate
+    _p_viva = (sum(int(e["avx512"]) for e in _janela)
+               / sum(int(e["n"]) for e in _janela))
+    _n_vivo = 1
+    while (1 - _p_viva) ** _n_vivo > _teto:
+        _n_vivo += 1
+    chk(_J > 0, f"o lock ancora a JANELA J={_J} (CP-015: um lugar so)")
+    chk(_n_vivo == _n_lock,
+        f"o N recalculado da JANELA (fracao viva {_p_viva:.5f} = "
+        f"{sum(int(e['avx512']) for e in _janela)}/"
+        f"{sum(int(e['n']) for e in _janela)} em "
+        f"{len(_janela)} execucoes) == o do lock ({_n_lock}) — "
+        f"P(zero)={((1 - _p_viva) ** _n_vivo):.5f} <= {_teto}: "
+        f"CONFORME, o fiscal nao reprova 'N desatualizado'")
+
+    # a ORIGEM CONGELADA continua reproduzivel (historico da CP-013):
+    # 38/97 -> N=8 — pela MESMA funcao, com o registro historico
     _frota = _json.loads((RAIZ / "harness" / "frota" / "execucoes.json")
                          .read_text(encoding="utf-8"))["execucoes"]
-    _teto = float(_voz_frota.frota().get("p_zero_2pct", "0.02"))
-
-    def _n_minimo(regs):
-        p = sum(1 for x in regs if x["avx512f"]) / len(regs)
-        n = 1
-        while (1 - p) ** n > _teto:
-            n += 1
-        return n, p
-
-    _n_calc, _p = _n_minimo(_frota)
+    _p_origem = sum(1 for x in _frota if x["avx512f"]) / len(_frota)
+    _n_origem = 1
+    while (1 - _p_origem) ** _n_origem > _teto:
+        _n_origem += 1
     _fracao = _voz_frota.frota()["fracao_avx512f"]
-    chk(_n_calc == _n_lock,
-        f"o N recalculado do registro ({_n_calc}, p={_p:.5f} = "
-        f"{sum(1 for x in _frota if x['avx512f'])}/{len(_frota)}) == o do "
-        f"lock ({_n_lock}) — P(zero)={((1 - _p) ** _n_calc):.5f} <= {_teto}")
+    chk(_n_origem == 8 and _n_origem != _n_lock,
+        f"a fracao CONGELADA 38/97 reproduz o N HISTORICO 8 pela mesma "
+        f"conta — a origem da decisao CP-013, e NAO o valor do lock "
+        f"({_n_lock}): a janela e o modelo vivo, o congelado e memoria")
     chk(_fracao == f"{sum(1 for x in _frota if x['avx512f'])}/{len(_frota)}",
-        f"a fracao do lock ({_fracao}) e a do registro "
+        f"a fracao do lock ({_fracao}) e a do registro historico "
         f"({sum(1 for x in _frota if x['avx512f'])}/{len(_frota)})")
     _sem_canceladas = [x for x in _frota if not x.get("cancelada")]
-    _n_alt, _ = _n_minimo(_sem_canceladas)
-    chk(_n_alt == _n_lock,
-        f"sem as 25 copias canceladas o N continua {_n_alt} == lock — a "
-        f"decisao de inclui-las nao move o numero ( registrado na CP-013)")
+    _p_alt = sum(1 for x in _sem_canceladas if x["avx512f"]) / len(_sem_canceladas)
+    _n_alt = 1
+    while (1 - _p_alt) ** _n_alt > _teto:
+        _n_alt += 1
+    chk(_n_alt == 8,
+        f"sem as 25 copias canceladas o N historico continua {_n_alt} — a "
+        f"decisao de inclui-las nao move o numero (registrado na CP-013)")
     chk(len(_frota) >= 90,
-        f"o registro carrega a frota inteira ({len(_frota)} execucoes — "
-        f"CP-009 8 + CP-011 28 + CP-012 61, canceladas inclusas)")
+        f"o registro historico carrega a frota inteira ({len(_frota)} "
+        f"execucoes — CP-009 8 + CP-011 28 + CP-012 61, canceladas inclusas)")
 
     # --- lock sem o bloco frota: pergunta sem resposta, falta nomeada -----
     _lock_real2 = _voz_frota.LOCK

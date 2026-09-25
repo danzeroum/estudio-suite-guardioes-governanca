@@ -29,31 +29,47 @@ e o CI inteiro lê versões do `voz.lock`
 da CPU (CP-011: `classe_simd` no lock, lida de flags medidas — nunca do nome do
 fabricante — e gravada como medido no `audio.json`).
 
-**A prova do job dublador é POR AMOSTRAGEM DA FROTA (CP-013)**, e só acorda
-para filmes que declaram `audio: true` (lido do próprio `filme.js` — filme
-mudo não aciona o job nem entra nele). A decisão do dono (24/09/2026, saída
-(e)) sobre a medição: **"a prova decisiva é bytes do PCM mixado em cópia
-AVX-512 visível; AVX2 é observação; sem amostra decisiva é vermelho
-nomeado"**. O job dispara **N cópias** cujo N nasce do `voz.lock` (bloco
-`frota`, derivado da fração medida 38/97 — o menor N com P(zero cópia
-AVX-512) ≤ 2%, recalculável de `harness/frota/execucoes.json`). Cada cópia
-**classifica primeiro** (classificador único de `estudio_suite/voz.py`):
-`avx512` → build e prova completa da CP-012 (o **hash do PCM mixado**
-`mix.pcm_f32_sha256` do `audio.json` tem de bater, o `.opus` decodificado
-fica sob o **teto do lock** — base medida −80,9 + margem 6 = −74,9, abaixo
-de −60 — e o **controle do teto** reprova citando o número); `avx2` → **sai
-cedo** (CP-014): publica classe e identidade rotulada (campos de síntese
-`nao_aplicavel:classe_avx2` — `medido:`/`falhou:`/`nao_aplicavel:`, nunca
-texto com "ou") e termina **neutra**, sem build e **sem medir a âncora**
-("medir o mesmo arquivo em toda cópia não traz informação"). A observação
-de verdade — regenerado × âncora, fala a fala, com build — é o **dispatch
-manual `observar_avx2`** ("observação, sem gate"). O veredito do run é
-do **agregador**: verde com ≥1 cópia AVX-512 idêntica e zero divergentes;
-`DIVERGENCIA_AVX512` nomeia a cópia; `SEM_AMOSTRA_DECISIVA` (zero avx512) é
-vermelho nomeado — o rerun é o caminho de volta; amostra ilegível reprova,
-**nunca conta como neutra**. Nenhum teto de descritor é gate; o job segue
-obrigatório, sem `continue-on-error`. `audio.json` sem o hash do PCM é
-dívida do fiscal de redublagem.
+**A prova do job dublador é POR AMOSTRAGEM DA FROTA (CP-013), em DUAS
+ONDAS (CP-015)**, e só acorda para filmes que declaram `audio: true`
+(lido do próprio `filme.js` — filme mudo não aciona o job nem entra
+nele). A decisão do dono (24/09/2026, saída (e)) sobre a medição:
+**"a prova decisiva é bytes do PCM mixado em cópia AVX-512 visível;
+AVX2 é observação; sem amostra decisiva é vermelho nomeado"**; a do
+25/09/2026 (CP-015) completou: **"N pela fração da janela móvel da
+frota; segunda onda automática quando a primeira não tiver AVX-512;
+rerun humano deixa de ser o caminho de volta"**. O job dispara **N
+cópias por ONDA** cujo N nasce do `voz.lock` (bloco `frota`,
+**recalculado da fração das últimas J execuções do registro
+`harness/frota/execucoes-gate.json`** — o menor N com P(zero cópia
+AVX-512) ≤ 2%; o teste recalcula e reprova **"N desatualizado"** se o
+lock divergir; mudança de N é PR de manutenção, nunca commit
+automático). Cada cópia **classifica primeiro** (classificador único de
+`estudio_suite/voz.py`): `avx512` → build e prova completa da CP-012
+(o **hash do PCM mixado** `mix.pcm_f32_sha256` do `audio.json` tem de
+bater, o `.opus` decodificado fica sob o **teto do lock** — base medida
+−80,9 + margem 6 = −74,9, abaixo de −60 — e o **controle do teto**
+reprova citando o número); `avx2` → **sai cedo** (CP-014): publica
+classe e identidade rotulada (campos de síntese
+`nao_aplicavel:classe_avx2` — `medido:`/`falhou:`/`nao_aplicavel:`,
+nunca texto com "ou") e termina **neutra**, sem build e **sem medir a
+âncora** ("medir o mesmo arquivo em toda cópia não traz informação").
+A observação de verdade — regenerado × âncora, fala a fala, com build
+— é o **dispatch manual `observar_avx2`** ("observação, sem gate").
+Se a **primeira onda** termina com ZERO cópias AVX-512, o **roteador**
+(`ci/rotear_segunda_onda.py`) acorda uma **segunda onda automática**
+de N cópias no MESMO run — ilegível não vira sorte, a segunda onda
+não mascara cópia que não provou. O veredito do run é do **agregador**
+sobre as DUAS ondas: verde com ≥1 cópia AVX-512 idêntica e zero
+divergentes; `DIVERGENCIA_AVX512` nomeia **onda e cópia**;
+`SEM_AMOSTRA_DECISIVA` **só nasce após duas ondas vazias** (P = 0,0315%
+com N=13 e a fração da janela — 1 em 3178) e continua vermelho
+nomeado; amostra ilegível reprova, **nunca conta como neutra**. Nenhum
+teto de descritor é gate; o job segue obrigatório, sem
+`continue-on-error`. `audio.json` sem o hash do PCM é dívida do fiscal
+de redublagem. O registro das execuções (classe por cópia, ondas,
+SEM_AMOSTRA) cresce por PR de manutenção —
+`ci/atualizar_registro_frota.py` junta os agregados baixados; commit
+automático no main, jamais.
 
 **Prova de bytes é contra o HEAD, nunca cópia contra cópia**:
 `git diff --exit-code -- '*.opus'`. Uma "prova" que comparou arquivos

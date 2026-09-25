@@ -444,6 +444,30 @@
    "sem_amostra_decisiva": false,
    "fonte": "artefato agregado-frota-run36091333340 (tentativa mais recente do run; medido pela API)",
    "head_do_pr": "a41824a"
+  },
+  {
+   "cp": "CP-014",
+   "run": "36092359210",
+   "tentativa": 1,
+   "head": "1eabed09",
+   "evento": "pull_request",
+   "quando": "2026-09-25T03:59:02+00:00",
+   "n": 8,
+   "ondas": 1,
+   "copias": {
+    "copia-1": "avx2",
+    "copia-2": "avx2",
+    "copia-3": "avx2",
+    "copia-4": "avx2",
+    "copia-5": "avx2",
+    "copia-6": "avx512",
+    "copia-7": "avx512",
+    "copia-8": "avx2"
+   },
+   "avx512": 2,
+   "sem_amostra_decisiva": false,
+   "fonte": "agregado-frota-run36092359210.zip (baixado pela API; head 1eabed09 = GITHUB_SHA do evento pull_request é o commit de MERGE — o head_do_pr f545dde é o commit FINAL da CP-014/PR #15, o SHA testado; veredito verde: 2 AVX-512 idênticas + 6 avx2)",
+   "head_do_pr": "f545dde"
   }
  ],
  "calculo": {
@@ -462,54 +486,77 @@
     4,
     3,
     0,
-    4
+    4,
+    2
    ],
-   "n_execucoes": 14,
-   "copias_por_execucao": [
+   "n_execucoes": 15,
+   "n_por_execucao": [
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
     8
    ],
-   "total_avx512": 30,
-   "total_copias": 112,
+   "total_avx512": 32,
+   "total_copias": 120,
    "sem_amostra": 2,
-   "media_avx512_por_execucao": 2.143,
-   "variancia_observada": 2.286
+   "media_avx512_por_execucao": 2.133,
+   "variancia_observada": 2.124
   },
   "taxa_sem_amostra": {
-   "valor": 0.14286,
+   "valor": 0.13333,
    "k": 2,
-   "n": 14,
+   "n": 15,
    "ic_wilson_95": [
-    0.04009,
-    0.39941
+    0.03736,
+    0.37882
    ],
    "ic_clopper_pearson_95": [
-    0.01779,
-    0.42813
+    0.01658,
+    0.4046
    ]
   },
+  "janela": {
+   "j": 20,
+   "execucoes_na_janela": 15,
+   "janela_incompleta": true,
+   "copias_na_janela": 120,
+   "avx512_na_janela": 32,
+   "fracao": 0.26667,
+   "p_zero_no_n": 0.01774,
+   "n_recalculado": 13,
+   "n_do_lock": 13,
+   "n_conforme": true,
+   "nota": "o N do lock bate com o recalculado da janela (CP-015: o teste reprova 'N desatualizado' se divergir)"
+  },
   "correlacao_intra_execucao": {
-   "referencia": "binomial(N=8, p=0.39175)",
-   "variancia_binomial": 1.906,
-   "variancia_observada": 2.286,
-   "razao_variancia": 1.199,
-   "estatistica_quiquad_dispersao": 15.588,
-   "graus_de_liberdade": 13,
-   "p_valor_dispersao": 0.2721,
+   "referencia": "binomial(p=0.26667 da janela, n por execução)",
+   "quiquad_homogeneidade": 19.006,
+   "graus_de_liberdade": 14,
+   "p_valor_homogeneidade": 0.1647,
    "leitura_dispersao": "sem sobredispersão detectada — as cópias de um mesmo run comportam-se como sorteios independentes",
-   "media_esperada": 3.134,
-   "media_observada": 2.143,
-   "componente_quiquad_media": 7.213,
-   "fracao_avx512_observada": 0.26786,
-   "fracao_do_lock": 0.39175,
-   "p_cauda_binomial_total": 0.0041
+   "dispersao_vs_lock_da_era": null,
+   "fracao_da_janela": 0.26667,
+   "fracao_congelada_do_lock": 0.39175,
+   "p_cauda_binomial_total": 0.00278
   },
   "veredito": {
    "nao_independente_dispara": false,
    "regra": "taxa > 2% E o limite inferior do IC de 95% (Wilson e Clopper-Pearson) acima de 2%",
-   "n_do_lock": 8,
-   "n_recalculado_da_taxa_observada": 13,
-   "aumento_percentual_n": 62.5,
-   "nota": "NAO_INDEPENDENTE NÃO dispara com estes dados — a taxa pontual está acima de 2% mas o IC cruza o limiar (limite inferior de Wilson 4.01% e de Clopper-Pearson 1.78%, ambos <= 2%): com 14 execuções o poder é baixo; registrar e vigiar, não concluir. A vigilância operacional segue sendo a da CP-013: 3 disparos SEGUIDOS de SEM_AMOSTRA recalculam o N por CP com medição nova"
+   "n_do_lock": 13,
+   "n_recalculado_da_janela": 13,
+   "n_desatualizado": false,
+   "nota": "NAO_INDEPENDENTE NÃO dispara com estes dados — a taxa pontual está acima de 2% mas o IC cruza o limiar (limite inferior de Wilson 3.74% e de Clopper-Pearson 1.66%, ambos <= 2%): com 15 execuções o poder é baixo; registrar e vigiar, não concluir. A vigilância operacional segue sendo a da CP-013: 3 disparos SEGUIDOS de SEM_AMOSTRA recalculam o N por CP com medição nova"
   }
  }
 }

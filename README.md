@@ -199,10 +199,17 @@ dez"). Não existe roteiro de áudio separado. Desde a CP-005, o **timbre animal
   filme mudo não aciona) e aplica a **prova por amostragem da frota**
   (CP-013, executando a decisão do dono de 24/09/2026, saída (e): "a prova
   decisiva é bytes do PCM mixado em cópia AVX-512 visível; AVX2 é observação;
-  sem amostra decisiva é vermelho nomeado"). O job dispara **N cópias** com
-  N do `voz.lock` (bloco `frota`, derivado da fração medida 38/97 — menor N
-  com P(zero cópia AVX-512) ≤ 2%; o teste recalcula de
-  `harness/frota/execucoes.json`). Cada cópia **classifica primeiro**: as
+  sem amostra decisiva é vermelho nomeado") **em DUAS ONDAS** (CP-015,
+  decisão do dono de 25/09/2026: "N pela fração da janela móvel da frota;
+  segunda onda automática quando a primeira não tiver AVX-512; rerun humano
+  deixa de ser o caminho de volta"). O job dispara **N cópias por onda**
+  com N do `voz.lock` (bloco `frota`, **recalculado da fração das últimas
+  J execuções do registro do gate** `harness/frota/execucoes-gate.json` —
+  menor N com P(zero cópia AVX-512) ≤ 2%; o teste recalcula e reprova
+  **"N desatualizado"** se o lock divergir; a fração 38/97 do lock é a
+  origem congelada da CP-013, a fração viva mora na janela; mudança de N
+  é PR de manutenção, nunca commit automático). Cada cópia
+  **classifica primeiro**: as
   **AVX-512** fazem a prova completa da CP-012 — o **hash do PCM mixado**
   (`mix.pcm_f32_sha256` do `audio.json`) tem de bater e o `.opus` decodificado
   fica sob **tolerância decodificada** (teto do lock: base medida −80,9 dBFS +
@@ -215,19 +222,30 @@ dez"). Não existe roteiro de áudio separado. Desde a CP-005, o **timbre animal
   CP-013; o gate de descritores morreu com o `TETO_NAO_DISCRIMINA` medido
   da CP-012). A observação de verdade — **regenerado × âncora, fala a
   fala** (duração, loudness, F0, centróide), com build — é o **dispatch
-  manual `observar_avx2`**, rotulado "observação, sem gate". O
-  **agregador** decide o run: verde com ≥1 cópia AVX-512 idêntica e zero
-  divergentes; `DIVERGENCIA_AVX512` nomeia a cópia; `SEM_AMOSTRA_DECISIVA`
-  (zero avx512) é vermelho nomeado — rerun; amostra ilegível reprova, nunca
-  neutra. Hash **por etapa** (PCM cru → prosódia → timbre → mix → `.opus`),
+  manual `observar_avx2`**, rotulado "observação, sem gate". Se a
+  **primeira onda** termina com ZERO cópias AVX-512, o **roteador**
+  (`ci/rotear_segunda_onda.py`) acorda a **segunda onda automática** no
+  mesmo run (ilegível não vira sorte — a segunda onda não mascara cópia
+  que não provou; o corpo da cópia é um só, o workflow reutilizável
+  `dublador-onda.yml`). O
+  **agregador** decide o run **sobre as duas ondas**: verde com ≥1 cópia
+  AVX-512 idêntica e zero divergentes; `DIVERGENCIA_AVX512` nomeia **onda
+  e cópia**; `SEM_AMOSTRA_DECISIVA` **só nasce após duas ondas vazias**
+  (P = 0,0315% com N=13 e a fração da janela — o vermelho ~50× mais raro,
+  e o caminho de volta automático já rodou); amostra ilegível reprova,
+  nunca neutra — e cópia sem artefato é ilegível, não SEM_AMOSTRA: a
+  estatística do sorteio não se mistura com entrega faltando. Hash
+  **por etapa** (PCM cru → prosódia → timbre → mix → `.opus`),
   classe, máquina, números e veredito seguem no artefato de identidade de
   cada cópia e no agregado do run — que publica a **entrada de registro**
-  da execução (classe por cópia, `SEM_AMOSTRA` sim/não) para o registro
+  da execução (classe por cópia, **ondas usadas**, `SEM_AMOSTRA` sim/não)
+  para o registro
   versionado `harness/frota/execucoes-gate.json` crescer **por PR de
-  manutenção** (nunca commit automático no main): é dele que
+  manutenção** (nunca commit automático no main; o
+  `ci/atualizar_registro_frota.py` junta os agregados baixados): é dele que
   `ci/independencia.py` recalcula a taxa de `SEM_AMOSTRA` e a correlação
-  intra-execução contra a binomial do lock — a independência das cópias é
-  monitorada de dados versionados, não assumida.
+  intra-execução contra a binomial **da janela** — a independência das cópias
+  é monitorada de dados versionados, não assumida.
 - No player, o botão **Som nasce desligado**; sem trilha, ele nem aparece.
   `renderizar(t)` segue pura: o áudio é escravo do tempo, nunca dono dele.
 - O **fiscal de redublagem** reprova quem edita legenda sem redublar — mesmo

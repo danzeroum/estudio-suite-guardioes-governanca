@@ -102,6 +102,25 @@ def main():
     chk(ver["prova"] == "observacao-dispatch-manual",
         "avx2: a prova declarada aponta o dispatch manual (CP-014)")
 
+    # --- CP-015: o campo ONDA (default 1; env ONDA=2 -> 2) -------------
+    chk(ver.get("onda") == 1,
+        "sem env ONDA, o veredito.json declara onda 1 (compatível com a "
+        "era CP-013/014, que não carregava o campo)")
+    chk(ident.get("onda") == 1,
+        "o identidade.json também carrega a onda (default 1)")
+    r = gerar(tmp, {**principais(), "CLASSE_DO_RUNNER": "avx2", "ONDA": "2"})
+    chk(r.returncode == 0, f"env ONDA=2 gera sem erro (exit {r.returncode})")
+    ver2 = json.loads((tmp / "saida" / "veredito.json").read_text())
+    ident2 = json.loads((tmp / "saida" / "identidade.json").read_text())
+    chk(ver2.get("onda") == 2 and ident2.get("onda") == 2,
+        "env ONDA=2 -> veredito.json e identidade.json declaram onda 2 "
+        "(o agregador distingue onda-1/copia-3 de onda-2/copia-3)")
+    r = gerar(tmp, {**principais(), "CLASSE_DO_RUNNER": "avx2",
+                    "ONDA": "lixo"})
+    ver3 = json.loads((tmp / "saida" / "veredito.json").read_text())
+    chk(ver3.get("onda") == 1,
+        "env ONDA ilegível cai no default 1 — campo inteiro, nunca quebrado")
+
     # --- o esquema: todo campo de medição tem estado nomeado ------------
     for secao in ("threads", "classe_simd", "prova"):
         for campo, valor in ident[secao].items():
@@ -190,10 +209,19 @@ def main():
         "avx512 sem prova: a cópia nao-provou (ilegível no agregador)")
 
     # --- o contrato estrutural do workflow ------------------------------
-    wf = (RAIZ / ".github" / "workflows" / "dublador.yml").read_text(
+    # CP-015: o corpo da CÓPIA mora no dublador-onda.yml (reutilizável,
+    # chamado para a onda 1 e para a 2); o dublador.yml é o orquestrador
+    # (planejar, roteador, onda 2 condicional, agregador)
+    wf = (RAIZ / ".github" / "workflows" / "dublador-onda.yml").read_text(
         encoding="utf-8")
     chk("python3 ci/veredito_da_copia.py" in wf,
-        "o veredito/identidade nascem de ci/veredito_da_copia.py no workflow")
+        "o veredito/identidade nascem de ci/veredito_da_copia.py no corpo "
+        "da onda (dublador-onda.yml)")
+    chk("ONDA=${{ inputs.onda }}" in wf,
+        "a onda chega ao veredito.json pelo env ONDA do input da chamada")
+    chk("identidade-onda${{ inputs.onda }}-${{ matrix.copia }}-run${{ github.run_id }}" in wf,
+        "o nome do artefato carrega a ONDA — o padrão que o roteador "
+        "(onda 1) e o agregador (todas) baixam")
     trecho_saida = wf[wf.index("A saída cedo da classe avx2"):]
     fim = trecho_saida.index("# CP-013: daqui para baixo")
     trecho_saida = trecho_saida[:fim]
@@ -210,9 +238,13 @@ def main():
         "o passo de saída cedo não chama observacao_ancora.py (a âncora "
         "não é mais medida no gate)")
     import re as _re
-    chk("pipx install" not in wf,
-        "o gate (dublador.yml) não instala audio-suite em passo NENHUM — "
-        "o instrumento de observação saiu do gate inteiro (CP-014)")
+    chk(not _re.search(r"^\s*continue-on-error:", wf, _re.M),
+        "o corpo da onda segue OBRIGATÓRIO: nenhum continue-on-error")
+    wfd = (RAIZ / ".github" / "workflows" / "dublador.yml").read_text(
+        encoding="utf-8")
+    chk("pipx install" not in wf and "pipx install" not in wfd,
+        "o gate (ondas + orquestrador) não instala audio-suite em passo "
+        "NENHUM — o instrumento de observação saiu do gate inteiro (CP-014)")
     # o workflow de observação existe e é dispatch manual
     wfo = (RAIZ / ".github" / "workflows" / "observar-avx2.yml").read_text(
         encoding="utf-8")
@@ -222,7 +254,7 @@ def main():
     chk("observação, sem gate" in wfo,
         "o dispatch carrega o rótulo 'observação, sem gate'")
 
-    print(f"  {len(ok)} verificações dos rótulos únicos (CP-014).")
+    print(f"  {len(ok)} verificações dos rótulos únicos (CP-014; onda CP-015).")
     if bad:
         for m in bad:
             print(f"  ERRO: {m}", file=sys.stderr)

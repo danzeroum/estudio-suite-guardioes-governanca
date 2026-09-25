@@ -294,17 +294,22 @@ def tolerancia() -> dict:
 
 
 def frota() -> dict:
-    """O bloco `frota:` do lock (CP-013) — a amostragem da prova da frota.
+    """O bloco `frota:` do lock (CP-013/CP-015) — a amostragem da prova.
 
     Raso, lido pelo mesmo parser dos outros blocos: amostragem (N),
-    fracao_avx512f, p_zero_2pct. O N e o numero de copias de cada
-    disparo do job dublador, DERIVADO da fracao medida (38/97) como o
-    menor N com P(nenhuma copia AVX-512) <= 2% — a decisao do dono
-    (24/09/2026, saida (e)): sem amostra decisiva e vermelho nomeado,
-    nunca verde por omissao, e o tamanho da amostra e calculo
-    registrado (harness/frota/execucoes.json), nao afirmado. AUSENTE
-    devolve {} — e quem precisa do N recusa nomeado (lock incompleto),
-    nunca chuta um numero.
+    fracao_avx512f, p_zero_2pct e janela (J). O N e o numero de copias de
+    cada ONDA do job dublador. CP-013: nasceu da fracao congelada 38/97
+    como o menor N com P(nenhuma copia AVX-512) <= 2%. CP-015 (decisao do
+    dono 25/09/2026): o N e RECALCULADO da fracao das ULTIMAS J execucoes
+    do registro do gate (harness/frota/execucoes-gate.json) — a frota e
+    um pool vivo e a janela e o que o descreve; o teste recalcula o N da
+    janela e reprova "N desatualizado" se divergir do valor AQUI, e a
+    mudanca entra por PR de manutencao, nunca por commit automatico.
+    fracao_avx512f e a ORIGEM CONGELADA (38/97, registro historico das
+    CPs 009/011/012); a fracao viva mora no registro do gate. A segunda
+    onda automatica (zero AVX-512 na primeira onda) roda a MESMA matrix N
+    — o N por onda. AUSENTE devolve {} — e quem precisa do N recusa
+    nomeado (lock incompleto), nunca chuta um numero.
     """
     if not LOCK.exists():
         raise ErroDeDados(

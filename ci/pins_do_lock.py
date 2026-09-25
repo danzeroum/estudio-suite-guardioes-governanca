@@ -31,13 +31,15 @@ Comportamento:
                           quatro tetos; sem eles, saida 2 nomeando (o
                           passo mede e publica, o veredito nao fica
                           verde por omissao)
-  --amostragem-n         imprime o N de copias de cada disparo do job
-                          dublador (CP-013, bloco frota do lock) — o
-                          numero DERIVADO da fracao medida da frota
-                          (menor N com P(zero copia AVX-512) <= 2%),
-                          recalculavel de harness/frota/execucoes.json
-                          pelo teste; sem o bloco, saida 2 nomeando
-                          (lock incompleto — o workflow nunca chuta)
+  --amostragem-n         imprime o N de copias de cada ONDA do job
+                          dublador (CP-013, bloco frota do lock; CP-015:
+                          recalculado da fracao da JANELA MOVEL das
+                          ultimas J execucoes do registro do gate — o
+                          menor N com P(zero copia AVX-512) <= 2%,
+                          conferido pelo teste, que reprova "N
+                          desatualizado" se divergir), sem o bloco,
+                          saida 2 nomeando (lock incompleto — o workflow
+                          nunca chuta)
   --conferir python,numpy,scipy
                           mede o ambiente EFETIVO (o mesmo
                           ambiente_instalado() do dublar) e confere as
@@ -293,10 +295,21 @@ def main(argv=None) -> int:
             print(f"ERRO: ancora de amostragem {n} < 1 — lock ilegivel",
                   file=sys.stderr)
             return 2
-        if n > 12:
-            print(f"ERRO: ancora de amostragem {n} > 12 — a matrix do job "
-                  f"dublador nao comporta (limite do workflow); recalculou "
-                  f"a frota por CP com medicao nova?", file=sys.stderr)
+        # CP-015: o limite subiu de 12 para 16 com o N da janela móvel
+        # (13 com a fração 0,2667). 16 cabe: o concorrente do runner
+        # hospedado é 20 jobs, as cópias avx2 saem cedo em SEGUNDOS (o
+        # gate sem instrumento termina na classe avx2 sem custo) e as
+        # ondas são SEQUENCIAIS (a 2 só existe quando a 1 termina) — o
+        # pico de simultaneidade é uma onda de N. N acima disso segue
+        # sendo recusa nomeada: recalculou a frota por CP? O PR de
+        # manutenção mexe no lock E neste limite JUNTOS, nunca um
+        # número chutado num YAML.
+        if n > 16:
+            print(f"ERRO: ancora de amostragem {n} > 16 — a matrix de uma "
+                  f"onda do job dublador nao comporta (limite de "
+                  f"simultaneidade, CP-015); recalculou a frota por CP com "
+                  f"medicao nova? PR de manutenção mexe no lock e no limite "
+                  f"JUNTOS", file=sys.stderr)
             return 2
         print(n)
         return 0

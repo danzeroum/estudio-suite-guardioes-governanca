@@ -1,40 +1,48 @@
 #!/usr/bin/env python3
-"""A independência das cópias, CALCULADA do registro (CP-014, passo 5).
+"""A independência das cópias e o N DA JANELA MÓVEL, CALCULADOS do
+registro (CP-014 passo 5; CP-015 passos 2 e 3).
 
-A diretiva do dono (25/09/2026): "monitorar a independência das cópias"
-— o N=8 do lock nasce de P(zero cópia AVX-512) <= 2% com a fração 38/97
-REGISTRADA, mas fração é estimativa de um pool vivo; as execuções reais
-do gate é que dizem se o modelo descreve a frota de verdade. Este módulo
-lê harness/frota/execucoes-gate.json (o registro versionado, uma entrada
+A diretiva do dono (25/09/2026): "N pela fração da janela móvel da
+frota; segunda onda automática quando a primeira não tiver AVX-512;
+rerun humano deixa de ser o caminho de volta." Este módulo lê
+harness/frota/execucoes-gate.json (o registro versionado, uma entrada
 por TENTATIVA de run do gate) e calcula:
 
-  A TAXA OBSERVADA DE SEM_AMOSTRA       k/n (tentativas com zero cópias
-                                        AVX-512 sobre o total)
-  O IC DE 95% DA TAXA                   Wilson (padrão) e
-                                        Clopper-Pearson (exata,
-                                        conservadora) — implementados em
-                                        math puro, sem scipy
-  A CORRELAÇÃO INTRA-EXECUÇÃO           as cópias AVX-512 por execução
-                                        comparadas à binomial com p =
-                                        38/97 (a fração do lock): a
-                                        DISPERSÃO (variância observada x
-                                        variância binomial; o componente
-                                        de dispersão do qui-quadrado com
-                                        os graus de liberdade) e a MÉDIA
-                                        (fração observada x fração do
-                                        lock, com o binomial exato do
-                                        total)
-  O VEREDITO                            NAO_INDEPENDENTE dispara SÓ se a
-                                        taxa passar de 2% COM o IC de
-                                        95% acima de 2% (limite inferior
-                                        acima de 2%) — a regra da
-                                        diretiva, aplicada aos dois ICs;
-                                        e o N RECAlculado a partir da
-                                        taxa observada (o que o lock
-                                        deveria ancorar SE a tendência
-                                        se confirmar — proposta, nunca
-                                        aplicação unilateral acima de
-                                        50%)
+  A JANELA MÓVEL                  as últimas J execuções do registro (J
+                                  do bloco frota do voz.lock — um lugar
+                                  só). Com menos de J execuções, o
+                                  cálculo usa TODAS e declara "janela
+                                  incompleta" — nunca inventa fração.
+  A FRAÇÃO DA JANELA              avx512/copias das execuções da janela
+                                  — a fração VIVA da frota (a 38/97 do
+                                  lock é a origem congelada da CP-013).
+  O N RECALCULADO                 o menor N com P(zero AVX-512) <= 2%
+                                  sobre a fração da janela — e o FISCAL:
+                                  o N do lock tem de BATER com ele, senão
+                                  "N desatualizado" (o teste reprova; a
+                                  mudança entra por PR de manutenção).
+  A TAXA OBSERVADA DE SEM_AMOSTRA k/n sobre TODAS as tentativas
+                                  registradas (histórico; com a segunda
+                                  onda, SEM_AMOSTRA só nasce após duas
+                                  ondas vazias).
+  O IC DE 95% DA TAXA             Wilson (padrão) e Clopper-Pearson
+                                  (exata, conservadora) — math puro.
+  A CORRELAÇÃO INTRA-EXECUÇÃO     as cópias AVX-512 por execução da
+                                  janela comparadas à binomial com p =
+                                  fração da janela: o qui-quadrado de
+                                  HOMOGENEIDADE com o n de CADA execução
+                                  (execuções de eras diferentes têm n
+                                  diferente — 8, 13, 26 com duas ondas —
+                                  e o teste padrão por execução é o que
+                                  soma certinho); e a MÉDIA (fração da
+                                  janela x fração congelada do lock,
+                                  com o binomial exato do total).
+  O VEREDITO                      NAO_INDEPENDENTE dispara SÓ se a taxa
+                                  passar de 2% COM os DOIS ICs de 95%
+                                  acima de 2% (limite inferior acima de
+                                  2%) — a regra da CP-014, intocada; e o
+                                  N desatualizado é apontado sem disparar
+                                  parada (a correção é PR de manutenção).
 
 O número é reproduzível: o teste (tests/test_independencia.py) refaz
 toda a aritmética a partir do registro e confere o bloco "calculo" que
@@ -108,129 +116,17 @@ def ic_clopper_pearson(k: int, n: int, alfa: float = ALFA) -> tuple:
     return (p_lo, p_hi)
 
 
-# ---- a comparação com a binomial do lock ------------------------------------
-def estatisticas_por_execucao(execucoes: list) -> dict:
-    """contagens de AVX-512 por tentativa, e o básico delas."""
-    contagens = [int(e.get("avx512", 0)) for e in execucoes]
-    n_copias = [int(e.get("n", 0)) for e in execucoes]
-    sem_amostra = [bool(e.get("sem_amostra_decisiva")) for e in execucoes]
-    n = len(contagens)
-    media = sum(contagens) / n if n else 0.0
-    var_obs = (sum((c - media) ** 2 for c in contagens) / (n - 1)
-               if n > 1 else 0.0)
-    return {"contagens": contagens, "n_execucoes": n,
-            "copias_por_execucao": sorted(set(n_copias)),
-            "total_avx512": sum(contagens),
-            "total_copias": sum(n_copias),
-            "sem_amostra": sum(1 for s in sem_amostra if s),
-            "media_avx512_por_execucao": round(media, 3),
-            "variancia_observada": round(var_obs, 3)}
-
-
-def calcular(execucoes: list, p_lock: float, n_lock: int,
-             p_zero_alvo: float = 0.02) -> dict:
-    """O cálculo inteiro, do registro ao veredito."""
-    est = estatisticas_por_execucao(execucoes)
-    n_exec = est["n_execucoes"]
-    k_sem = est["sem_amostra"]
-
-    taxa = (k_sem / n_exec) if n_exec else 0.0
-    wil = ic_wilson(k_sem, n_exec)
-    cp = ic_clopper_pearson(k_sem, n_exec)
-
-    # ---- correlação intra-execução: binomial(n_lock, p_lock) -------------
-    # o N por execução conferido: registro e lock têm de concordar
-    n_por_exec = set(est["copias_por_execucao"])
-    media_esp = n_lock * p_lock
-    var_esp = n_lock * p_lock * (1 - p_lock)
-    # componente de dispersão do qui-quadrado (desvio ao REDOR da média
-    # observada — o que sobra depois de tirar o componente de média):
-    cont = est["contagens"]
-    media_obs = est["media_avx512_por_execucao"]
-    disp = (sum((c - media_obs) ** 2 for c in cont) / var_esp
-            if var_esp and n_exec > 1 else 0.0)
-    gl_disp = n_exec - 1 if n_exec > 1 else 0
-    # componente de média (desvio da média observada à esperada):
-    comp_media = (n_exec * (media_obs - media_esp) ** 2 / var_esp
-                  if var_esp else 0.0)
-    # p-valor do qui-quadrado por sobrevivência da função gama incompleta
-    p_disp = _p_quiquad(disp, gl_disp) if gl_disp else 1.0
-
-    # a fração observada x a fração do lock (binomial exato do total)
-    total_avx, total_copias = est["total_avx512"], est["total_copias"]
-    p_frac_obs = (total_avx / total_copias) if total_copias else 0.0
-    # P(X <= observado) sob Bin(total, p_lock) — cauda inferior
-    p_cauda_frac = _binom_cdf_ate(total_avx, total_copias, p_lock) \
-        if total_copias else 1.0
-
-    # ---- o veredito da diretiva -------------------------------------------
-    dispara_wilson = taxa > p_zero_alvo and wil[0] > p_zero_alvo
-    dispara_cp = taxa > p_zero_alvo and cp[0] > p_zero_alvo
-    nao_independente = dispara_wilson and dispara_cp
-
-    # N recalculado a partir da taxa observada (a frota medida): o menor N
-    # com P(zero) <= alvo usando a FRAÇÃO OBSERVADA por cópia
-    fracao_obs = p_frac_obs
-    if 0.0 < fracao_obs < 1.0:
-        n_obs = 1
-        while (1.0 - fracao_obs) ** n_obs > p_zero_alvo:
-            n_obs += 1
-        aumento = (n_obs - n_lock) / n_lock if n_lock else None
-    else:
-        n_obs, aumento = None, None
-
-    return {
-        "execucoes": est,
-        "taxa_sem_amostra": {
-            "valor": round(taxa, 5),
-            "k": k_sem, "n": n_exec,
-            "ic_wilson_95": [round(wil[0], 5), round(wil[1], 5)],
-            "ic_clopper_pearson_95": [round(cp[0], 5), round(cp[1], 5)],
-        },
-        "correlacao_intra_execucao": {
-            "referencia": f"binomial(N={n_lock}, p={p_lock:.5f})",
-            "variancia_binomial": round(var_esp, 3),
-            "variancia_observada": est["variancia_observada"],
-            "razao_variancia": (round(est["variancia_observada"] / var_esp, 3)
-                                if var_esp else None),
-            "estatistica_quiquad_dispersao": round(disp, 3),
-            "graus_de_liberdade": gl_disp,
-            "p_valor_dispersao": round(p_disp, 4),
-            "leitura_dispersao": (
-                "sem sobredispersão detectada — as cópias de um mesmo run "
-                "comportam-se como sorteios independentes"
-                if p_disp > 0.05 else
-                "SOBREDISPERSÃO: as cópias de um mesmo run não são "
-                "sorteios independentes — correlação intra-execução"),
-            "media_esperada": round(media_esp, 3),
-            "media_observada": est["media_avx512_por_execucao"],
-            "componente_quiquad_media": round(comp_media, 3),
-            "fracao_avx512_observada": round(fracao_obs, 5),
-            "fracao_do_lock": round(p_lock, 5),
-            "p_cauda_binomial_total": round(p_cauda_frac, 5),
-        },
-        "veredito": {
-            "nao_independente_dispara": nao_independente,
-            "regra": ("taxa > 2% E o limite inferior do IC de 95% (Wilson e "
-                      "Clopper-Pearson) acima de 2%"),
-            "n_do_lock": n_lock,
-            "n_recalculado_da_taxa_observada": n_obs,
-            "aumento_percentual_n": (round(aumento * 100, 1)
-                                     if aumento is not None else None),
-            "nota": (
-                f"NAO_INDEPENDENTE NÃO dispara com estes dados — a taxa "
-                f"pontual está acima de 2% mas o IC cruza o limiar (limite "
-                f"inferior de Wilson {wil[0]:.2%} e de Clopper-Pearson "
-                f"{cp[0]:.2%}, ambos <= 2%): com {n_exec} execuções o poder "
-                f"é baixo; registrar e vigiar, não concluir. A vigilância "
-                f"operacional segue sendo a da CP-013: 3 disparos SEGUIDOS "
-                f"de SEM_AMOSTRA recalculam o N por CP com medição nova"
-                if not nao_independente else
-                "NAO_INDEPENDENTE — registrar, recalcular N e propor por "
-                "CP; aplicação unilateral proibida se o N subir mais de "
-                "50%"),
-        },
-    }
+# ---- o N da janela móvel (CP-015, passo 3) ---------------------------------
+def menor_n_com_p_zero(p: float, alvo: float = 0.02) -> int:
+    """O menor N com P(zero AVX-512 em N cópias) <= alvo, dado p — a
+    definição literal da diretiva. p fora de (0,1) não tem resposta
+    honesta: levanta (o chamador nomeia)."""
+    if not (0.0 < p < 1.0):
+        raise ValueError(f"fração {p!r} fora de (0,1) — sem N honesto")
+    n = 1
+    while (1.0 - p) ** n > alvo:
+        n += 1
+    return n
 
 
 def _gammq(a: float, x: float) -> float:
@@ -282,6 +178,187 @@ def _p_quiquad(x: float, gl: int) -> float:
     return _gammq(gl / 2.0, x / 2.0)
 
 
+# ---- a comparação com a binomial da janela ---------------------------------
+def estatisticas_por_execucao(execucoes: list) -> dict:
+    """contagens de AVX-512 por tentativa (com o n de cada uma), e o básico."""
+    contagens = [int(e.get("avx512", 0)) for e in execucoes]
+    n_copias = [int(e.get("n", 0)) for e in execucoes]
+    sem_amostra = [bool(e.get("sem_amostra_decisiva")) for e in execucoes]
+    n = len(contagens)
+    media = sum(contagens) / n if n else 0.0
+    var_obs = (sum((c - media) ** 2 for c in contagens) / (n - 1)
+               if n > 1 else 0.0)
+    return {"contagens": contagens, "n_execucoes": n,
+            "n_por_execucao": n_copias,
+            "total_avx512": sum(contagens),
+            "total_copias": sum(n_copias),
+            "sem_amostra": sum(1 for s in sem_amostra if s),
+            "media_avx512_por_execucao": round(media, 3),
+            "variancia_observada": round(var_obs, 3)}
+
+
+def calcular(execucoes: list, p_lock: float, n_lock: int,
+             janela: int = None, p_zero_alvo: float = 0.02) -> dict:
+    """O cálculo inteiro, do registro ao veredito.
+
+    p_lock/n_lock: a fração CONGELADA (origem CP-013, 38/97) e o N atual
+    do lock — o fiscal "N desatualizado" compara o N da janela com este.
+    janela: J do lock; None usa todas as execuções (sem janela declarada).
+    """
+    est = estatisticas_por_execucao(execucoes)
+    n_exec = est["n_execucoes"]
+    k_sem = est["sem_amostra"]
+
+    # ---- a janela móvel (CP-015): as últimas J execuções ----------------
+    j = int(janela) if janela else None
+    if j and j > 0:
+        janela_execs = execucoes[-j:]
+        incompleta = len(execucoes) < j
+    else:
+        janela_execs = execucoes
+        incompleta = False
+    est_j = estatisticas_por_execucao(janela_execs)
+    total_avx_j, total_copias_j = est_j["total_avx512"], est_j["total_copias"]
+    p_janela = (total_avx_j / total_copias_j) if total_copias_j else None
+
+    # o N recalculado da fração da janela — e o FISCAL do lock
+    if p_janela is not None and 0.0 < p_janela < 1.0:
+        n_janela = menor_n_com_p_zero(p_janela, p_zero_alvo)
+        p_zero_no_n = (1.0 - p_janela) ** n_janela
+        n_conforme = (n_janela == n_lock)
+    else:
+        n_janela, p_zero_no_n, n_conforme = None, None, False
+
+    taxa = (k_sem / n_exec) if n_exec else 0.0
+    wil = ic_wilson(k_sem, n_exec)
+    cp = ic_clopper_pearson(k_sem, n_exec)
+
+    # ---- correlação intra-execução: binomial(p = fração da janela) ------
+    # qui-quadrado de HOMOGENEIDADE com o n de CADA execução da janela
+    # (X² = Σ (obs−n·p)²/(n·p·(1−p)), g.l. = E−1): execuções de eras
+    # diferentes têm n diferente (8, 13, 26 com duas ondas) e este é o
+    # teste que soma certinho; a fração pooled é o estimador, então o
+    # componente de média é zero por construção — sobrou só dispersão
+    cont_j = est_j["contagens"]
+    n_por_exec_j = est_j["n_por_execucao"]
+    homog = dispersao = None
+    gl = len(cont_j) - 1 if len(cont_j) > 1 else 0
+    if p_janela is not None and 0.0 < p_janela < 1.0 and gl > 0:
+        homog = sum((o - ni * p_janela) ** 2 / (ni * p_janela * (1 - p_janela))
+                    for o, ni in zip(cont_j, n_por_exec_j) if ni > 0)
+        p_homog = _p_quiquad(homog, gl)
+        # a leitura histórica (CP-014): dispersão ao redor da MÉDIA
+        # observada contra a variância binomial do lock com n_lock — só
+        # faz sentido quando a janela é toda do mesmo n; publicada como
+        # referência de era quando for o caso
+        if len(set(n_por_exec_j)) == 1 and n_por_exec_j[0] == n_lock:
+            var_esp = n_lock * p_lock * (1 - p_lock)
+            media_obs_j = est_j["media_avx512_por_execucao"]
+            dispersao = (sum((c - media_obs_j) ** 2 for c in cont_j) / var_esp
+                         if var_esp else 0.0)
+    else:
+        p_homog = 1.0
+
+    # a fração da janela x a fração congelada do lock (binomial exato)
+    p_cauda_frac = (_binom_cdf_ate(total_avx_j, total_copias_j, p_lock)
+                    if total_copias_j else 1.0)
+
+    # ---- o veredito da diretiva -------------------------------------------
+    dispara_wilson = taxa > p_zero_alvo and wil[0] > p_zero_alvo
+    dispara_cp = taxa > p_zero_alvo and cp[0] > p_zero_alvo
+    nao_independente = dispara_wilson and dispara_cp
+
+    janela_doc = {
+        "j": j,
+        "execucoes_na_janela": est_j["n_execucoes"],
+        "janela_incompleta": bool(incompleta),
+        "copias_na_janela": total_copias_j,
+        "avx512_na_janela": total_avx_j,
+        "fracao": round(p_janela, 5) if p_janela is not None else None,
+        "p_zero_no_n": round(p_zero_no_n, 5) if p_zero_no_n is not None else None,
+        "n_recalculado": n_janela,
+        "n_do_lock": n_lock,
+        "n_conforme": bool(n_conforme),
+        "nota": (
+            "o N do lock bate com o recalculado da janela (CP-015: o teste "
+            "reprova 'N desatualizado' se divergir)"
+            if n_conforme else
+            f"N DESATUALIZADO: o lock ancora {n_lock} e a janela calcula "
+            f"{n_janela} com a fração {p_janela:.5f} — PR de manutenção é o "
+            f"caminho, commit automático jamais" if n_janela is not None else
+            "sem cópias na janela: fração indefinida — nada afirmado"),
+    }
+
+    return {
+        "execucoes": est,
+        "taxa_sem_amostra": {
+            "valor": round(taxa, 5),
+            "k": k_sem, "n": n_exec,
+            "ic_wilson_95": [round(wil[0], 5), round(wil[1], 5)],
+            "ic_clopper_pearson_95": [round(cp[0], 5), round(cp[1], 5)],
+        },
+        "janela": janela_doc,
+        "correlacao_intra_execucao": {
+            "referencia": (f"binomial(p={p_janela:.5f} da janela, "
+                           f"n por execução)" if p_janela is not None
+                           else "sem janela"),
+            "quiquad_homogeneidade": (round(homog, 3)
+                                      if homog is not None else None),
+            "graus_de_liberdade": gl,
+            "p_valor_homogeneidade": round(p_homog, 4),
+            "leitura_dispersao": (
+                "sem sobredispersão detectada — as cópias de um mesmo run "
+                "comportam-se como sorteios independentes"
+                if p_homog > 0.05 else
+                "SOBREDISPERSÃO: as cópias de um mesmo run não são "
+                "sorteios independentes — correlação intra-execução"),
+            "dispersao_vs_lock_da_era": (round(dispersao, 3)
+                                         if dispersao is not None else None),
+            "fracao_da_janela": (round(p_janela, 5)
+                                 if p_janela is not None else None),
+            "fracao_congelada_do_lock": round(p_lock, 5),
+            "p_cauda_binomial_total": round(p_cauda_frac, 5),
+        },
+        "veredito": {
+            "nao_independente_dispara": nao_independente,
+            "regra": ("taxa > 2% E o limite inferior do IC de 95% (Wilson e "
+                      "Clopper-Pearson) acima de 2%"),
+            "n_do_lock": n_lock,
+            "n_recalculado_da_janela": n_janela,
+            "n_desatualizado": bool(n_janela is not None
+                                    and n_janela != n_lock),
+            "nota": (
+                f"NAO_INDEPENDENTE NÃO dispara com estes dados — a taxa "
+                f"pontual está acima de 2% mas o IC cruza o limiar (limite "
+                f"inferior de Wilson {wil[0]:.2%} e de Clopper-Pearson "
+                f"{cp[0]:.2%}, ambos <= 2%): com {n_exec} execuções o poder "
+                f"é baixo; registrar e vigiar, não concluir. A vigilância "
+                f"operacional segue sendo a da CP-013: 3 disparos SEGUIDOS "
+                f"de SEM_AMOSTRA recalculam o N por CP com medição nova"
+                if not nao_independente else
+                "NAO_INDEPENDENTE — registrar, recalcular N e propor por "
+                "CP; aplicação unilateral proibida se o N subir mais de "
+                "50%"),
+        },
+    }
+
+
+def calcular_do_registro(doc: dict) -> dict:
+    """O bloco 'calculo' inteiro de um registro — J, N e p_zero do LOCK
+    (o lugar único), p_lock da origem congelada. É esta função que o
+    ci/atualizar_registro_frota.py usa para regravar o bloco e o teste
+    usa para reconferir: um caminho só, número reproduzível."""
+    fr = voz.frota()
+    n_lock = int(str(fr["amostragem"]).strip())
+    frac = str(fr.get("fracao_avx512f", "")).strip()
+    num, den = frac.split("/")
+    p_lock = int(num) / int(den)
+    p_zero = float(str(fr.get("p_zero_2pct", "0.02")).strip() or "0.02")
+    j = int(str(fr.get("janela", "0")).strip() or "0") or None
+    return calcular(doc["execucoes"], p_lock, n_lock, janela=j,
+                    p_zero_alvo=p_zero)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--registro", default=str(
@@ -294,32 +371,38 @@ def main() -> int:
     frac = str(fr.get("fracao_avx512f", "")).strip()
     num, den = frac.split("/")
     p_lock = int(num) / int(den)
+    j = int(str(fr.get("janela", "0")).strip() or "0") or None
 
-    calc = calcular(doc["execucoes"], p_lock, n_lock)
-    print("== INDEPENDÊNCIA DAS CÓPIAS (CP-014 — do registro "
-          f"{Path(args.registro).name})")
+    calc = calcular(doc["execucoes"], p_lock, n_lock, janela=j)
+    print("== INDEPENDÊNCIA DAS CÓPIAS E N DA JANELA (CP-014/CP-015 — do "
+          f"registro {Path(args.registro).name})")
     t = calc["taxa_sem_amostra"]
-    print(f"   taxa SEM_AMOSTRA: {t['k']}/{t['n']} = {t['valor']:.3%}")
+    print(f"   taxa SEM_AMOSTRA (histórico do registro): "
+          f"{t['k']}/{t['n']} = {t['valor']:.3%}")
     print(f"   IC95 Wilson:        [{t['ic_wilson_95'][0]:.2%}, "
           f"{t['ic_wilson_95'][1]:.2%}]")
     print(f"   IC95 Clopper-Pearson: [{t['ic_clopper_pearson_95'][0]:.2%}, "
           f"{t['ic_clopper_pearson_95'][1]:.2%}]")
+    ja = calc["janela"]
+    incompleta = (" (JANELA INCOMPLETA — o cálculo usa todas, nunca "
+                  "inventa fração)" if ja["janela_incompleta"] else "")
+    print(f"   janela: J={ja['j']} | {ja['execucoes_na_janela']} execuções"
+          f"{incompleta} | fração {ja['fracao']}")
+    print(f"   N da janela: {ja['n_recalculado']} (P(zero)="
+          f"{ja['p_zero_no_n']}) x N do lock {ja['n_do_lock']} — "
+          f"{'CONFORME' if ja['n_conforme'] else 'N DESATUALIZADO'}")
     c = calc["correlacao_intra_execucao"]
-    print(f"   dispersão: var obs {c['variancia_observada']} x binomial "
-          f"{c['variancia_binomial']} (razão {c['razao_variancia']}) — "
-          f"qui-quadrado de dispersão {c['estatistica_quiquad_dispersao']} "
-          f"em {c['graus_de_liberdade']} g.l., p={c['p_valor_dispersao']:.3f}")
-    print(f"   média: obs {c['media_observada']} x esperada "
-          f"{c['media_esperada']} — fração obs "
-          f"{c['fracao_avx512_observada']:.1%} x lock "
-          f"{c['fracao_do_lock']:.1%} (cauda {c['p_cauda_binomial_total']:.4f})")
+    print(f"   homogeneidade: qui-quadrado {c['quiquad_homogeneidade']} em "
+          f"{c['graus_de_liberdade']} g.l., p={c['p_valor_homogeneidade']:.3f}"
+          f" — {c['leitura_dispersao']}")
+    print(f"   fração da janela {c['fracao_da_janela']} x congelada "
+          f"{c['fracao_congelada_do_lock']} (cauda "
+          f"{c['p_cauda_binomial_total']:.4f})")
     v = calc["veredito"]
     print(f"   VEREDITO: NAO_INDEPENDENTE dispara = "
-          f"{v['nao_independente_dispara']}")
-    if v["n_recalculado_da_taxa_observada"]:
-        print(f"   N recalculado da taxa observada: "
-              f"{v['n_do_lock']} -> {v['n_recalculado_da_taxa_observada']} "
-              f"(+{v['aumento_percentual_n']}%)")
+          f"{v['nao_independente_dispara']}"
+          + (" | N DESATUALIZADO — PR de manutenção é o caminho"
+             if v["n_desatualizado"] else ""))
     print(f"   {v['nota']}")
     return 0
 

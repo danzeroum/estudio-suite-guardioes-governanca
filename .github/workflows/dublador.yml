@@ -34,15 +34,7 @@ name: Dublador
 # identico entre as duas familias) + o .opus DECODIFICADO sob o teto do
 # lock (base -80.9 dBFS + margem 6 = -74.9, abaixo de -60) + CONTROLE
 # POSITIVO (ruido 6 dB acima do teto reprova citando o numero; teto que
-# nao pega e TETO_NAO_DISCRIMINA). Classe avx2: o PCM diverge no cru e
-# a nulidade nao e audibilidade — a validacao e por DESCRITORES por
-# fala (loudness, F0 mediana/pitch_f0, centroide, duracao) contra os
-# tetos do lock, com CONTROLES POSITIVOS (+0,5 dB, +20 cents, fala
-# trocada do mesmo guardiao, 50 ms de corte) reprovando em toda
-# execucao. Sem o teto da sua classe, o job RECUSA (lock incompleto) --
-# nunca verde por omissao. O log e o artefato dizem SEMPRE qual prova
-# rodou, com que classe e com que numeros -- verificacao (bytes no PCM)
-# e validacao (teto do codec / descritores) nunca se confundem.
+# nao pega e TETO_NAO_DISCRIMINA).
 #
 # CP-013: a decisao do dono (24/09/2026, saida (e)) — "a prova
 # decisiva e bytes do PCM mixado em copia AVX-512 visivel; AVX2 e
@@ -50,51 +42,60 @@ name: Dublador
 # TETO_NAO_DISCRIMINA da CP-012 SEM ajustar instrumento ou controle:
 # nenhum teto de descritor entra no lock como gate. O job vira
 # AMOSTRAGEM DA FROTA: a matrix de copias nasce do N do LOCK (bloco
-# frota, derivado da fracao medida 38/97 — o menor N com P(zero copia
-# AVX-512) <= 2%, recalculavel de harness/frota/execucoes.json pelo
-# teste; nunca digitado aqui). Cada copia CLASSIFICA primeiro (o
-# classificador unico de estudio_suite/voz.py): avx512 -> build e a
-# prova completa da CP-012 (PCM identico + codec sob teto + controle
-# vivo); avx2 -> sai CEDO: publica classe e identidade, mede os
-# descritores da ANCORRA como observacao (sem gate, sem build —
-# ci/observacao_ancora.py: o runner decodifica o .opus commitado com
-# libsndfile e o audio-suite mede os segmentos; a medida do
-# regenerado exigiria build e nao roda) e termina NEUTRA. O job
-# AGREGADOR decide o run inteiro: verde com >=1 copia AVX-512 com PCM
-# identico E zero divergentes; DIVERGENCIA_AVX512 nomeia a copia;
-# SEM_AMOSTRA_DECISIVA e vermelho nomeado (zero avx512 — o caminho de
-# volta e o RERUN, o N do lock da P <= 2%); amostra ilegivel
-# (ausente, corrompida ou avx512 sem prova) reprova, nunca conta como
-# neutra. O job segue OBRIGATORIO: sem continue-on-error em passo
-# nenhum do gate — a observacao avx2 e o UNICO passo tolerante a
-# falha DE PROPOSITO (a falha vira status publicado no artefato:
-# observacao nao e gate), e tudo o mais reprova.
+# frota — recalculado da JANELA MOVEL do registro desde a CP-015, nunca
+# digitado aqui). Cada copia CLASSIFICA primeiro: avx512 -> build e a
+# prova completa da CP-012; avx2 -> sai CEDO (CP-014: sem build, sem
+# gate, sem audio-suite, sem medir a âncora) e termina NEUTRA. O job
+# AGREGADOR decide o run inteiro sobre TODAS AS ONDAS.
 #
-# FROTA COMPROVADA (head a20377e, 24-25/09/2026, CP-013): 5 disparos do
-# job (PR x2 + 3 dispatches) — 8 cópias AVX-512 IDENTICAS (3 Intel:
-# 8573C/6973P-C; 5 AMD-avx512: 9V45/9V74), zero divergentes, zero
-# ilegiveis, controle do codec reprovando em todas (-68,63 a -68,9 x
-# teto -74,9); 33 cópias avx2 em observação (âncora medida sem build, F0
-# por voz idêntica entre cópias); SEM_AMOSTRA_DECISIVA ocorreu 1 vez
-# (8/8 avx2) — vermelho nomeado, e o RERUN devolveu o verde: o desenho
-# funcionou como especificado.
+# FROTA COMPROVADA (CP-013, 24-25/09/2026): 12 cópias AVX-512 IDENTICAS
+# nos heads finais (Intel de duas gerações + AMD-avx512), zero
+# divergentes, controle do codec reprovando em todas; 33 cópias avx2 em
+# observação; SEM_AMOSTRA_DECISIVA ocorreu 2x — vermelho nomeado, e o
+# RERUN devolveu o verde nas duas: o desenho funcionou como especificado
+# (e as duas ocorrências entraram no registro, com a fonte declarada).
 #
 # CP-014 (25/09/2026, diretiva do dono): a cópia avx2 do gate sai
 # cedo SEM instalar audio-suite e SEM medir a âncora commitada — "medir
-# o mesmo arquivo em toda cópia não traz informação" (a âncora é uma
-# só, independente de classe: 33 cópias mediram valores idênticos na
-# CP-013). A observação de verdade — regenerado x âncora, fala a fala,
-# com build — é o DISPATCH MANUAL observar_avx2
-# (.github/workflows/observar-avx2.yml), disparado quando se quer
-# olhar, rotulado "observação, sem gate". O veredito e a identidade
-# da cópia passam a nascer de ci/veredito_da_copia.py com RÓTULOS
-# ÚNICOS: medido:<valor>, falhou:<motivo>, nao_aplicavel:<motivo> — a
-# cópia avx2 declara os campos de síntese como nao_aplicavel:classe_avx2,
-# e texto com "ou" reprova a geração (rótulo ambíguo não publica). O
-# agregador publica no agregado.json a entrada de registro de cada
-# execução (classe por cópia, SEM_AMOSTRA sim/não) para o registro
-# versionado harness/frota/execucoes-gate.json crescer por PR de
+# o mesmo arquivo em toda cópia não traz informação". A observação de
+# verdade — regenerado x âncora, fala a fala, com build — é o DISPATCH
+# MANUAL observar_avx2 (.github/workflows/observar-avx2.yml), rotulado
+# "observação, sem gate". O veredito e a identidade da cópia nascem de
+# ci/veredito_da_copia.py com RÓTULOS ÚNICOS: medido:<valor>,
+# falhou:<motivo>, nao_aplicavel:<motivo> — texto com "ou" reprova a
+# geração. O agregador publica no agregado.json a entrada de registro
+# de cada execução para o registro versionado crescer por PR de
 # manutenção — commit automático no main, jamais.
+#
+# CP-015 (25/09/2026, decisão do dono): "N pela fração da janela móvel
+# da frota; segunda onda automática quando a primeira não tiver
+# AVX-512; rerun humano deixa de ser o caminho de volta." A estrutura
+# do workflow vira DUAS ONDAS e um ROTEADOR:
+#
+#   planejar        o N do lock (recalculado da janela), os filmes que
+#                   declaram audio, e se este PR acorda o job caro
+#   dublador-onda1  a onda 1 — matrix de N cópias no workflow
+#                   REUTILIZÁVEL dublador-onda.yml (o corpo da cópia é
+#                   um só para as duas ondas)
+#   rotear          olha a onda 1 (ci/rotear_segunda_onda.py): a segunda
+#                   onda acorda SE E SÓ SE todas as cópias da onda 1 são
+#                   avx2 (zero AVX-512 no sorteio) e tudo é legível —
+#                   ilegível NÃO vira outra sorte, o agregador nomeia
+#   dublador-onda2  a onda 2 — a MESMA matrix N, os MESMOS passos, o
+#                   número da onda diferente no veredito e no artefato
+#   agregar         o veredito do RUN sobre TODAS as ondas declaradas:
+#                   verde com >=1 AVX-512 idêntica e zero divergentes;
+#                   DIVERGENCIA_AVX512 nomeia ONDA e cópia;
+#                   SEM_AMOSTRA_DECISIVA só nasce após DUAS ondas vazias
+#                   (P(duas) = 0,0315% com N=13 e a fração da janela) e
+#                   continua vermelho nomeado — mas o caminho de volta
+#                   automático JÁ RODOU dentro do run; ilegível reprova,
+#                   nunca neutra.
+#
+# O N não é digitado aqui nem no dublador-onda.yml: o planejar pergunta
+# ao lock (ci/pins_do_lock.py --amostragem-n), o lock é recalculado da
+# janela do registro pelo teste, e a mudança de N é PR de manutenção —
+# nunca commit automático.
 #
 # CP-011: o FILTRO POR DECLARACAO. O job so processa filmes que DECLARAM
 # audio (audio: true no proprio filme.js, lido de la -- nunca de lista de
@@ -103,11 +104,11 @@ name: Dublador
 # mudados contra a lista dos que declaram.
 
 on:
-  # CP-013: sem input de rodadas — o N das copias mora no voz.lock
-  # (bloco frota), lido pelo planejar. Um input que sobrescrevesse o
-  # N seria a segunda morada do numero; matrix fora do tamanho do
-  # lock e recusada pelo agregador (--conferir-n), nunca verde por
-  # omissao.
+  # CP-013/CP-015: sem input de rodadas ou de N — o N das cópias mora no
+  # voz.lock (bloco frota, recalculado da janela do registro), lido pelo
+  # planejar. Um input que sobrescrevesse o N seria a segunda morada do
+  # numero; matrix fora do tamanho do lock é recusada pelo agregador
+  # (--conferir-n), nunca verde por omissão.
   workflow_dispatch:
   pull_request:
     paths:
@@ -127,22 +128,26 @@ on:
       - 'ci/observacao_ancora.py'
       - 'ci/observar_avx2.py'
       - 'ci/independencia.py'
+      - 'ci/rotear_segunda_onda.py'
+      - 'ci/atualizar_registro_frota.py'
       - 'harness/frota/execucoes.json'
       - 'harness/frota/execucoes-gate.json'
       - '.github/workflows/dublador.yml'
+      - '.github/workflows/dublador-onda.yml'
       - '.github/workflows/observar-avx2.yml'
       - 'filmes/*/*.filme.js'
 
 jobs:
-  # A matrix de copias nasce AQUI — e do LOCK (CP-013): o N e derivado
-  # da fracao medida da frota (bloco frota do voz.lock) e lido por
-  # ci/pins_do_lock.py --amostragem-n; lock sem o bloco reprova o job
-  # com causa nomeada (lock incompleto), nunca uma matrix chutada.
-  # fail-fast desligado de proposito: numa frota heterogenea, cancelar
-  # as outras copias na primeira falha destruiria exatamente a
-  # evidencia que o diagnostico precisa (quem passou x quem falhou).
-  # O veredito do run NAO e de copia nenhuma: e do AGREGADOR, o job
-  # final. O job segue OBRIGATORIO: sem continue-on-error.
+  # A matrix de copias nasce AQUI — e do LOCK (CP-013; CP-015: o N é o da
+  # janela): o N é derivado da fração das últimas J execuções do registro
+  # do gate (bloco frota do voz.lock) e lido por ci/pins_do_lock.py
+  # --amostragem-n; lock sem o bloco reprova o job com causa nomeada
+  # (lock incompleto), nunca uma matrix chutada. fail-fast desligado de
+  # proposito: numa frota heterogenea, cancelar as outras copias na
+  # primeira falha destruiria exatamente a evidencia que o diagnostico
+  # precisa (quem passou x quem falhou). O veredito do run NAO e de copia
+  # nenhuma: e do AGREGADOR, o job final. O job segue OBRIGATORIO: sem
+  # continue-on-error.
   #
   # CP-011: aqui tambem nasce o FILTRO POR DECLARACAO -- a lista de
   # filmes que declaram audio (do proprio filme.js) e a decisao de rodar
@@ -162,10 +167,11 @@ jobs:
       - id: copias
         shell: bash
         run: |
-          # CP-013: o N vem do lock (bloco frota, fracao medida 38/97;
-          # o teste recalcula de harness/frota/execucoes.json). O pin
-          # falha (exit 2, lock INCOMPLETO nomeado) se o bloco sumir —
-          # o job nao monta matrix com numero chutado.
+          # CP-013/CP-015: o N vem do lock (bloco frota — da fração da
+          # JANELA MÓVEL do registro; o teste recalcula e fiscaliza
+          # "N desatualizado"). O pin falha (exit 2, lock INCOMPLETO
+          # nomeado) se o bloco sumir — o job nao monta matrix com
+          # numero chutado.
           N=$(python3 ci/pins_do_lock.py --amostragem-n)
           lista="["
           i=1
@@ -175,7 +181,7 @@ jobs:
             i=$((i+1))
           done
           echo "lista=$lista]" >> "$GITHUB_OUTPUT"
-          echo "copias: $lista] (N do lock: $N — CP-013, decisao (e))"
+          echo "copias: $lista] (N do lock: $N — CP-013/CP-015, decisão (e) + janela móvel)"
 
       # CP-011: quem declara audio, lido do PROPRIO filme (nunca lista de
       # nomes); e se este PR acorda o job caro. Acordam o job: mudanca em
@@ -215,10 +221,12 @@ jobs:
                         "ci/pins_do_lock.py", "ci/prova_por_classe.py",
                         "ci/agregar_prova.py", "ci/veredito_da_copia.py",
                         "ci/observacao_ancora.py", "ci/observar_avx2.py",
-                        "ci/independencia.py",
+                        "ci/independencia.py", "ci/rotear_segunda_onda.py",
+                        "ci/atualizar_registro_frota.py",
                         "harness/frota/execucoes.json",
                         "harness/frota/execucoes-gate.json",
                         ".github/workflows/dublador.yml",
+                        ".github/workflows/dublador-onda.yml",
                         ".github/workflows/observar-avx2.yml")
                   or p.startswith(("estudio_suite/", "ferramentas/dublador/"))
                   for p in muda)
@@ -253,405 +261,149 @@ jobs:
           done < <(grep -E '^(filmes|rodar|motivo)=' /tmp/planejar.log)
           echo "== filtro (CP-011): $(grep '^motivo=' /tmp/planejar.log | cut -d= -f2-)"
 
-  dublador:
+  # CP-015: a ONDA 1 — o workflow reutilizável dublador-onda.yml com a
+  # matrix do lock. O corpo da cópia mora LÁ (um só lugar para as duas
+  # ondas): classificação, saída cedo da avx2, build e prova completa da
+  # avx512, veredito/identidade rotulados com o número da onda.
+  dublador-onda1:
     needs: planejar
     if: needs.planejar.outputs.rodar == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        copia: ${{ fromJSON(needs.planejar.outputs.copias) }}
+    uses: ./.github/workflows/dublador-onda.yml
+    with:
+      copias: ${{ needs.planejar.outputs.copias }}
+      filmes: ${{ needs.planejar.outputs.filmes }}
+      onda: 1
+
+  # CP-015: O ROTEADOR — olha a onda 1 e decide se a segunda acorda.
+  # Roda com if: always() (a onda 1 pode ter cópia vermelha — o roteador
+  # não decide o veredito, só a ROTA). A regra é UMA: segunda onda acorda
+  # se e somente se TODAS as cópias esperadas da onda 1 são legíveis e
+  # TODAS são avx2 — zero AVX-512 no sorteio. Com qualquer AVX-512
+  # (idêntica, divergente ou nao-provou), com artefato ausente ou
+  # corrompido: NÃO acorda — esses estados são do AGREGADOR, e a segunda
+  # onda não existe para mascarar cópia ilegível (ilegível reprova,
+  # nunca vira outra sorte).
+  rotear:
+    needs: [planejar, dublador-onda1]
+    if: always() && needs.planejar.outputs.rodar == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 10
+    outputs:
+      segunda_onda: ${{ steps.rotear.outputs.segunda_onda }}
     steps:
       - uses: actions/checkout@v4
 
-      # O cache e chaveado pelo sha256 do lock QUE O DECLARA: voz.lock e a
-      # identidade do modelo (hash novo, modelo novo); amostras.lock e a
-      # identidade das portadoras. Cache sem chave de lock serviria modelo
-      # errado rapido -- o oposto do que o lock existe para garantir.
-      - name: As chaves de cache sao os sha256 dos locks
-        run: |
-          echo "VOZ_LOCK_SHA=$(sha256sum voz.lock | cut -d' ' -f1)" >> "$GITHUB_ENV"
-          echo "AMOSTRAS_LOCK_SHA=$(sha256sum amostras.lock | cut -d' ' -f1)" >> "$GITHUB_ENV"
-
-      - name: O cache do modelo de voz (workspace/voz)
-        if: env.CLASSE_DO_RUNNER == 'avx512'
-        uses: actions/cache@v4
+      - name: Baixar os vereditos da onda 1
+        uses: actions/download-artifact@v4
         with:
-          path: workspace/voz
-          key: voz-modelo-${{ env.VOZ_LOCK_SHA }}
+          pattern: identidade-onda1-*
+          path: /tmp/amostras1
+          # merge-multiple: false (default) — cada artefato no seu
+          # subdiretório (identidade-onda1-<copia>-run<id>/veredito.json)
 
-      - name: O cache das portadoras e earcons (workspace/amostras)
-        if: env.CLASSE_DO_RUNNER == 'avx512'
-        uses: actions/cache@v4
-        with:
-          path: workspace/amostras
-          key: amostras-${{ env.AMOSTRAS_LOCK_SHA }}
-
-      # CP-009: a IDENTIDADE DA MAQUINA, medida e publicada ANTES de
-      # dublar — no log e num artefato JSON. lscpu --json: o parser e
-      # deterministico, o grep em campo traduzido nao seria.
-      # CP-011: a classe do runner nasce AQUI, pelo MESMO classificador do
-      # dublar (estudio_suite/voz.py — um lugar so), lendo as MESMAS flags;
-      # e as FLAGS COMPLETAS vão para o artefato: a chave da classe pode
-      # precisar de mais uma flag (CLASSE_MAL_DEFINIDA — um 9V45 com avx512f
-      # divergiu), e descobrir QUAL exige o diff das flags de quem passa x
-      # quem diverge. Flags fora do artefato seria descobrimento impossível.
-      - name: A identidade da máquina (lscpu, classe, ancora, teto, flags)
-        shell: bash
-        run: |
-          lscpu --json > /tmp/lscpu.json
-          mkdir -p /tmp/identidade
-          python3 - <<'EOF' | tee /tmp/identidade-maquina.env
-          import json
-          d = json.load(open('/tmp/lscpu.json'))
-          campos = {e['field'].rstrip(':').strip(): (e['data'] or '').strip()
-                    for e in d['lscpu']}
-          flags = set(campos.get('Flags', '').split())
-          sockets = int(campos.get('Socket(s)', '0') or 0)
-          por_socket = int(campos.get('Core(s) per socket', '0') or 0)
-          fisicos = sockets * por_socket
-          linhas = [
-              f"CPU_MODELO={campos.get('Model name', 'ilegivel')}",
-              f"SOCKETS={sockets}",
-              f"NUCLEOS_POR_SOCKET={por_socket}",
-              f"NUCLEOS_FISICOS={fisicos}",
-              f"THREADS_POR_NUCLEO={campos.get('Thread(s) per core', 'ilegivel')}",
-              f"AVX2={int('avx2' in flags)}",
-              f"AVX512F={int('avx512f' in flags)}",
-              f"AMX_TILE={int('amx_tile' in flags)}",
-              f"FLAGS_SIMD={' '.join(sorted(f for f in flags if f.startswith(('avx', 'amx', 'sse', 'fma', 'mmx', 'xop', 'gfni', 'vaes', 'vpclmul', 'sha'))))}",
-          ]
-          print('\n'.join(linhas))
-          # as flags COMPLETAS vão para o artefato (a descoberta da chave
-          # da classe é o diff destas listas entre quem passa e quem falha)
-          open('/tmp/identidade/flags-completas.txt', 'w').write(
-              campos.get('Model name', '?') + '\n' + ' '.join(sorted(flags)) + '\n')
-          EOF
-          cat /tmp/identidade-maquina.env >> "$GITHUB_ENV"
-          NPROC=$(nproc)
-          CGROUP_CPU=$(cat /sys/fs/cgroup/cpu.max 2>/dev/null || echo "ilegivel")
-          echo "NPROC=$NPROC" | tee -a "$GITHUB_ENV"
-          echo "CGROUP_CPU=$CGROUP_CPU" | tee -a "$GITHUB_ENV"
-          echo "COPIA=${{ matrix.copia }}" >> "$GITHUB_ENV"
-          echo "RUN_ID=${{ github.run_id }}" >> "$GITHUB_ENV"
-          echo "ATTEMPT=${{ github.run_attempt }}" >> "$GITHUB_ENV"
-          # CP-011: a classe do runner, PELO CLASSIFICADOR UNICO — o mesmo
-          # codigo que o dublar usa dentro da imagem e os testes testam.
-          CLASSE_DO_RUNNER=$(python3 -c "
-          import sys; sys.path.insert(0, '.')
-          from estudio_suite import voz
-          print(voz.classe_simd_medida())")
-          echo "CLASSE_DO_RUNNER=$CLASSE_DO_RUNNER" | tee -a "$GITHUB_ENV"
-          CLASSE_ANCORA=$(python3 ci/pins_do_lock.py --classe-simd)
-          echo "CLASSE_ANCORA=$CLASSE_ANCORA" | tee -a "$GITHUB_ENV"
-          TETO_RESIDUO=$(python3 ci/pins_do_lock.py --teto-residuo 2>/dev/null || true)
-          echo "TETO_RESIDUO=${TETO_RESIDUO:-}" >> "$GITHUB_ENV"
-          echo "== identidade do runner (CP-009/CP-011/CP-012/CP-013):"
-          cat /tmp/identidade-maquina.env | grep -v '^FLAGS_SIMD='
-          echo "  nproc:         $NPROC"
-          echo "  cgroup cpu:    $CGROUP_CPU"
-          echo "  classe SIMD:   $CLASSE_DO_RUNNER (ancora: $CLASSE_ANCORA)"
-          echo "  teto do codec: ${TETO_RESIDUO:-NAO REGISTRADO — lock INCOMPLETO para a classe avx512}"
-          echo "  descritores:   OBSERVACAO sem gate (CP-013, decisao (e)) — nenhum teto de descritor no lock"
-          echo "  flags SIMD:    $(grep '^FLAGS_SIMD=' /tmp/identidade-maquina.env | cut -d= -f2- | tr ' ' '\n' | wc -l) flags (completas no artefato)"
-
-      # CP-014: a SAIDA CEDO da cópia avx2 — sem NADA. O classificador
-      # (passo anterior) decidiu a classe DE ANTES de qualquer passo
-      # caro; a cópia avx2 NÃO constrói, NÃO dubla, NÃO prova, NÃO
-      # instala audio-suite e NÃO mede a âncora commitada — "medir o
-      # mesmo arquivo em toda cópia não traz informação" (diretiva do
-      # dono, 25/09/2026; a CP-013 mediu a âncora em 33 cópias avx2 com
-      # valores idênticos entre si e iguais à medição local — a âncora
-      # é independente de classe, e a medição repetida não informava
-      # nada). A observação de VERDADE — o regenerado contra a âncora,
-      # fala a fala, os quatro descritores com deltas — exige build e é
-      # o DISPATCH MANUAL observar_avx2 (.github/workflows/
-      # observar-avx2.yml), rotulado "observação, sem gate": paga o
-      # preço do build quando é PEDIDA, nunca em todo PR. Este passo é
-      # só a DECLARAÇÃO pública do que a cópia não faz — o veredito
-      # (abaixo) publica a classe e o estado neutro para o agregador.
-      - name: A saída cedo da classe avx2 (CP-014 — sem build, sem gate, sem audio-suite)
-        if: env.CLASSE_DO_RUNNER == 'avx2'
-        shell: bash
-        run: |
-          echo "== SAÍDA CEDO (CP-014): cópia ${COPIA} classificou avx2"
-          echo "   não instala audio-suite (o instrumento de observação não entra no gate)"
-          echo "   não mede a âncora commitada (medir o mesmo arquivo em toda cópia não traz informação)"
-          echo "   não constrói, não dubla, não prova (o gate dela não existe — decisão (e) da CP-013)"
-          echo "   a observação desta classe é o dispatch manual observar_avx2 — rotulada 'observação, sem gate'"
-          echo "   a cópia termina NEUTRA: classe e identidade publicadas, o agregador não a conta"
-
-      # CP-013: daqui para baixo, so a classe avx512 — a prova completa
-      # da CP-012: build, dublagem em 2 rodadas, determinismo e a prova
-      # por classe (bytes do PCM + codec sob teto + controle vivo). A
-      # copia avx2 ja saiu cedo (declaracao acima, neutra).
-      #
-      # buildx com cache de camadas do GitHub Actions: a base por digest e
-      # os pins do lock mudam raramente; o build efetivo costuma ser so
-      # resolver metadata. O rollback e o proprio digest + os pins do lock.
-      # CP-009: o --build-arg de threads vem do voz.lock (pins_do_lock.py
-      # --threads) — o ENV OMP/OPENBLAS/MKL da imagem nasce dele, e o
-      # dublar confere o ENV na entrada. Numero digitado em segundo lugar
-      # seria defeito; aqui ha so uma fonte.
-      - name: O builder com cache de camadas
-        if: env.CLASSE_DO_RUNNER == 'avx512'
-        run: docker buildx create --name dublador --driver docker-container --use
-
-      - name: A imagem que materializa o lock
-        if: env.CLASSE_DO_RUNNER == 'avx512'
-        run: |
-          THREADS_DO_LOCK=$(python3 ci/pins_do_lock.py --threads)
-          echo "== threads da ancora (voz.lock): $THREADS_DO_LOCK"
-          echo "THREADS_ANCORA=$THREADS_DO_LOCK" >> "$GITHUB_ENV"
-          docker buildx build \
-            --platform linux/amd64 \
-            --build-arg THREADS_DO_LOCK="$THREADS_DO_LOCK" \
-            --cache-from type=gha \
-            --cache-to type=gha,mode=max \
-            --load \
-            -t estudio-dublador:voz-lock \
-            -f ferramentas/dublador/Dockerfile .
-
-      # CP-009: as THREADS EFETIVAS DA SESSAO, lidas de DENTRO da imagem,
-      # pelo MESMO caminho do dublar (ancora -> ENV -> materializar ->
-      # sessao -> get_session_options). E a prova de que a ancora chega
-      # na sessao ANTES de qualquer sintese — e o valor que vai para o
-      # audio.json e para o artefato de identidade.
-      - name: As threads efetivas da sessão (de dentro da imagem)
-        if: env.CLASSE_DO_RUNNER == 'avx512'
-        env:
-          ESTUDIO_VOZ_CACHE: ${{ github.workspace }}/workspace/voz
-        run: |
-          docker run --rm --platform linux/amd64 \
-            -v "$PWD":/app -v "$ESTUDIO_VOZ_CACHE":/app/workspace/voz -w /app \
-            estudio-dublador:voz-lock python3 -c '
-          import sys
-          sys.path.insert(0, ".")
-          from estudio_suite import voz
-          from estudio_suite.dublar import _voz_do_lock, _conferir_threads_da_sessao
-          a = voz.ancora()
-          threads = voz.conferir_threads(a["ambiente"])
-          base = voz.materializar()
-          voice = _voz_do_lock(base / (a["nome"] + ".onnx"), threads)
-          efetivo = _conferir_threads_da_sessao(voice, threads)
-          print("THREADS_EFETIVAS=%d" % efetivo)
-          print("OMP_NUM_THREADS=%s" % __import__("os").environ.get("OMP_NUM_THREADS"))
-          ' | tee /tmp/probe-threads.txt
-          grep "THREADS_EFETIVAS=" /tmp/probe-threads.txt >> "$GITHUB_ENV"
-          grep "OMP_NUM_THREADS=" /tmp/probe-threads.txt >> "$GITHUB_ENV" || true
-
-      # O compromisso: os .opus commitados. As dublagens regeneram POR
-      # CIMA (o dublar escreve no repositorio montado) -- por isso a copia
-      # (e os sha256, e desde a CP-011 tambem o audio.json, referencia das
-      # DURACOES POR FALA) acontece ANTES da primeira rodada.
-      - name: Os sha256 do que esta commitado
-        if: env.CLASSE_DO_RUNNER == 'avx512'
-        shell: bash
-        run: |
-          mkdir -p /tmp/commitado
-          find filmes -path '*/audio/*.opus' | sort | while read -r f; do
-            mkdir -p "/tmp/commitado/$(dirname "$f")"
-            cp "$f" "/tmp/commitado/$f"
-            sha256sum "$f"
-          done | tee /tmp/commitado.sha256
-          find filmes -path '*/audio/audio.json' | sort | while read -r f; do
-            cp "$f" "/tmp/commitado/$f"
-          done
-
-      # Duas rodadas: a 1 prova determinismo da imagem, a 2 prova que a
-      # determinacao e estavel. CP-011: os filmes vem do PLANEJAR — os
-      # que DECLARAM audio, lidos do proprio filme.js — nunca de nomes
-      # escritos aqui; e cada rodada arquiva o hash POR ETAPA que o
-      # dublar publica em workspace/voz-etapas/ (diagnostico de ONDE a
-      # divergencia nasce, nao contrato do repositorio).
-      - name: Dublar quem declara audio (rodada 1)
-        if: env.CLASSE_DO_RUNNER == 'avx512'
-        env:
-          ESTUDIO_VOZ_CACHE: ${{ github.workspace }}/workspace/voz
-        run: |
-          for fid in ${{ needs.planejar.outputs.filmes }}; do
-            ferramentas/dublador/dublar.sh "$fid"
-          done
-          find filmes -path '*/audio/*.opus' | sort | xargs sha256sum > /tmp/rodada1.sha256
-          mkdir -p /tmp/etapas-rodada1
-          cp workspace/voz-etapas/*.etapas.json /tmp/etapas-rodada1/ 2>/dev/null || true
-
-      - name: Dublar quem declara audio (rodada 2)
-        if: env.CLASSE_DO_RUNNER == 'avx512'
-        env:
-          ESTUDIO_VOZ_CACHE: ${{ github.workspace }}/workspace/voz
-        run: |
-          for fid in ${{ needs.planejar.outputs.filmes }}; do
-            ferramentas/dublador/dublar.sh "$fid"
-          done
-          find filmes -path '*/audio/*.opus' | sort | xargs sha256sum > /tmp/rodada2.sha256
-          mkdir -p /tmp/etapas-rodada2
-          cp workspace/voz-etapas/*.etapas.json /tmp/etapas-rodada2/ 2>/dev/null || true
-
-      # O determinismo interno vale para TODA classe (a mesma maquina tem
-      # de devolver os mesmos bytes duas vezes — o que a imagem garante).
-      # A comparacao contra o commitado mudou de casa: agora e a PROVA POR
-      # CLASSE (abaixo) que decide se exige bytes ou tolerancia.
-      - name: O determinismo interno da imagem (rodada 1 == rodada 2)
-        if: env.CLASSE_DO_RUNNER == 'avx512'
-        run: |
-          echo "== rodada 1 == rodada 2 (o determinismo da imagem)"
-          diff -u /tmp/rodada1.sha256 /tmp/rodada2.sha256
-          echo "== hash por etapa: rodada 1 == rodada 2 (diagnostico)"
-          if diff -rq /tmp/etapas-rodada1 /tmp/etapas-rodada2; then
-            echo "   etapas identicas entre rodadas (pcm_cru/pos_prosodia/pos_timbre/mix/opus)"
-          else
-            echo "   ATENCAO: etapas divergem entre rodadas com .opus iguais — diagnostico"
-          fi
-
-      # CP-012: A PROVA POR CLASSE. Roda DENTRO da imagem (numpy, ffmpeg,
-      # repositorio montado, o MESMO classificador do dublar): na classe
-      # avx512, BYTES NO PCM MIXADO (o hash f32 do audio.json) + codec
-      # decodificado sob teto + o CONTROLE do teto (ruido 6 dB acima
-      # reprova citando o numero; teto que nao pega e
-      # TETO_NAO_DISCRIMINA); na classe avx2, duracoes do manifesto aqui
-      # e a EQUIVALENCIA POR DESCRITORES no runner (passo seguinte). Sem
-      # o teto da classe, RECUSA nomeada (lock incompleto) — os numeros
-      # desta execucao sao medidos e publicados ANTES da recusa: e deles
-      # que o teto nasce. Os residuos nos DOIS pontos seguem publicados
-      # como diagnostico.
-      - name: A prova por classe (dentro da imagem)
-        if: env.CLASSE_DO_RUNNER == 'avx512'
-        shell: bash
-        run: |
-          mkdir -p /tmp/prova
-          docker run --rm --platform linux/amd64 \
-            -v "$PWD":/app -v /tmp/commitado:/commitado -v /tmp/prova:/prova -w /app \
-            estudio-dublador:voz-lock \
-            python3 ci/prova_por_classe.py --commitado /commitado --saida /prova \
-            | tee /tmp/prova/prova.log
-
-      # CP-013/CP-014: o VEREDITO E A IDENTIDADE DA COPIA — o contrato do
-      # agregador e a identidade ROTULADA. ci/veredito_da_copia.py escreve
-      # os dois artefatos de uma vez: veredito.json (cópia, classe, prova,
-      # veredito, números — avx512 -> identica | divergente | nao-provou;
-      # avx2 -> observacao, neutra; indeterminada -> ilegível) e
-      # identidade.json com RÓTULOS ÚNICOS (CP-014): medido:<valor>,
-      # falhou:<motivo>, nao_aplicavel:<motivo> — os campos de síntese da
-      # cópia avx2 são todos "nao_aplicavel:classe_avx2", e um rótulo com
-      # "ou" REPROVA a geração (o artefato ambíguo não nasce; saída 2
-      # nomeando o campo). Escreve SEMPRE (if: always) — vermelho também
-      # tem veredito, e é assim que o agregador nomeia quem divergiu.
-      - name: O veredito e a identidade da cópia (CP-013; rótulos CP-014)
-        if: always()
+      - id: rotear
+        name: O roteador da segunda onda (CP-015)
         shell: bash
         run: |
           set -o pipefail
-          python3 ci/veredito_da_copia.py \
-            --saida /tmp/identidade \
-            --prova /tmp/prova/prova.json \
-            --rodada1 /tmp/rodada1.sha256 \
-            --rodada2 /tmp/rodada2.sha256 \
-            | tee /tmp/identidade/veredito-da-copia.log
+          python3 ci/rotear_segunda_onda.py \
+            --artefatos /tmp/amostras1 \
+            --copias '${{ needs.planejar.outputs.copias }}' \
+            --saida /tmp/rotear | tee /tmp/rotear/rotear.log
 
-      # CP-009/CP-011: o artefato de identidade — SEMPRE (verde ou
-      # vermelho). Verde sem identidade seria sorte sem prova; vermelho
-      # sem identidade seria diagnostico perdido (André Borges: cada
-      # veredito carrega maquina, classe, prova aplicada e numeros).
-      # O veredito.json e o identidade.json rotulado já moram em
-      # /tmp/identidade (passo anterior); este passo empacota o resto:
-      # o hash POR ETAPA de cada rodada, o prova.json com os residuos
-      # medidos nos dois pontos e as flags completas do lscpu.
-      - name: O artefato de identidade (run, CPU, classe, prova, números)
-        if: always()
-        shell: bash
-        run: |
-          mkdir -p /tmp/identidade
-          cat /tmp/identidade/identidade.json
-          cp -r /tmp/etapas-rodada1 /tmp/identidade/ 2>/dev/null || true
-          cp -r /tmp/etapas-rodada2 /tmp/identidade/ 2>/dev/null || true
-          cp /tmp/prova/prova.json /tmp/prova/prova.log /tmp/identidade/ 2>/dev/null || true
-          # veredito.json e identidade.json (rotulados, CP-014) ja
-          # moram em /tmp/identidade — o upload pega tudo
-          echo "== hash por etapa (rodada 2):"
-          cat /tmp/etapas-rodada2/*.etapas.json 2>/dev/null | head -40 || echo "  (sem etapas)"
-
-      # Onde divergiu, quando diverge: duracoes do commitado contra as
-      # regeneradas, medidas pelo ffprobe DA PROPRIA IMAGEM (a ancora e
-      # ele tambem) -- e publicadas como artefato para o diagnostico,
-      # JUNTO com a identidade da maquina que divergiu.
-      - name: O diff de duracoes (diagnostico da falha)
-        if: failure()
-        shell: bash
-        run: |
-          docker run --rm --platform linux/amd64 \
-            -v "$PWD":/app -v /tmp/commitado:/commitado -w /app \
-            estudio-dublador:voz-lock sh -c '
-              for f in $(find filmes -path "*/audio/*.opus" | sort); do
-                a=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "/commitado/$f" 2>/dev/null || echo "?")
-                b=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f" 2>/dev/null || echo "?")
-                printf "%s  commitado=%s  regenerado=%s\n" "$f" "$a" "$b"
-              done' | tee /tmp/identidade/duracoes.diff
-
-      - name: Publicar o diff de duracoes
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: diff-de-duracoes-${{ matrix.copia }}
-          path: /tmp/identidade/
-
-      - name: Publicar a identidade (verde tambem)
+      - name: Publicar a rota (verde também)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: identidade-${{ matrix.copia }}-run${{ github.run_id }}
-          path: /tmp/identidade/
+          name: rotear-segunda-onda-run${{ github.run_id }}
+          path: /tmp/rotear/
 
-  # CP-013: O AGREGADOR — o veredito do RUN não é de cópia nenhuma, é
-  # da AMOSTRAGEM. Um job final lê os artefatos de TODAS as cópias (o
-  # veredito.json de cada uma, baixado por pattern — cada artefato no
-  # seu subdiretório) e decide:
+  # CP-015: a ONDA 2 — automática (decisão do dono): a MESMA matrix N,
+  # os MESMOS passos da onda 1, o número da onda diferente no veredito e
+  # no artefato. "Rerun humano deixa de ser o caminho de volta": quando o
+  # sorteio da frota não traz NENHUMA AVX-512, a resposta é tentar de
+  # novo NO MESMO RUN — P(uma onda vazia) ~ 1,77% com N=13 e a fração da
+  # janela; P(duas vazias) ~ 0,0315%. Se o roteador não acordar a onda 2
+  # (estado que não é do sorteio), este job é pulado e o agregador nomeia
+  # o que houver.
+  dublador-onda2:
+    needs: [planejar, rotear]
+    if: needs.rotear.outputs.segunda_onda == 'true'
+    uses: ./.github/workflows/dublador-onda.yml
+    with:
+      copias: ${{ needs.planejar.outputs.copias }}
+      filmes: ${{ needs.planejar.outputs.filmes }}
+      onda: 2
+
+  # CP-013/CP-015: O AGREGADOR — o veredito do RUN não é de cópia nenhuma,
+  # é da AMOSTRAGEM SOBRE AS ONDAS DECLARADAS. Um job final lê os
+  # artefatos de TODAS as cópias de TODAS as ondas (o veredito.json de
+  # cada uma, baixado por pattern — cada artefato no seu subdiretório,
+  # o campo "onda" distingue onda-1/copia-3 de onda-2/copia-3) e decide:
   #
   #   VERDE                 >= 1 cópia AVX-512 com PCM idêntico E zero
   #                         cópias AVX-512 divergentes E zero ilegíveis
+  #                         (em qualquer onda)
   #   DIVERGENCIA_AVX512    qualquer cópia AVX-512 divergente — com o
-  #                         NOME da cópia e os números
-  #   SEM_AMOSTRA_DECISIVA  zero cópias AVX-512 — vermelho nomeado; o
-  #                         caminho de volta é o RERUN (o N do lock dá
-  #                         P(zero) <= 2%); parada da CP só dispara em
-  #                         3 disparos SEGUIDOS
+  #                         NOME da ONDA, da cópia e os números
+  #   SEM_AMOSTRA_DECISIVA  zero cópias AVX-512 em TODAS as ondas. Com a
+  #                         segunda onda automática, só nasce após DUAS
+  #                         ondas vazias (P = 0,0315%) — e segue vermelho
+  #                         nomeado: o caminho automático já rodou; o que
+  #                         resta é revisar o N da janela ou o rerun
   #   AMOSTRA_ILEGIVEL      cópia sem artefato, corrompida, classe
-  #                         indeterminada ou AVX-512 que não provou —
-  #                         reprova, nunca conta como neutra
+  #                         indeterminada, AVX-512 que não provou, onda
+  #                         declarada que não entregou, ou matrix que não
+  #                         veio do lock — reprova, nunca conta como neutra
   #
   # As cópias avx2 (veredito "observacao") são NEUTRAS: não decidem,
   # não bloqueiam, aparecem no resumo porque a observação é pública.
-  # O resumo do job lista cópia, CPU, classe, prova e veredito
-  # (GITHUB_STEP_SUMMARY), e o agregado.json vai para o artefato.
-  # needs: dublador + always(): o agregador roda mesmo com cópia
+  # O resumo do job lista onda, cópia, CPU, classe, prova e veredito
+  # (GITHUB_STEP_SUMMARY), o agregado.json vai para o artefato — e o
+  # campo REGISTRO dele (com as ondas) é o que alimenta
+  # harness/frota/execucoes-gate.json por PR de manutenção
+  # (ci/atualizar_registro_frota.py no clone do curador; commit
+  # automático no main, JAMAIS).
+  # needs: ondas + roteador + always(): o agregador roda mesmo com cópia
   # vermelha — é ele quem NOMEIA quem divergiu; e o --conferir-n fecha
-  # o círculo do "um lugar só": a matrix conferida contra o lock.
+  # o círculo do "um lugar só": a matrix conferida contra o lock, por
+  # onda.
   agregar:
-    needs: [planejar, dublador]
+    needs: [planejar, dublador-onda1, rotear, dublador-onda2]
     if: always() && needs.planejar.outputs.rodar == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
-      - name: Baixar os vereditos de todas as cópias
+      - name: Baixar os vereditos de todas as cópias de todas as ondas
         uses: actions/download-artifact@v4
         with:
           pattern: identidade-*
           path: /tmp/amostras
           # merge-multiple: false (default) — cada artefato no seu
-          # subdiretório (identidade-<copia>-run<id>/veredito.json),
+          # subdiretório (identidade-onda<o>-<copia>-run<id>/veredito.json),
           # senão os arquivos de mesmo nome se sobrescreveriam
 
-      - name: O agregador da prova por amostragem (CP-013)
+      - name: O agregador da prova por amostragem (CP-013; ondas CP-015)
+        env:
+          # o head do PR para o registro: no evento pull_request o
+          # GITHUB_SHA é o commit de MERGE — o head_do_pr é registrado
+          # junto (a fronteira da CP-014, medida e declarada)
+          GITHUB_PR_HEAD: ${{ github.event.pull_request.head.sha }}
         shell: bash
         run: |
           set -o pipefail
           mkdir -p /tmp/agregado
+          ONDAS='1'
+          if [ "${{ needs.rotear.outputs.segunda_onda }}" = "true" ]; then
+            ONDAS='1,2'
+          fi
+          echo "== ondas declaradas deste run: $ONDAS"
           python3 ci/agregar_prova.py \
             --artefatos /tmp/amostras \
             --copias '${{ needs.planejar.outputs.copias }}' \
+            --ondas "$ONDAS" \
             --conferir-n \
             --saida /tmp/agregado | tee /tmp/agregado/agregado.log
 

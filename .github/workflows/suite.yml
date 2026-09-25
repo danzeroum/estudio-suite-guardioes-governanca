@@ -161,15 +161,37 @@ jobs:
       - name: A equivalência por descritores (CP-012, instrumento)
         run: python3 tests/test_equivalencia_descritores.py
 
-      # CP-013: o AGREGADOR da prova por amostragem — veredito do run com
-      # artefatos sintéticos: {1 avx512 idêntica + 11 avx2} verde; zero
-      # avx512 SEM_AMOSTRA_DECISIVA; divergente nomeado; amostra ilegível
-      # reprova, nunca neutra; e o contrato estrutural do workflow (avx2
-      # sem build e sem gate, job obrigatório, veredito.json publicado,
-      # matrix do lock; CP-014: a saída cedo sem audio-suite e o registro
+      # CP-013/CP-015: o AGREGADOR da prova por amostragem — veredito do
+      # run com artefatos sintéticos: {1 avx512 idêntica + 11 avx2} verde;
+      # zero avx512 SEM_AMOSTRA_DECISIVA (nas DUAS ondas, CP-015); onda 1
+      # {8 avx2} + onda 2 {1 AVX-512 idêntica} VERDE (a segunda onda
+      # automática salvou o sorteio); onda 2 divergente nomeada COM ONDA E
+      # CÓPIA; onda declarada sem artefato é AMOSTRA_ILEGIVEL (nunca
+      # SEM_AMOSTRA — cópia sem artefato não é sorteio); amostra ilegível
+      # reprova, nunca neutra; e os contratos estruturais dos workflows
+      # (onda reutilizável, roteador, onda 2 condicional, job obrigatório,
+      # veredito.json publicado, matrix do lock; o registro com as ondas
       # no agregado.json).
-      - name: O agregador da amostragem da frota (CP-013)
+      - name: O agregador da amostragem da frota (CP-013; ondas CP-015)
         run: python3 tests/test_agregar_prova.py
+
+      # CP-015: O ROTEADOR da segunda onda — a decisão do dono provada:
+      # o sorteio limpo sem AVX-512 acorda a segunda onda; qualquer outro
+      # estado (AVX-512 presente, artefato ausente/corrompido, veredito
+      # impróprio, duplicata) NÃO acorda — a segunda onda não existe para
+      # mascarar cópia ilegível; a saída vai ao $GITHUB_OUTPUT e ao
+      # rotear.json; a ausência estrutural é saída 2 nomeada.
+      - name: O roteador da segunda onda (CP-015)
+        run: python3 tests/test_rotear_segunda_onda.py
+
+      # CP-015: O ATUALIZADOR DO REGISTRO — o braço do curador: junta os
+      # agregados baixados (zips ou json) no registro versionado,
+      # deduplicado por run+tentativa, ordenado, com as entradas inválidas
+      # rejeitadas nomeadas e o bloco calculo regravado pelo caminho único
+      # (calcular_do_registro) — o número é recalculável; --dry-run não
+      # escreve; sem agregado legível é saída 2 e registro intocado.
+      - name: O atualizador do registro da frota (CP-015)
+        run: python3 tests/test_atualizar_registro_frota.py
 
       # CP-014: os RÓTULOS ÚNICOS do identidade.json — a cópia avx2 com
       # TODOS os campos de síntese em nao_aplicavel:classe_avx2; campo
@@ -180,14 +202,17 @@ jobs:
       - name: Os rótulos únicos do identidade.json (CP-014)
         run: python3 tests/test_veredito_da_copia.py
 
-      # CP-014: a INDEPENDÊNCIA das cópias, recalculada do registro
-      # versionado (harness/frota/execucoes-gate.json) — a taxa de
-      # SEM_AMOSTRA com os ICs de 95% (Wilson e Clopper-Pearson), a
-      # correlação intra-execução contra a binomial do lock, e a regra
-      # da diretiva (taxa > 2% com IC acima de 2% dispara
-      # NAO_INDEPENDENTE) provada nos dois sentidos: o número é
-      # reproduzível, nunca afirmado.
-      - name: A independência das cópias (CP-014)
+      # CP-014/CP-015: a INDEPENDÊNCIA das cópias e o N DA JANELA,
+      # recalculados do registro versionado
+      # (harness/frota/execucoes-gate.json) — a taxa de SEM_AMOSTRA com os
+      # ICs de 95% (Wilson e Clopper-Pearson), a correlação intra-execução
+      # (homogeneidade com o n de cada execução), a JANELA MÓVEL (J do
+      # lock, fração viva, N recalculado) e o FISCAL: o N do lock tem de
+      # bater com o da janela, senão "N desatualizado"; a borda (menos de
+      # J execuções usa todas e declara incompleta); a regra dos DOIS ICs
+      # provada nos dois sentidos — o número é reproduzível, nunca
+      # afirmado.
+      - name: A independência das cópias e a janela (CP-014/CP-015)
         run: python3 tests/test_independencia.py
 
       # CP-004/CP-007: o sexto portao, agora MEDINDO de verdade -- a
