@@ -85,17 +85,103 @@ proposta:
       achado vira registro.
 
   resultado_da_medicao:
-    quando: "2026-09-25 (dispatches do observar_avx2 na branch desta CP — preenchido quando a evidência fecha)"
-    # PREENCHIDO PELO PASSO 2: a tabela por filme/cópia/modelo/execução
-    # com os sha256, e o veredito DETERMINISTICO_NA_CLASSE ou
-    # NAO_DETERMINISTICO recalculado por ci/determinismo_avx2.py.
+    quando: "2026-09-25 — 5 dispatches do observar_avx2 na branch desta CP (runs 36101518337, 36101532243, 36102509816, 36102511853, 36103230090), 28 cópias avx2 medidas, evidência versionada em harness/frota/observacao-avx2.json"
+    veredito_medido:
+      veredito: DETERMINISTICO_NA_CLASSE
+      como_foi_medido: >
+        5 execuções do dispatch manual observar_avx2 na branch desta CP
+        (o instrumento CP-014 + o registro do sha256 do PCM mixado por
+        filme — o MESMO campo mix.pcm_f32_sha256 que o gate lê): 28
+        cópias avx2 sorteadas buildaram de propósito, sintetizaram os 2
+        filmes e o audio.json REGENERADO de cada uma carrega o hash do
+        PCM mixado. O veredito é RECALCULADO da evidência versionada por
+        ci/determinismo_avx2.py (e reconferido pelo teste) — nunca
+        afirmado.
+      a_tabela:
+        filme: jornada-dado
+        hash_avx2_medido: "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29"
+        ancora_commitada_avx512: "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+        copias_medidas: 28
+        modelos: "AMD EPYC 7763 (24 cópias), AMD EPYC 9V74 (4 cópias)"
+        diverge_da_ancora: "sim — o esperado entre classes (CP-011: a classe seleciona os kernels do MLAS)"
+        filme_2: legitimo-interesse
+        hash_avx2_medido_2: "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312"
+        ancora_commitada_avx512_2: "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      limitacao_declarada: >
+        A pergunta pede >= 3 modelos de CPU avx2 distintos; o pool sorteou
+        2 em 5 execuções e 28 cópias — e a fronteira medida é maior: nos
+        registros COMPLETOS da frota (execucoes.json das CPs 009/011/012
+        com 97 entradas + execucoes-gate.json com 17), a classe avx2 só
+        aparece em EPYC 7763 e EPYC 9V74-sem-avx512f. Dois modelos é TUDO
+        o que o pool tem mostrado em ~200 sorteios. O veredito é
+        determinístico NO QUE A FROTA TEM; um modelo avx2 novo (ex. Intel
+        sem AVX-512, que nunca caiu no sorteio) é exatamente o risco que
+        o contrato esboçado declara.
+      achado_extra: >
+        O 9V74 aparece nas DUAS classes nos registros (com e sem
+        avx512f — as FLAGS variam por runner, o nome do modelo não
+        decide): as cópias 9V74-avx2 produziram o MESMO hash que as
+        7763-avx2. A classe (flags medidas), não o modelo, é o que
+        assina os bytes — mais um dado para a pergunta da CLASSE como
+        âncora, não da máquina.
+    o_contrato_esboçado_se_deterministico:
+      nota: "ESBOÇO para decisão do dono — NADA implementado; a execução é CP própria, declarada antes de executada"
+      quem_gera_o_hash_avx2: >
+        O redublar/dublar.sh na máquina que dubla: o audio.json passa a
+        carregar DOIS hashes de PCM mixado — o mix.pcm_f32_sha256 (avx512,
+        o atual) e um mix.pcm_f32_sha256_avx2. O hash avx2 nasce como a
+        âncora nasceu: uma CP mede (dispatch dedicado, o mesmo caminho
+        desta evidência), registra o valor no audio.json por PR de
+        redublagem/âncora, e dali é referência. Quem gera é a síntese de
+        VERDADE (a imagem do lock), nunca um número digitado.
+      como_entra_num_pr_de_redubragem: >
+        O gate (dublador) em toda cópia: classe avx512 confere o
+        regenerado contra o hash avx512 (como hoje); classe avx2 confere
+        o regenerado contra o hash AVX2 — o .opus decodificado segue sob
+        o teto do lock (o codec permanece divergente-por-família). Uma
+        cópia de QUALQUER classe reprova com o hash errado: o sorteio
+        deixa de importar porque não existe mais cópia que não decide.
+      estado_divida_quando_o_hash_avx2_falta: >
+        audio.json SEM o hash avx2 é DÍVIDA nomeada (o mesmo estado da
+        audio.json sem o hash avx512 hoje): as cópias avx2 publicam
+        "divida:hash-avx2-ausente" — vermelho suave registrado, o gate
+        continua decidindo pela(s) cópia(s) avx512, e a dívida vira
+        exigência no PR de redublagem seguinte. Verde por omissão não
+        existe: o estado é nomeado, nunca mudo.
+      o_que_muda_no_n: >
+        Toda cópia decisiva -> P(zero cópias decisivas) = 0: o N deixa de
+        ser um cálculo de probabilidade e vira só um tamanho de amostra
+        de DIVERGÊNCIA (quantas cópias se quer espremer para achar um
+        bytes-errado se ele existir). A janela móvel, a segunda onda e o
+        rerun automático viram redundância para o caso de sorteio — que
+        deixa de existir; sobrevivem para o caso de frota dividida (uma
+        parte divergindo). O bloco frota do lock encolheria para um N de
+        vigilância declarado, não calculado de P(zero).
+      riscos: >
+        (1) A âncora avx2 travaria a frota avx2 (~70% do pool, 2 modelos
+        hoje) como o 8370C travou a avx512 — e o pool MUDA (38/97 ->
+        43/146 medido na CP-015): um modelo avx2 novo com bytes
+        diferentes deixaria o gate vermelho em toda cópia daquele modelo
+        até nova medição/âncora — o custo de Toda cópia decisiva é Toda
+        cópia podendo quebrar. (2) A evidência cobre 2 modelos: a
+        fronteira medida do pool, não uma garantia sobre modelos que
+        nunca apareceram. (3) O determinismo foi medido no head 3241289
+        (cadeia do lock: onnxruntime 1.30.0, threads 2) — avançar a
+        âncora, o runtime ou as threads pode quebrar a igualdade e o
+        mesmo rigor de lock da avx512 teria de cercar a avx2. (4) O
+        codec segue divergente-por-família: o teto decodificado continua
+        necessário. (5) O risco de GESTÃO: a decisão inverte o desenho
+        da decisão (e) da CP-013 — a observação vira prova — e isso é
+        papel do dono, não do agente.
 
   desfecho:
     proposta_aberta: >
       O PR desta CP fica ABERTO como proposta, para decisão do dono —
-      nada é mergeado sem a decisão. Verificação (a medição) é do agente;
-      validação (virar âncora) é do dono.
-
+      nada é mergeado sem a decisão. Verificação (a medição) é do agente
+      e está FEITA: 5 execuções, 28 cópias, 2 modelos, veredito
+      DETERMINISTICO_NA_CLASSE recalculável da evidência versionada
+      (com a limitação de 2 modelos declarada). Validação (virar
+      âncora) é do dono: o contrato esboçado e os riscos estão acima.
   doutrina:
     - >
       Nada aqui muda o gate, o voz.lock ou o audio.json: a prova decisiva
