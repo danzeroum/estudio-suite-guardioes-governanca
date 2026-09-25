@@ -1,0 +1,573 @@
+{
+ "$schema": "estudio-suite/frota-observacao-avx2@1",
+ "descricao": "Evidência do dispatch observar_avx2 (CP-016, proposta): uma entrada por EXECUÇÃO (run), as cópias avx2 que observaram com o modelo de CPU e o sha256 do PCM mixado por filme (regenerado_avx2 e ancora_commitada). É daqui que ci/determinismo_avx2.py recalcula o veredito — nada é afirmado.",
+ "como_cresce": "ci/atualizar_observacao_avx2.py junta os artefatos baixados; cresce por PR, sem commit automático no main",
+ "execucoes": [
+  {
+   "run": "36101518337",
+   "copias": [
+    {
+     "copia": "copia-4",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 9V74 80-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-4-run36101518337.zip"
+    },
+    {
+     "copia": "copia-5",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 9V74 80-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-5-run36101518337.zip"
+    },
+    {
+     "copia": "copia-6",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-6-run36101518337.zip"
+    },
+    {
+     "copia": "copia-7",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-7-run36101518337.zip"
+    },
+    {
+     "copia": "copia-8",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-8-run36101518337.zip"
+    }
+   ],
+   "quando": "2026-09-25T06:08:06Z",
+   "head": "3241289"
+  },
+  {
+   "run": "36101532243",
+   "copias": [
+    {
+     "copia": "copia-2",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-2-run36101532243.zip"
+    },
+    {
+     "copia": "copia-5",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-5-run36101532243.zip"
+    },
+    {
+     "copia": "copia-7",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-7-run36101532243.zip"
+    },
+    {
+     "copia": "copia-8",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-8-run36101532243.zip"
+    }
+   ],
+   "quando": "2026-09-25T06:08:17Z",
+   "head": "3241289"
+  },
+  {
+   "run": "36102509816",
+   "copias": [
+    {
+     "copia": "copia-1",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-1-run36102509816.zip"
+    },
+    {
+     "copia": "copia-2",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-2-run36102509816.zip"
+    },
+    {
+     "copia": "copia-4",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-4-run36102509816.zip"
+    },
+    {
+     "copia": "copia-6",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-6-run36102509816.zip"
+    },
+    {
+     "copia": "copia-7",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-7-run36102509816.zip"
+    },
+    {
+     "copia": "copia-8",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-8-run36102509816.zip"
+    }
+   ],
+   "quando": "2026-09-25T06:21:40Z",
+   "head": "3241289"
+  },
+  {
+   "run": "36102511853",
+   "copias": [
+    {
+     "copia": "copia-1",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-1-run36102511853.zip"
+    },
+    {
+     "copia": "copia-2",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-2-run36102511853.zip"
+    },
+    {
+     "copia": "copia-3",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-3-run36102511853.zip"
+    },
+    {
+     "copia": "copia-4",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-4-run36102511853.zip"
+    },
+    {
+     "copia": "copia-6",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-6-run36102511853.zip"
+    },
+    {
+     "copia": "copia-7",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-7-run36102511853.zip"
+    },
+    {
+     "copia": "copia-8",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-8-run36102511853.zip"
+    }
+   ],
+   "quando": "2026-09-25T06:21:42Z",
+   "head": "3241289"
+  },
+  {
+   "run": "36103230090",
+   "copias": [
+    {
+     "copia": "copia-1",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 9V74 80-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-1-run36103230090.zip"
+    },
+    {
+     "copia": "copia-2",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 9V74 80-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-2-run36103230090.zip"
+    },
+    {
+     "copia": "copia-4",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-4-run36103230090.zip"
+    },
+    {
+     "copia": "copia-5",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-5-run36103230090.zip"
+    },
+    {
+     "copia": "copia-7",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-7-run36103230090.zip"
+    },
+    {
+     "copia": "copia-8",
+     "classe": "avx2",
+     "cpu": "AMD EPYC 7763 64-Core Processor",
+     "status": "ok",
+     "filmes": {
+      "jornada-dado": {
+       "regenerado_avx2": "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29",
+       "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f"
+      },
+      "legitimo-interesse": {
+       "regenerado_avx2": "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312",
+       "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421"
+      }
+     },
+     "fonte": "observacao-avx2-copia-8-run36103230090.zip"
+    }
+   ],
+   "quando": "2026-09-25T06:31:15Z",
+   "head": "3241289"
+  }
+ ],
+ "veredito": {
+  "execucoes": 5,
+  "copias_avx2": 28,
+  "modelos_de_cpu": [
+   "AMD EPYC 7763 64-Core Processor",
+   "AMD EPYC 9V74 80-Core Processor"
+  ],
+  "filmes": {
+   "jornada-dado": {
+    "copias_medidas": 28,
+    "hashes_distintos": [
+     "e310e609f5ce70bda66aab25bf873ddac326121199ff431c607037c292448a29"
+    ],
+    "modelos_distintos": [
+     "AMD EPYC 7763 64-Core Processor",
+     "AMD EPYC 9V74 80-Core Processor"
+    ],
+    "execucoes_distintas": [
+     "36101518337",
+     "36101532243",
+     "36102509816",
+     "36102511853",
+     "36103230090"
+    ],
+    "ancora_commitada": "6978cb72981bd942ae23107d8ea63a3d9075baea86f99147d2e825fc304b293f",
+    "diverge_da_ancora": true
+   },
+   "legitimo-interesse": {
+    "copias_medidas": 28,
+    "hashes_distintos": [
+     "57f97d36adfb17981c79d78aa712c9a48fafacd2cbebbf0b3e96baeaa0029312"
+    ],
+    "modelos_distintos": [
+     "AMD EPYC 7763 64-Core Processor",
+     "AMD EPYC 9V74 80-Core Processor"
+    ],
+    "execucoes_distintas": [
+     "36101518337",
+     "36101532243",
+     "36102509816",
+     "36102511853",
+     "36103230090"
+    ],
+    "ancora_commitada": "61ddf58a6e4c2916b39af5aba01f16fbf3c8f38c3b5aa379435711a79ac3c421",
+    "diverge_da_ancora": true
+   }
+  },
+  "veredito": "DETERMINISTICO_NA_CLASSE",
+  "divergencias": [],
+  "limitacoes": [
+   "2 modelos distintos observados — a pergunta pede >= 3: registrou-se a fronteira medida do pool"
+  ],
+  "nota": "todos os hashes regenerado_avx2 de cada filme são IGUAIS entre cópias, modelos e execuções",
+  "cp": "CP-016 (proposta — a decisão de virar âncora é do dono)"
+ }
+}

@@ -20,7 +20,13 @@ jobs:
       # valendo. Tirar a audio-suite do job derruba o build -- de proposito.
       ESTUDIO_EXIGIR_AUDIO_SUITE: "1"
     steps:
+      # CP-016: fetch-depth 0 — o teste do determinismo prova NO DIFF que
+      # esta branch não toca gate/lock/audio.json, e o diff contra o main
+      # precisa da base no histórico (o mesmo motivo do planejar do
+      # Dublador); com depth 1 nem o pai do merge ref resolve
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # CP-008: O LOCK MANDA NO CI. Nenhuma versao de python/numpy/scipy e
       # digitada aqui -- o workflow pergunta ao voz.lock pelo mesmo parser do
@@ -214,6 +220,15 @@ jobs:
       # afirmado.
       - name: A independência das cópias e a janela (CP-014/CP-015)
         run: python3 tests/test_independencia.py
+
+      # CP-016 (proposta): o DETERMINISMO da classe avx2 — a evidência e o
+      # veredito recalculados (DETERMINISTICO_NA_CLASSE / NAO_DETERMINISTICO
+      # com a tabela), as limitações declaradas (modelos/execuções), o
+      # coletor por run com deduplicação — e a regra dura provada no diff:
+      # esta branch não toca gate, lock nem audio.json (a decisão de virar
+      # âncora é do dono).
+      - name: O determinismo da classe avx2 (CP-016, proposta)
+        run: python3 tests/test_determinismo_avx2.py
 
       # CP-004/CP-007: o sexto portao, agora MEDINDO de verdade -- a
       # audio-suite esta instalada (isolada, pinada) e o job a prometeu no
