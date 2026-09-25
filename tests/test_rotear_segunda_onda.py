@@ -210,6 +210,15 @@ def main():
         and "needs: [planejar, dublador-onda1]" in wf,
         "o roteador roda sempre que o job acordou (cópia vermelha também "
         "— ele roteia, o agregador sentencia)")
+    trecho_rot = wf[wf.index("O roteador da segunda onda"):]
+    trecho_rot = trecho_rot[:trecho_rot.index("Publicar a rota")]
+    chk("mkdir -p /tmp/rotear" in trecho_rot
+        and trecho_rot.index("mkdir -p /tmp/rotear")
+        < trecho_rot.index("rotear.log"),
+        "o passo do roteador cria o diretório ANTES do tee — a corrida do "
+        "run 36101113176 (o tee abriu o log antes de o script criar o "
+        "diretório e derrubou o passo com o roteador já decidido certo) "
+        "não pode voltar")
 
     print(f"  {len(ok)} verificações do roteador da segunda onda (CP-015).")
     if bad:

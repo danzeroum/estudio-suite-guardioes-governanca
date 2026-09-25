@@ -306,6 +306,12 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          # o diretório ANTES do tee: o tee abre o log no início do
+          # pipeline — a corrida contra o mkdir do script já derrubou
+          # este passo uma vez (run 36101113176: o roteador DECIDIU
+          # certo e publicou o rotear.json, o tee é que morreu com o
+          # diretório ainda não criado); criar primeiro é a correção
+          mkdir -p /tmp/rotear
           python3 ci/rotear_segunda_onda.py \
             --artefatos /tmp/amostras1 \
             --copias '${{ needs.planejar.outputs.copias }}' \
