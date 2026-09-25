@@ -31,6 +31,15 @@ por índice (fala k x fala k); manifestos com contagens diferentes são
 registrados como achado do filme, e as falas do prefixo comum seguem
 medidas.
 
+CP-016 (proposta, 25/09/2026): o script REGISTRA TAMBÉM o sha256 do PCM
+mixado de cada lado — o mix.pcm_f32_sha256 do audio.json REGENERADO (a
+síntese avx2 DESTA cópia) e o da âncora commitada (a síntese avx512 que
+o gate ancora) — o MESMO campo que o gate lê na classe avx512, aqui
+como OBSERVAÇÃO: é o dado que alimenta a pergunta da CP-016 (a síntese
+avx2 é byte-determinística entre modelos e execuções?). O modelo de CPU
+da cópia vai no artefato (cpu) — a pergunta é ENTRE modelos. Sem gate,
+sem teto, sem veredito: o número é publicado, a leitura é da CP.
+
 SEM GATE, SEM TETO, SEM CONTROLE, SEM VERDE: nada aqui reprova, bloqueia
 ou valida — o rotulo do artefato é "observação, sem gate" (a decisão (e)
 da CP-013 segue intocada: o gate é SÓ bytes do PCM em cópia AVX-512). A
@@ -108,9 +117,11 @@ def main() -> int:
         "gate": False,
         "copia": copia,
         "classe": classe,
+        "cpu": os.environ.get("CPU_MODELO", "ilegivel"),
         "run_id": run_id,
         "instrumento": ("audio-suite pinada (perfil guardioes-equivalencia) "
-                        "+ energia numpy — as MESMAS funções da CP-012"),
+                        "+ energia numpy — as MESMAS funções da CP-012; "
+                        "sha256 do PCM mixado por filme (CP-016, proposta)"),
         "filmes": [],
         "status": "ok",
     }
@@ -201,6 +212,26 @@ def main() -> int:
                 filme_doc = {
                     "filme": fid, "falas": falas, "delta_maximo": maximos,
                 }
+                # CP-016 (proposta): o sha256 do PCM mixado de cada lado —
+                # o MESMO campo que o gate lê (mix.pcm_f32_sha256), aqui
+                # como observação. O regenerado é a síntese avx2 DESTA
+                # cópia; a âncora é a commitada (classe avx512). Divergir
+                # da âncora é o ESPERADO (a classe muda os kernels do
+                # MLAS — CP-011); o que a CP-016 pergunta é se o
+                # REGENERADO é igual entre cópias/modelos/execuções.
+                try:
+                    filme_doc["hash_pcm_mixado"] = {
+                        "regenerado_avx2": str(
+                            mani_reg.get("mix", {}).get("pcm_f32_sha256")
+                            or "nao-registrado"),
+                        "ancora_commitada": str(
+                            mani_com.get("mix", {}).get("pcm_f32_sha256")
+                            or "nao-registrado"),
+                    }
+                except Exception as e:
+                    filme_doc["hash_pcm_mixado"] = {
+                        "regenerado_avx2": f"falhou:{type(e).__name__}",
+                        "ancora_commitada": f"falhou:{type(e).__name__}"}
                 if achado_manifesto:
                     filme_doc["achado"] = achado_manifesto
                 doc["filmes"].append(filme_doc)

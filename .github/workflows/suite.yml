@@ -215,6 +215,15 @@ jobs:
       - name: A independência das cópias e a janela (CP-014/CP-015)
         run: python3 tests/test_independencia.py
 
+      # CP-016 (proposta): o DETERMINISMO da classe avx2 — a evidência e o
+      # veredito recalculados (DETERMINISTICO_NA_CLASSE / NAO_DETERMINISTICO
+      # com a tabela), as limitações declaradas (modelos/execuções), o
+      # coletor por run com deduplicação — e a regra dura provada no diff:
+      # esta branch não toca gate, lock nem audio.json (a decisão de virar
+      # âncora é do dono).
+      - name: O determinismo da classe avx2 (CP-016, proposta)
+        run: python3 tests/test_determinismo_avx2.py
+
       # CP-004/CP-007: o sexto portao, agora MEDINDO de verdade -- a
       # audio-suite esta instalada (isolada, pinada) e o job a prometeu no
       # env. O portao publica LUFS e true peak reais por filme; FINDING
