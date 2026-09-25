@@ -1,0 +1,324 @@
+# Mudanca proposta a partir de EVIDENCIA, nao de gosto.
+# Declarada antes de executada; fica como registro mesmo depois.
+#
+# A CP-010 fecha o que a CP-006 deixou declarado e nao aplicado: os rigs
+# dizem 'mais-grave', 'medio-grave', 'medio', 'mais-agudo', e a voz de
+# todos sai na MESMA altura. Esta CP so PROPOE e MEDE (prototipo fora do
+# dublar); a execucao e sprint propria, depois do PR #12 e do descritor
+# pitch_f0 da audio-suite (danzeroum/audio-suite#44).
+schema: estudio-suite/change-proposal@1
+
+proposta:
+  id: CP-010
+  titulo: "Pitch por guardiao: alvos de F0 medidos, nao adjetivos"
+  autor: agente/curador (Agente B)
+  criada_em: "2026-09-24T06:30:00Z"
+  estado: proposta              # nada executado; merge e decisao humana
+  depende_de:
+    - "PR #12 do estudio (Sprint 12 / CP-008) mergeado -- zona do dublar, voz.lock, filmes/*/audio"
+    - "danzeroum/audio-suite#44 (descritor pitch_f0, AS-DESC-008) mergeado e pinado no CI"
+
+  sinal:
+    tipo: dado-inerte-com-cliente
+    chave: "pitch-declarado-nao-aplicado"
+    evidencia: >
+      Medido com o descritor pitch_f0 (YIN, quadros vozeados) da audio-suite
+      sobre as baselines da carteira de voz (filmes/<id>/baseline/vozes/,
+      main 6608628): as 10 vozes dos dois filmes tem F0 mediana entre
+      156,95 e 173,73 Hz -- 1,8 semitom do extremo ao extremo, com o
+      Elefante 'mais-grave' (173,73 Hz na jornada) ACIMA do narrador
+      'medio' (156,95 Hz). O descritor de altura que a carteira usa hoje,
+      pitch_stab.pitch_drift_cents, da 4.851-5.456 cents para TODOS e nao
+      separa nada (nao decide vozeamento). Causa: um unico modelo
+      (pt_BR-faber-medium) e pitch_aplicado: false no audio.json -- o
+      timbre da CP-005 muda a cor, nao a F0. O dado (rig.voz.pitch) existe
+      e nao tem cliente; a tela diz 'o grave e o Elefante' e o som nao
+      confirma.
+
+  doutrina:                    # herdada; nada aqui e negociavel
+    - >
+      Camada aditiva e ordem fixa da CP-006: fala -> piper -> PROSODIA
+      (pitch entra aqui) -> timbre -> mix. Categoria 'medio' com expressao
+      neutra devolve a voz ATUAL byte a byte (deslocamento 0 = retorno do
+      pcm intocado, por construcao nas duas tecnicas do prototipo).
+    - >
+      Time-stretch continua PROIBIDO: o deslocamento de F0 preserva o
+      numero de amostras de cada clipe (medido: duracao identica em 12/12
+      falas das duas tecnicas).
+    - >
+      Determinismo total: mesma entrada -> mesmos bytes, sem semente.
+    - >
+      O alvo e NUMERO derivado de medicao; o adjetivo do rig so da a ORDEM.
+      Medida pela audio-suite (CLI externa, codigo nunca copiado); descritor
+      nunca reprova (R1) -- quem reprova e o fiscal da suite com criterio
+      declarado nesta CP.
+    - >
+      noise_scale NAO SE TOCA (CP-004). Modelo e ambiente so avancam por CP.
+
+  medicao:
+    medidor: "audio-suite pitch_f0 (AS-DESC-008) @ danzeroum/audio-suite#44, commit edb73f0"
+    prototipo: "harness/prototipos/cp010/prototipo.py (ver README.md ao lado)"
+    frases: "3 frases neutras iguais para todos (a comparacao isola a voz)"
+    referencia_hz: 166.0            # mediana das medianas atuais do prototipo
+    derivacao_do_passo: >
+      sigma_frase = 0,44 st (desvio da mediana da MESMA voz entre 7 frases,
+      3 falantes; max 0,90 st). Separar duas vozes em 2 sigma numa frase
+      isolada: 2*sqrt(2)*sigma_frase = 1,24 st. Mais o erro da tecnica nos
+      dois lados (WORLD 2 x 0,60 st, pior medido): 2,44 st -> passo de
+      2,5 st entre categorias adjacentes. Ancora 'medio' = a referencia
+      MEDIDA, para que narrador e coruja nao sejam processados.
+    alvos_st:                        # dado: harness/prototipos/cp010/alvos.yaml
+      mais-grave: -5.0
+      medio-grave: -2.5
+      medio: 0.0
+      mais-agudo: 2.5
+    tabela: |
+      F0 mediana em Hz (pitch_f0). "filmes" = baseline da carteira hoje
+      (jornada / legitimo). "atual" = prototipo sem deslocamento, apos timbre.
+      Depois = apos deslocamento + timbre do rig; erro em cents vs. alvo.
+
+      guardiao   declarado    filmes (Hz)      atual  alvo st  alvo Hz  WORLD (erro)    PSOLA (erro)
+      elefante   mais-grave   173,73 / 167,47  165,88  -5,0    124,36   124,03 (-4 c)   125,67 (+18 c)
+      aguia      medio-grave  170,70 / --      170,56  -2,5    143,67   142,09 (-19 c)  140,77 (-35 c)
+      tartaruga  medio-grave  171,42 / 163,37  165,76  -2,5    143,67   143,07 (-7 c)   143,57 (-1 c)
+      coruja     medio        169,19 / 162,53  166,11   0,0    166,00   165,70 (-3 c)   167,42 (+15 c)
+      narrador   medio        156,95 / 163,89  165,57   0,0    166,00   164,17 (-19 c)  167,45 (+15 c)
+      raposa     mais-agudo   173,22 / --      167,59  +2,5    191,78   197,06 (+47 c)  199,04 (+64 c)
+
+      Distancia entre guardioes (st, |12*log2(Fa/Fb)|):
+      par                    hoje   WORLD  PSOLA   categorias
+      elefante ~ aguia       0,48   2,35   1,96    adjacentes
+      elefante ~ tartaruga   0,01   2,47   2,31    adjacentes
+      aguia ~ coruja         0,46   2,66   3,00    adjacentes
+      tartaruga ~ coruja     0,04   2,54   2,66    adjacentes
+      tartaruga ~ narrador   0,02   2,38   2,66    adjacentes
+      coruja ~ raposa        0,15   3,00   3,00    adjacentes
+      narrador ~ raposa      0,21   3,16   2,99    adjacentes
+      elefante ~ raposa      0,18   8,02   7,96    extremos
+      aguia ~ tartaruga      0,49   0,12   0,34    MESMA categoria
+      coruja ~ narrador      0,06   0,16   0,00    MESMA categoria
+      menor distancia entre categorias adjacentes: hoje 0,01 -> WORLD 2,35 / PSOLA 1,96
+
+      Leitura honesta: o erro apos o timbre (ate 64 c, Raposa -- a portadora
+      do latido puxa a F0 para cima) e maior que antes dele (<= 16 c PSOLA
+      em fala crua); por isso uma distancia adjacente mediu 1,96 st, abaixo
+      do passo nominal 2,5 mas acima do limiar de separabilidade 1,24 st.
+    alternativa_modelos: |
+      F0 mediana das mesmas 3 frases, sem DSP, noise 0 (pt_BR do piper-voices):
+        pt_BR-faber-medium   ~166 Hz  (o do voz.lock)
+        pt_BR-edresson-low   159,80 Hz (16 kHz; "low")
+        pt_BR-jeff-medium    155,67 Hz
+        pt_BR-cadu-medium    132,07 Hz (-3,9 st do faber)
+      Todos masculinos: modelos diferentes dao no maximo 2 niveis distantes
+      (faber x cadu), nao 4; e o log do piper acusou "Missing phoneme from
+      id map" em um deles -- risco de pronuncia.
+
+  estabilidade_entre_classes:        # vigilia 2 (2026-09-24), harness/prototipos/cp010/estabilidade.py
+    pergunta: >
+      A etapa de pitch muda de bytes com a classe de SIMD da maquina? O
+      Agente A localizou a divergencia entre runners AMD AVX2 e Intel AVX-512
+      no onnxruntime (piper); aqui a etapa de pitch roda SOBRE PCM FIXO
+      (sintetizado uma vez, conferido por sha256 a cada execucao) para isolar.
+    como: >
+      Maquina: Intel Xeon com AVX-512 completo, Python 3.12, numpy 2.1.3,
+      scipy 1.14.1, pyworld 0.3.5 (pinos do voz.lock + pyworld). Cada
+      execucao e um processo novo; 4 niveis x threads 1 e 2
+      (OMP/OPENBLAS/MKL_NUM_THREADS) x 2 repeticoes = 16 execucoes por
+      tecnica. Hash = sha256 do PCM int16 de saida (o artefato que o dublar
+      grava) e do float64 antes da quantizacao.
+        N0  nada desligado
+        N1  NPY_DISABLE_CPU_FEATURES sem AVX-512
+        N2  N1 + AVX2, FMA3, AVX (e F16C, que o numpy exige junto com o AVX)
+        N3  N2 + GLIBC_TUNABLES=glibc.cpu.hwcaps sem AVX-512/AVX2/FMA/AVX
+      Conferido em cada processo: as features ativas do numpy caem como
+      pedido (N0 1111, N1 0111, N2/N3 0000 em AVX512F/AVX2/FMA3/AVX).
+    o_que_escapa_do_npy: >
+      NPY_DISABLE_CPU_FEATURES so controla o despacho do PROPRIO numpy.
+      (1) pyworld nao usa numpy no nucleo: e C++ que liga apenas em
+      libstdc++/libm/libc, e a libm da glibc escolhe variantes por CPU via
+      ifunc (exp/log/sin/cos com FMA/AVX2) -- escapa; por isso o N3.
+      (2) o PSOLA tambem passa pela libm: nem todo cos/float64 do numpy tem
+      caminho SIMD proprio. (3) scipy: NAO entra na etapa de pitch de
+      nenhuma das duas tecnicas (PSOLA = numpy + YIN; WORLD = pyworld). Entra
+      logo depois, no timbre (butter/sosfilt/resample_poly, codigo compilado
+      do scipy, fora do NPY_*) -- medido como extra, e ficou identico ate no N3.
+    tabela: |
+      tecnica  nivel  threads  int16 (artefato)            float64 vs N0
+      psola    N0     1,2      e7e54377bb16 (16/16 iguais) identico
+      psola    N1     1,2      e7e54377bb16                identico
+      psola    N2     1,2      e7e54377bb16                identico
+      psola    N3     1,2      e7e54377bb16                difere: delta max -319,1 dBFS (~1 ulp)
+      world    N0     1,2      7916569f274b (16/16 iguais) identico
+      world    N1     1,2      7916569f274b                identico
+      world    N2     1,2      7916569f274b                identico
+      world    N3     1,2      7916569f274b                difere: delta max -240,3 dBFS
+      timbre*  N0-N3  1,2      7f54532a0b71 (16/16 iguais) identico
+      * fora da etapa de pitch (scipy); medido porque "scipy nao provado".
+      2x no mesmo nivel: hash identico em TODOS os pares (determinismo).
+      Entrada (sha256 dos wav fixos, 12 primeiros): elefante ff0018979043,
+      aguia 87bb6f96af08, tartaruga d0afef88bdd3, raposa aa53916d9854.
+    veredito:
+      psola: >
+        ESTAVEL ENTRE CLASSES. int16 identico em N0-N3; float64 identico em
+        N0-N2 e ~1 ulp em N3. Risco de 1 LSB virar entre maquinas: <= 2e-5
+        amostra por filme de 124 s (limite superior: 2*delta/LSB por amostra).
+      world: >
+        EXIGE TOLERANCIA (ou guarda por hash). int16 identico no que foi
+        medido, mas a folga e 80 dB menor: delta float de -240 dBFS sob a
+        libm sem FMA/AVX, o que da ate ~0,17 amostra por filme de 124 s com
+        risco de virar 1 LSB entre maquinas -- redublagem em outra classe
+        pode mudar bytes sem ninguem ter editado nada.
+    limite_da_prova: >
+      Uma maquina so (Intel AVX-512); N1-N3 EMULAM classes menores dentro
+      dela. AMD real nao foi medida. A guarda definitiva e o hash por etapa
+      da CP-011 rodando nos runners reais (item 6 do sprint).
+
+  contexto_da_frota_avx2:            # registro CP-013 (Agente A, 2026-09-25) — NAO muda o estado da CP
+    o_caminho_avx2_varia_a_altura: >
+      O caminho de sintese na classe avx2 move a F0 mediana POR FALA em
+      ~+-2,2 Hz nas falas estaveis (medido na frota da CP-012, 6 amostras
+      avx2 identicas entre si em 2 modelos de CPU: deltas -2,20/+1,95/
+      +1,72/+1,03 Hz) — na faixa de altura dos filmes (~157-174 Hz), isso e
+      ~10-25 cents, ou seja ~+-20 cents por fala. A fala de timbre misto
+      (p10/elefante, voz+trompa) foge dessa regra por razao de INSTRUMENTO:
+      o pitch_f0 declara p10-p90 de 132,85-478,42 Hz na PROPRIA ancora e a
+      mediana "move" 42,10 Hz entre duas sinteses — pergunta aberta na
+      issue danzeroum/audio-suite#46 (fragilidade do rastreador ou mudanca
+      real de vozeamento?).
+    contexto_para_os_passos_de_2_5_st: >
+      O passo proposto entre categorias adjacentes (2,5 st) e ~10-12x MAIOR
+      que essa variacao medida — os passos NAO comem o ruido avx2. O que o
+      ruido come e a RESOLUCAO fina: a CP-012 mediu que um controle de +20
+      cents (2,02-2,87 Hz) fica NO NIVEL do proprio ruido da frota (por isso
+      a decisao do dono 24/09/2026, saida (e), tirou qualquer teto de F0 do
+      gate — os descritores seguem como OBSERVACAO publicada, CP-013).
+      Consequencia pratica para esta CP: alvos por guardiao (2,5 st) seguem
+      distinguiveis na frota; validacao fina de cents por fala, NAO — e a
+      verificacao de bytes da etapa de pitch (hash por etapa, ja na CP-011)
+      que garante a cadeia, nao a medida de F0.
+    fonte: >
+      CP-012 (resultado_da_medicao.o_achado_teto_nao_discrimina e
+      validacao_local_fase_1); CP-013 (observacao da ancora por copia avx2);
+      issue danzeroum/audio-suite#46. Registrado AQUI porque o passo de
+      pitch e o tema desta CP — a CP-010 CONTINUA proposta, nada muda de
+      estado.
+
+  alternativas:
+    A_world:
+      o_que: "pyworld (WORLD: harvest + cheaptrick + d4c; F0 x razao; ressintese)"
+      medido: "erro apos timbre -19..+47 c; duracao preservada; 2x no mesmo processo identico"
+      custo: >
+        Dependencia nova COMPILADA (C++) no ambiente de sintese: avancar
+        voz.lock (bloco ambiente) e a imagem dubladora do PR #12. E a
+        dependencia que a CP-006 deixou "a ser aprovada".
+      risco_determinismo: >
+        A ressintese do WORLD injeta ruido na componente aperiodica. Medido
+        identico 2x no mesmo processo e entre processos (ver como_se_prova);
+        entre MAQUINAS (build C++ e libm diferentes) nao foi medido -- e o
+        mesmo risco que a CP-007 resolveu travando versoes.
+    B_psola:
+      o_que: "TD-PSOLA em numpy/scipy (marcas de pitch pela F0 do YIN)"
+      medido: "erro apos timbre -35..+64 c; em fala crua <= 16 c; duracao preservada; deterministico"
+      custo: >
+        Nenhuma dependencia nova: numpy e scipy ja estao no bloco ambiente
+        do voz.lock. Exige rastreador de F0 PROPRIO na suite (o prototipo
+        usa o YIN da audio-suite, que e CLI externa e nao pode virar
+        import do estudio): ~80 linhas, testadas contra a audio-suite.
+      risco_determinismo: "baixo: aritmetica fixa sobre numpy/scipy ja travados."
+      risco_qualidade: >
+        PSOLA e mais sujeito a artefato (aspereza) que o WORLD em deslocamentos
+        grandes (o Elefante vai a -5 st). NAO MEDIDO por descritor --
+        exige escuta humana das amostras regeraveis.
+    C_modelos:
+      o_que: "um modelo piper por guardiao"
+      medido: "132-166 Hz entre os 4 modelos pt_BR; so 2 niveis uteis"
+      custo: "N ancoras novas no voz.lock (sha por modelo), N vezes o download, pronuncia diferente por guardiao"
+      veredito: "nao atende sozinho; descartada como tecnica principal"
+    recomendacao: >
+      B (PSOLA), agora por DOIS motivos medidos: (1) nao avanca o ambiente do
+      voz.lock e erra <= 64 c pos-timbre; (2) e ESTAVEL ENTRE CLASSES de
+      SIMD -- int16 identico em N0-N3 e folga de ~1 ulp, contra -240 dBFS do
+      WORLD, que expoe a redublagem a bytes diferentes entre maquinas. Segue
+      CONDICIONADA a escuta humana (kit de audicao: harness/prototipos/cp010/
+      audicao.py). Se a escuta reprovar o PSOLA no Elefante (-5 st), A
+      (WORLD) com pyworld travado no voz.lock E com a etapa de pitch na guarda
+      de hash por etapa (item 6) desde o primeiro dia.
+  escopo:
+    sprint_execucao: >
+      (depois do merge do PR #12 e de audio-suite#44)
+      1. estudio_suite/pitch.py: deslocamento de F0 da tecnica aprovada +
+         rastreador de F0 proprio (se B), puro, deterministico.
+      2. Mapa categoria -> semitons como DADO em estudio_suite (no espirito
+         do mapa de prosodia da CP-006); o rig continua declarando so o
+         adjetivo -- motor/ nao muda.
+      3. dublar: pitch do guardiao + pitch_st da expressao (CP-006) somados
+         na etapa de prosodia; audio.json com pitch_aplicado: true e o
+         deslocamento efetivo por clipe.
+      4. harness/perfis/guardioes-vozes.yaml ganha pitch_f0; a carteira
+         passa a publicar F0 mediana por falante.
+      5. Redublagem dos filmes publicados + carteira regravada (--gravar),
+         diffs no PR.
+      6. A etapa de pitch entra na lista de hash por etapa da CP-011
+         (piper -> prosodia/PITCH -> timbre -> mix), para que uma divergencia
+         entre runners aponte a ETAPA que mudou. A CP-011 e do Agente A e NAO
+         e editada aqui: o item e pedido quando esta sprint executar.
+    fora: >
+      Trocar modelo (C), reabrir noise_scale, mexer no timbre, pitch por
+      registro diferente do declarado.
+
+  impacto:
+    - "estudio_suite/{pitch(novo),prosodia,dublar}.py :: deslocamento na etapa de prosodia"
+    - "voz.lock :: SO se a opcao A for escolhida (pyworld no bloco ambiente)"
+    - "harness/perfis/guardioes-vozes.yaml :: descritor pitch_f0"
+    - "ci/ + .github/ :: pin da audio-suite num SHA que tenha o pitch_f0"
+    - "filmes/*/audio/, filmes/*/baseline/vozes/, filmes/*/relatorio.json :: redublagem"
+    - "tests/test_{prosodia,dublar,vozes}.py :: casos novos"
+
+  caminhos_afetados:
+    - esta-suite :: estudio_suite/{pitch,prosodia,dublar}.py
+    - esta-suite :: harness/perfis/guardioes-vozes.yaml
+    - esta-suite :: ci/, .github/workflows/ (pin da audio-suite)
+    - esta-suite :: filmes/*/audio/, filmes/*/baseline/vozes/, filmes/*/relatorio.json
+    - esta-suite :: tests/
+    - esta-suite :: voz.lock (somente opcao A)
+
+  risco:
+    nivel: medio
+    porque: >
+      Muda a voz de filmes ja publicados, e toca a zona que o Sprint 12
+      (PR #12) esta mexendo agora: dublar, voz.lock, imagem dubladora,
+      filmes/*/audio. Contencao: (1) nada disso e executado por esta CP --
+      ela so propoe e mede, fora do dublar; (2) a execucao espera o merge
+      do PR #12 e e rebaseada sobre ele; (3) 'medio' + neutro fica
+      byte-identico, entao a regressao se limita aos guardioes deslocados;
+      (4) o criterio de aceite e numerico e medido pela audio-suite.
+    riscos_locks:
+      - "voz.lock/modelo: intocado nas opcoes A e B"
+      - "voz.lock/ambiente: intocado em B; +pyworld (versao travada) em A"
+      - "amostras.lock: intocado (timbre nao muda)"
+      - "lei.lock: sem relacao"
+
+  aval_humano_necessario: true   # merge do PR e decisao humana
+
+  como_se_prova:
+    - "prototipo roda do zero com um comando (README.md de harness/prototipos/cp010) num venv isolado; amostras e resultado em workspace/cp010/ (gitignored)"
+    - "duas execucoes (venvs e workspaces diferentes) -> resultado.json identico e sha256 das amostras identicos"
+    - "cada guardiao: |F0 mediana medida - alvo| <= 65 cents apos o timbre (pior medido no prototipo: 64 c)"
+    - "categorias adjacentes: distancia medida >= 1,24 st (2*sqrt(2)*sigma_frase); hoje e 0,01"
+    - "deslocamento 0: pcm devolvido intocado (byte a byte) -- narrador e coruja nao mudam"
+    - "duracao de cada clipe identica antes e depois do deslocamento"
+    - "dublar 2x no sprint de execucao -> sha256 identicos em todos os .opus"
+    - "estabilidade.py: etapa de pitch sobre PCM fixo em N0-N3 x threads 1/2 x 2 -> int16 identico (psola e world medidos; veredito por tecnica acima)"
+
+  pontos_de_decisao:
+    - "Tecnica: B (PSOLA, recomendada, condicionada a escuta) ou A (WORLD, +pyworld no voz.lock)."
+    - "Pares na MESMA categoria (aguia~tartaruga, coruja~narrador) medem 0,0-0,3 st: aceitar (timbre e ritmo os distinguem) ou subdividir as categorias (aumenta a faixa alem de +-5 st)."
+    - "Raposa: registro 'encarregado' declara 'medio' e 'titular' 'mais-agudo' -- pitch por registro (como o ritmo ja e) ou so pelo rig."
+    - "Onde mora o mapa categoria -> semitons: estudio_suite (proposto) ou no rig (motor/, protegido)."
+
+  backlog:                      # PROIBIDO nesta CP
+    - "Contorno de F0 dentro da frase (entonacao) -- so a mediana e alvo aqui."
+    - "Modelo por guardiao (alternativa C)."
+    - resposta_padrao: >
+        Se um revisor perguntar por esses itens: "backlog da CP-010" --
+        nao e esquecimento.
