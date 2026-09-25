@@ -70,6 +70,15 @@ name: Dublador
 # falha DE PROPOSITO (a falha vira status publicado no artefato:
 # observacao nao e gate), e tudo o mais reprova.
 #
+# FROTA COMPROVADA (head a20377e, 24-25/09/2026, CP-013): 5 disparos do
+# job (PR x2 + 3 dispatches) — 8 cópias AVX-512 IDENTICAS (3 Intel:
+# 8573C/6973P-C; 5 AMD-avx512: 9V45/9V74), zero divergentes, zero
+# ilegiveis, controle do codec reprovando em todas (-68,63 a -68,9 x
+# teto -74,9); 33 cópias avx2 em observação (âncora medida sem build, F0
+# por voz idêntica entre cópias); SEM_AMOSTRA_DECISIVA ocorreu 1 vez
+# (8/8 avx2) — vermelho nomeado, e o RERUN devolveu o verde: o desenho
+# funcionou como especificado.
+#
 # CP-011: o FILTRO POR DECLARACAO. O job so processa filmes que DECLARAM
 # audio (audio: true no proprio filme.js, lido de la -- nunca de lista de
 # nomes). E so e acionado por eles: PR que so toca filme mudo (ex. um

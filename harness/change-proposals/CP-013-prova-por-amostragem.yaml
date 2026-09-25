@@ -147,8 +147,46 @@ proposta:
       ci/pins_do_lock.py --amostragem-n — o YAML nunca o digita. Lock
       sem o bloco frota e lock INCOMPLETO (recusa nomeada, nunca um
       numero chutado).
-    tabela_frota: []
-    execucoes: 0
+    tabela_frota:
+      # head a20377e (final da maquinaria; o head 932b78f provou o mesmo
+      # desenho antes da correcao do interpretador da observacao: 4 runs
+      # verdes, 7 identicas — 3 Intel + 4 AMD, zero divergentes, zero
+      # SEM_AMOSTRA; registrado no PR). Colunas: PCM = hash do mix f32 do
+      # audio.json; residuo = opus decodificado x commitado decodificado
+      # nos dois filmes (jornada/legitimo); controle = ruido injetado 6 dB
+      # acima do teto (-68,9) tem de REPROVAR — e reprovou em TODAS.
+      - {disparo: "PR attempt 2 (36075600630)", copia: "copia-7", cpu: "Intel Xeon Platinum 8573C", familia: intel, pcm: IGUAL, residuo_dbfs: "-inf / -inf", controle_dbfs: "-68,9 / -68,9", veredito: identica}
+      - {disparo: "dispatch 1 (36076338788)", copia: "copia-1", cpu: "Intel Xeon 6973P-C", familia: intel, pcm: IGUAL, residuo_dbfs: "-inf / -inf", controle_dbfs: "-68,9 / -68,9", veredito: identica}
+      - {disparo: "dispatch 1 (36076338788)", copia: "copia-6", cpu: "AMD EPYC 9V45", familia: amd-avx512, pcm: IGUAL, residuo_dbfs: "-80,9 / -83,14", controle_dbfs: "-68,63 / -68,74", veredito: identica}
+      - {disparo: "dispatch 2 (36076621350)", copia: "copia-5", cpu: "AMD EPYC 9V74", familia: amd-avx512, pcm: IGUAL, residuo_dbfs: "-80,9 / -83,14", controle_dbfs: "-68,63 / -68,74", veredito: identica}
+      - {disparo: "dispatch 3 (36076889018)", copia: "copia-1", cpu: "AMD EPYC 9V74", familia: amd-avx512, pcm: IGUAL, residuo_dbfs: "-80,9 / -83,14", controle_dbfs: "-68,63 / -68,74", veredito: identica}
+      - {disparo: "dispatch 3 (36076889018)", copia: "copia-3", cpu: "AMD EPYC 9V74", familia: amd-avx512, pcm: IGUAL, residuo_dbfs: "-80,9 / -83,14", controle_dbfs: "-68,63 / -68,74", veredito: identica}
+      - {disparo: "dispatch 3 (36076889018)", copia: "copia-6", cpu: "Intel Xeon 6973P-C", familia: intel, pcm: IGUAL, residuo_dbfs: "-inf / -inf", controle_dbfs: "-68,9 / -68,9", veredito: identica}
+      - {disparo: "dispatch 3 (36076889018)", copia: "copia-7", cpu: "AMD EPYC 9V45", familia: amd-avx512, pcm: IGUAL, residuo_dbfs: "-80,9 / -83,14", controle_dbfs: "-68,63 / -68,74", veredito: identica}
+    frota_do_head_final: >
+      5 disparos do job no head final a20377e (PR attempt 1, PR attempt 2
+      e 3 dispatches) — teto de 6 respeitado. RESULTADO: 8 copias AVX-512
+      IDENTICAS (3 Intel: 8573C e 6973P-C, duas geracoes; 5 AMD-avx512:
+      9V45 x2 e 9V74 x3), ZERO divergentes, ZERO amostras ilegiveis, o
+      controle do codec REPROVANDO em todas (-68,63 a -68,9, teto -74,9)
+      e o residuo codec medido exatamente como a CP-011/012 registraram
+      (-inf no Intel; -80,9/-83,14 no AMD). 33 copias avx2 sairam cedo
+      como observacao (sem build) e MEDERAM a ancora: F0 mediana por voz
+      identica entre as copias e igual a medida local (aguia 167,63,
+      coruja 165,34, elefante 172,28, narrador 156,95, raposa 172,0,
+      tartaruga 171,65 Hz) — a ancora e independente de classe, como a
+      CP-011 isolou. A cota da aceite foi superada: >= 3 Intel E >= 3
+      AMD-avx512 identicas.
+    sem_amostra_decisiva: >
+      OCORREU 1 VEZ (PR attempt 1 no head final: 8/8 copias avx2): o
+      agregador reprovou VERMELHO nomeado "SEM_AMOSTRA_DECISIVA — zero
+      copias AVX-512 no disparo; o caminho de volta e o RERUN". O rerun
+      (attempt 2) devolveu o verde com 1 Intel identica — o desenho
+      funcionou EXATAMENTE como especificado: a falta de amostra decisiva
+      e vermelho nomeado, nunca neutra, e a parada so dispararia se
+      repetisse 3 disparos SEGUIDOS (nao repetiu). A probabilidade
+      medida com o N do lock: P(zero avx512) = 0,019 por disparo.
+    execucoes: 5
 
   doutrina:
     - >
@@ -291,7 +329,29 @@ proposta:
         no PR — o agente nao escolhe por conta propria.
 
   licoes:
-    (a preencher no fechamento)
+    o_vermelho_nomeado_e_o_caminho: >
+      A primeira rodada real do desenho novo sorteou 8/8 copias avx2 e o
+      agregador ficou VERMELHO nomeado — SEM_AMOSTRA_DECISIVA, com o rerun
+      escrito no proprio veredito. O rerun devolveu o verde. E exatamente o
+      comportamento que a decisao (e) pediu: "sem amostra decisiva e
+      vermelho nomeado". Um gate que passasse verde num disparo sem
+      nenhuma copia decisiva estaria mentindo por omissao — este nao.
+    observacao_falha_publicada_copia_neutra: >
+      Duas rodadas reais falharam na OBSERVACAO (a primeira: soundfile so
+      existia no venv da audio-suite, o python3 do runner nao o importava
+      — ModuleNotFoundError; a segunda: achar o CLI com command -v ANTES
+      de exportar o PATH do pipx). Nas DUAS, o desenho segurou: a falha
+      foi PUBLICADA (status no artefato, log no job), as copias terminaram
+      NEUTRAS e o agregador seguiu verde — observacao nao e gate. A
+      correcao (interpretador = python do venv da audio-suite pinada;
+      caminhos perguntados ao proprio pipx) chegou pela VIA certa: o
+      registro da falha, nao um continue-on-error que a esconderia.
+    a_ancora_e_independente_de_classe: >
+      As 33 copias avx2 do head final mediram a MESMA ancora: F0 mediana
+      por voz identica entre copias e igual a medida local (diferenca
+      zero). E a observacao servindo ao que ela e: evidencia publica de
+      que o instrumento e a ancora nao variam com a classe — o que varia
+      (a sintese regenerada) e o que a decisao (e) tirou do gate.
 
   risco:
     nivel: medio
